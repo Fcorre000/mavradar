@@ -7,6 +7,10 @@
 *.mobileprovision
 *.keystore
 *.jks
+*.pem
+*.key
+*.cer
+*.certSigningRequest
 google-services.json
 GoogleService-Info.plist
 serviceAccountKey.json
@@ -34,6 +38,11 @@ yarn-error.log
 app/ios/
 app/android/
 
+# compiled app binaries (EAS downloads land here)
+*.ipa
+*.apk
+*.aab
+
 # === Python (edge/ and server/) ===
 __pycache__/
 *.py[cod]
@@ -60,3 +69,6 @@ edge/logs/
 !.vscode/extensions.json
 !.vscode/settings.json
 .idea/
+
+# machine-local agent settings (shared .claude/settings.json still commits)
+**/.claude/settings.local.json
