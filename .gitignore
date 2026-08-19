@@ -53,6 +53,27 @@ venv/
 .mypy_cache/
 .ruff_cache/
 
+# === LaTeX build artifacts (docs/) ===
+# built PDFs are intentionally NOT ignored: they are the submitted deliverable
+*.aux
+*.lof
+*.lot
+*.toc
+*.out
+*.log
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.xdv
+*.bbl
+*.blg
+*.bcf
+*.run.xml
+# beamer, for the sprint presentations
+*.nav
+*.snm
+*.vrb
+
 # === local detection data (huge, regenerable) ===
 edge/data/*.db
 edge/data/*.csv
