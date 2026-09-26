@@ -1,0 +1,39 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Crossing status and history: readable by any app user, written only by the server.
+    // Server writes use the Admin SDK, which bypasses these rules.
+    match /crossings/{usdotId} {
+      allow read: if request.auth != null;
+      match /events/{eventId} {
+        allow read: if request.auth != null;
+      }
+    }
+
+    // Device registry, keyed on the push token, not the uid (Amendment 002, 4.1).
+    // The app registers with a merge write of uid, platform, and updatedAt, so
+    // subscriptions and quietHours are optional and survive re-registration.
+    match /devices/{fcmToken} {
+      allow get: if request.auth != null && resource.data.uid == request.auth.uid;
+      allow create: if validDevice();
+      allow update: if validDevice() && resource.data.uid == request.auth.uid;
+      allow delete: if request.auth != null && resource.data.uid == request.auth.uid;
+    }
+
+    function validDevice() {
+      let d = request.resource.data;
+      return request.auth != null
+        && d.uid == request.auth.uid
+        && d.keys().hasOnly(['uid', 'platform', 'subscriptions', 'quietHours', 'updatedAt'])
+        && d.platform in ['android', 'ios']
+        && d.updatedAt == request.time
+        && (!('subscriptions' in d) || (d.subscriptions is list && d.subscriptions.size() <= 20));
+    }
+
+    // Everything else (nodes, detections, tenants, alert log) is server-only.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
