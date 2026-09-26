@@ -74,6 +74,16 @@ venv/
 *.snm
 *.vrb
 
+# === instructor handouts (not ours to redistribute; COURSE_CONSTRAINTS.md quotes what matters) ===
+docs/course/*.pdf
+
+# === Firebase emulator and CLI state ===
+.firebase/
+firebase-debug.log*
+firestore-debug.log*
+ui-debug.log*
+pglite-debug.log*
+
 # === local detection data (huge, regenerable) ===
 edge/data/*.db
 edge/data/*.csv
