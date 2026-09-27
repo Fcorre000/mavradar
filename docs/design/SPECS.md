@@ -17,6 +17,14 @@ All sizes are dp, type is sp, frame is 412 x 915. Token names in `code` refer to
 - Touch targets are at least 48 dp. Text passes WCAG AA (4.5:1, 3:1 at 24 sp and up). Icons and marker rings pass 3:1.
 - Every time and duration uses tabular numerals.
 
+## Brand color candidates (not decided)
+
+Five schemes are under review: Graphite (default), Transit Navy, Cobalt, Prairie Slate and Railtie. They're in `tokens.json` (`color.brandCandidates`) and in `app/src/constants/theme.ts` (`BrandSchemes`). You can flip between them in the mockup under Settings > Brand colors.
+
+- A brand scheme changes the neutrals (background, surfaces, text, dividers) and the primary color, which drives filled buttons, switches, selection and links.
+- Status card, marker, timeline and notification colors never change with the brand.
+- None of the candidates uses red, amber, teal-green or purple, so a brand color can't be mistaken for a crossing state. All pass AA.
+
 ## Components
 
 ### Status card

@@ -54,10 +54,30 @@
   const YESTERDAY = [[1406, 4, 0], [1322, 21, 1], [1247, 6, 0]];
   const WORDS = { clear: 'Clear', approaching: 'Approaching', blocked: 'Blocked', stopped: 'Stopped', unknown: 'Unknown' };
 
+
+  // Brand color candidates, mirrored from app/src/constants/theme.ts (BrandSchemes). Status colors never change.
+  const BRANDS = {
+    graphite: { name: 'Graphite', desc: 'Neutral. Only the status colors carry color.',
+      light: { bg: '#FFFFFF', surface: '#F6F7F9', text: '#111418', text2: '#4A5260', divider: '#E3E6EB', outline: '#C9CED6', pill: '#E3E6EB', tonal: '#EDF0F3', track: '#ECEEF1', sheet: '#FFFFFF', handle: '#C9CED6', primary: '#111418', 'on-primary': '#FFFFFF', link: '#111418', ok: '#007A6E', 'snack-bg': '#2B3036', 'snack-ink': '#F2F4F7', 'snack-action': '#7FD9CC' },
+      dark: { bg: '#121212', surface: '#1B1E22', text: '#F2F4F7', text2: '#B6BDC8', divider: '#2C3137', outline: '#3A4048', pill: '#2C3137', tonal: '#262A30', track: '#2C3137', sheet: '#1B1E22', handle: '#5A616B', primary: '#F2F4F7', 'on-primary': '#121212', link: '#F2F4F7', ok: '#7FD9CC', 'snack-bg': '#E3E6EB', 'snack-ink': '#111418', 'snack-action': '#00594F' } },
+    transitNavy: { name: 'Transit Navy', desc: 'Deep navy on warm paper, like transit wayfinding.',
+      light: { bg: '#FBFAF7', surface: '#F1EFE9', text: '#13213A', text2: '#4B566A', divider: '#E3E0D8', outline: '#C8C4BA', pill: '#DCE4F0', tonal: '#E8ECF3', track: '#EAE7E0', sheet: '#FFFFFF', handle: '#C8C4BA', primary: '#1B3A66', 'on-primary': '#FFFFFF', link: '#1B3A66', ok: '#007A6E', 'snack-bg': '#1B2A42', 'snack-ink': '#EEF2F8', 'snack-action': '#A9C4EC' },
+      dark: { bg: '#0D1522', surface: '#152033', text: '#EEF2F8', text2: '#AEB9CB', divider: '#22304A', outline: '#33425E', pill: '#23395C', tonal: '#1C2A42', track: '#22304A', sheet: '#152033', handle: '#4A5A78', primary: '#A9C4EC', 'on-primary': '#0D1522', link: '#A9C4EC', ok: '#7FD9CC', 'snack-bg': '#DCE4F0', 'snack-ink': '#13213A', 'snack-action': '#1B3A66' } },
+    cobalt: { name: 'Cobalt', desc: 'Bright civic blue. The most energetic option.',
+      light: { bg: '#FFFFFF', surface: '#F4F6FB', text: '#0F1523', text2: '#4A5366', divider: '#E1E6F0', outline: '#C3CBDA', pill: '#DDE6FF', tonal: '#EAF0FF', track: '#E8ECF4', sheet: '#FFFFFF', handle: '#C3CBDA', primary: '#2350C8', 'on-primary': '#FFFFFF', link: '#2350C8', ok: '#007A6E', 'snack-bg': '#1A2233', 'snack-ink': '#F0F3FA', 'snack-action': '#9DB6FF' },
+      dark: { bg: '#0E1117', surface: '#171C27', text: '#F0F3FA', text2: '#B2BACB', divider: '#262D3C', outline: '#384257', pill: '#24345E', tonal: '#1E2638', track: '#262D3C', sheet: '#171C27', handle: '#4B5670', primary: '#9DB6FF', 'on-primary': '#0E1117', link: '#9DB6FF', ok: '#7FD9CC', 'snack-bg': '#DDE6FF', 'snack-ink': '#0F1523', 'snack-action': '#2350C8' } },
+    prairieSlate: { name: 'Prairie Slate', desc: 'Blue-gray on sand. Quiet and regional.',
+      light: { bg: '#F7F5F0', surface: '#EFECE5', text: '#1C2227', text2: '#525A61', divider: '#E2DED5', outline: '#C6C1B6', pill: '#DDE3E7', tonal: '#E8ECEE', track: '#E7E3DB', sheet: '#FFFDF9', handle: '#C6C1B6', primary: '#3B5163', 'on-primary': '#FFFFFF', link: '#3B5163', ok: '#007A6E', 'snack-bg': '#27323B', 'snack-ink': '#EEF0F1', 'snack-action': '#B7C8D6' },
+      dark: { bg: '#121517', surface: '#1B2024', text: '#EEF0F1', text2: '#B3BBC1', divider: '#2A3136', outline: '#3B454C', pill: '#2B3A45', tonal: '#232A30', track: '#2A3136', sheet: '#1B2024', handle: '#525E66', primary: '#B7C8D6', 'on-primary': '#121517', link: '#B7C8D6', ok: '#7FD9CC', 'snack-bg': '#DDE3E7', 'snack-ink': '#1C2227', 'snack-action': '#3B5163' } },
+    railtie: { name: 'Railtie', desc: 'Espresso brown on cream, like weathered rail ties.',
+      light: { bg: '#FAF7F2', surface: '#F2EDE5', text: '#231B15', text2: '#5A5048', divider: '#E6DFD4', outline: '#CBC1B3', pill: '#E8DDD0', tonal: '#F0E8DE', track: '#EAE3D8', sheet: '#FFFDF9', handle: '#CBC1B3', primary: '#4A3528', 'on-primary': '#FFFFFF', link: '#4A3528', ok: '#007A6E', 'snack-bg': '#33271E', 'snack-ink': '#F4EEE7', 'snack-action': '#E2CDB5' },
+      dark: { bg: '#15110E', surface: '#1F1915', text: '#F4EEE7', text2: '#C0B4A7', divider: '#30271F', outline: '#45382C', pill: '#3A2E24', tonal: '#2A221B', track: '#30271F', sheet: '#1F1915', handle: '#5E4F41', primary: '#E2CDB5', 'on-primary': '#15110E', link: '#E2CDB5', ok: '#7FD9CC', 'snack-bg': '#E8DDD0', 'snack-ink': '#231B15', 'snack-action': '#4A3528' } }
+  };
+
   // ---------------------------------------------------------------- state
   const S = {
     onboarded: false, tab: 'status', mapView: 'map', sheet: 'peek', selectedId: 'center', statusId: 'center',
-    dataset: 'one', zoom: 'area', appearance: 'system', k: 1,
+    dataset: 'one', zoom: 'area', appearance: 'system', brand: 'graphite', k: 1,
     conn: 'online', offlineSince: null,
     center: { state: 'clear', clearSince: START - 30 * 60, since: null, stoppedAt: null, detectedAt: null, lastReading: null },
     age: 3, ageOthers: 5, frozen: false, speed: 1,
@@ -541,7 +561,7 @@
     const types = [['blocked', 'Blocked', 'When a train blocks the crossing'], ['cleared', 'Cleared', 'When the crossing clears'], ['stopped', 'Stopped', 'When a train stops across the road'], ['approaching', 'Approaching', 'Available when early-warning sensors are installed']];
     const toggles = types.map(([k, t, d]) => {
       const dis = k === 'approaching';
-      let h = '<div class="row row72 pad" style="border-top:0;border-bottom:1px solid var(--divider)"><span class="stack" style="flex:1;gap:2px"><span class="t-body" style="line-height:1.4;color:' + (dis ? 'var(--text2)' : 'var(--text)') + '">' + t + '</span><span class="t-sec muted">' + d + '</span></span>' + switchBtn(!dis && granted && S.alerts[k], 'alertType', k, t + ' alerts', dis) + '</div>';
+      let h = '<div class="row row72 inset" style="border-top:0;border-bottom:1px solid var(--divider)"><span class="stack" style="flex:1;gap:2px"><span class="t-body" style="line-height:1.4;color:' + (dis ? 'var(--text2)' : 'var(--text)') + '">' + t + '</span><span class="t-sec muted">' + d + '</span></span>' + switchBtn(!dis && granted && S.alerts[k], 'alertType', k, t + ' alerts', dis) + '</div>';
       if (S.settingsCard === k) {
         h += '<div role="status" style="margin:12px 20px 4px;padding:14px 16px;border-radius:16px;border:1px solid var(--outline)" class="stack"><span class="t-sec" style="font-weight:600;margin-bottom:6px">Notifications are off for MavRadar in Android settings.</span><span class="t-sec muted" style="margin-bottom:10px">Turn them on there to get alerts. Status still works without them.</span>' +
           '<button type="button" class="pill-btn" style="align-self:flex-start;padding:0 18px"' + fk('openAndroidSettings') + '>Open settings</button></div>';
@@ -549,18 +569,27 @@
       return h;
     }).join('');
     const seg = (opts, cur, act) => '<div class="seg" role="group">' + opts.map(([v, l]) => '<button type="button" aria-pressed="' + (String(cur) === String(v)) + '"' + fk(act, v) + '>' + (String(cur) === String(v) ? I.check : '') + l + '</button>').join('') + '</div>';
-    const navRow = (act, title, desc, val) => '<button type="button" class="row row72 pad" style="width:100%;border-top:0;border-bottom:1px solid var(--divider);text-align:left"' + fk(act) + '><span class="stack" style="flex:1;gap:2px"><span class="t-body" style="line-height:1.4">' + title + '</span>' + (desc ? '<span class="t-sec muted">' + desc + '</span>' : '') + '</span><span style="font-size:15px;font-weight:600">' + val + '</span>' + I.chevR + '</button>';
+    const navRow = (act, title, desc, val) => '<button type="button" class="row row72 inset" style="width:calc(100% - 40px);border-top:0;border-bottom:1px solid var(--divider);text-align:left"' + fk(act) + '><span class="stack" style="flex:1;gap:2px"><span class="t-body" style="line-height:1.4">' + title + '</span>' + (desc ? '<span class="t-sec muted">' + desc + '</span>' : '') + '</span><span style="font-size:15px;font-weight:600">' + val + '</span>' + I.chevR + '</button>';
     const commute = ['All day', 'Weekdays 7 to 9 AM, 4 to 7 PM'][S.commute];
     const quiet = ['Off', '10 PM to 6 AM'][S.quiet];
     return '<div class="view"><div class="scroll" data-scroll="settings"><header style="padding:36px 20px 8px"><h1 class="t-name" style="margin:0">Settings</h1></header>' +
       '<h2 class="sec-h">Alerts</h2><div style="margin:0 20px;padding:12px 14px;border-radius:16px;background:var(--surface);display:flex;align-items:center;gap:10px">' + (granted ? I.bell : I.bellOff) + '<span class="t-sec">' + statusLine + '</span></div>' +
       '<div class="pad t-sec muted" style="padding-top:14px">' + (followed.length ? 'For crossings you follow: ' + esc(followed.join(', ')) : "You're not following a crossing yet. Follow one from Status or the map.") + '</div>' +
       toggles +
-      '<div class="pad stack" style="gap:10px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--divider)"><span class="t-body">Minimum blockage before alerting</span>' + seg([[1, '1 min'], [3, '3 min'], [5, '5 min']], S.minBlock, 'minBlock') + '<span class="t-sec muted">Blockages shorter than this won\'t alert you.</span></div>' +
+      '<div class="inset stack" style="gap:10px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--divider)"><span class="t-body">Minimum blockage before alerting</span>' + seg([[1, '1 min'], [3, '3 min'], [5, '5 min']], S.minBlock, 'minBlock') + '<span class="t-sec muted">Blockages shorter than this won\'t alert you.</span></div>' +
       navRow('commute', 'Commute windows', 'Only alert at set times, like weekdays 7 to 9 AM', commute.length > 10 ? 'Set' : commute) + navRow('quiet', 'Quiet hours', 'No alerts overnight or while you sleep', quiet.length > 4 ? 'On' : quiet) +
       '<h2 class="sec-h" style="padding-top:24px">Appearance</h2><div class="pad">' + seg([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], S.appearance, 'appearance') + '</div>' +
+      '<h2 class="sec-h" style="padding-top:24px">Brand colors <span style="font-weight:500">· exploring options</span></h2><div class="inset stack" role="radiogroup" aria-label="Brand colors">' +
+      Object.keys(BRANDS).map((key) => {
+        const b = BRANDS[key];
+        const p = b[theme()];
+        const on = S.brand === key;
+        return '<button type="button" class="brand-opt" role="radio" aria-checked="' + on + '"' + fk('brand', key) + '><span class="radio' + (on ? ' on' : '') + '"></span>' +
+          '<span class="brand-sw" aria-hidden="true"><i style="background:' + p.bg + '"></i><i style="background:' + p.surface + '"></i><i style="background:' + p.primary + '"></i><i style="background:' + p.text + '"></i></span>' +
+          '<span class="stack" style="flex:1;gap:2px"><span class="t-body" style="font-weight:600;line-height:1.4">' + b.name + '</span><span class="t-sec muted">' + b.desc + '</span></span></button>';
+      }).join('') + '</div><p class="t-disc inset" style="padding-top:10px">Brand colors change neutrals and buttons only. Crossing status colors stay the same in every option.</p>' +
       '<h2 class="sec-h" style="padding-top:24px">About</h2>' + navRow('aboutHow', 'How detection works', '', '') + navRow('aboutSensors', 'Sensors', '', '1 online') + navRow('feedback', 'Send feedback', '', '') +
-      '<div class="pad stack" style="gap:4px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--divider)"><span class="t-body">Privacy</span><span class="t-sec muted">No account. No location. We store an anonymous device token for alerts.</span></div>' +
+      '<div class="inset stack" style="gap:4px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--divider)"><span class="t-body">Privacy</span><span class="t-sec muted">No account. No location. We store an anonymous device token for alerts.</span></div>' +
       '<div class="pad" style="padding-top:16px">' + disclaimer + '<p class="t-disc" style="padding:4px 0 24px">Version 1.0.0 · mockup</p></div></div>' + nav('settings') + '</div>';
   }
 
@@ -676,6 +705,8 @@
     screen.dataset.theme = theme();
     screen.dataset.k = String(S.k);
     screen.style.setProperty('--k', S.k);
+    const pal = BRANDS[S.brand][theme()];
+    Object.keys(pal).forEach((k) => screen.style.setProperty('--' + k, pal[k]));
     patch(LA, appHtml(), 'app');
     patch(LO, overlays(), 'over');
     patch(LS, sysbar(), 'sys');
@@ -808,6 +839,7 @@
     commute() { S.choice = { title: 'Commute windows', items: [{ label: 'All day', sub: 'Alerts any time', on: S.commute === 0, v: 0 }, { label: 'Weekdays 7 to 9 AM, 4 to 7 PM', sub: 'Only while you usually drive', on: S.commute === 1, v: 1 }], pick: (it) => { S.commute = it.v; } }; S.overlay = 'choice'; },
     quiet() { S.choice = { title: 'Quiet hours', items: [{ label: 'Off', on: S.quiet === 0, v: 0 }, { label: '10 PM to 6 AM', sub: 'No alerts overnight', on: S.quiet === 1, v: 1 }], pick: (it) => { S.quiet = it.v; } }; S.overlay = 'choice'; },
     appearance(d) { S.appearance = d.id; },
+    brand(d) { S.brand = d.id; },
     aboutHow() { S.info = { title: 'How detection works', html: '<p class="t-body">A small solar-powered radar near the tracks watches for trains and reports every few seconds. When a train is on the crossing, we show it here and, if you follow the crossing, send an alert.</p><p class="t-body">If the sensor goes quiet, we show Unknown instead of guessing.</p>' + disclaimer }; S.overlay = 'info'; },
     aboutSensors() { S.info = { title: 'Sensors', html: '<div class="row"><span class="t-body">Center St · East node</span><span class="val t-sec muted">' + (eff(byId('center')).state === 'unknown' ? 'Offline' : 'Online · battery OK') + '</span></div>' }; S.overlay = 'info'; },
     feedback() { snack('Opens your email app to send feedback.'); },
