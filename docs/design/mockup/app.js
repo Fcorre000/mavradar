@@ -55,7 +55,7 @@
   const WORDS = { clear: 'Clear', approaching: 'Approaching', blocked: 'Blocked', stopped: 'Stopped', unknown: 'Unknown' };
 
 
-  // Brand color candidates, mirrored from app/src/constants/theme.ts (BrandSchemes). Status colors never change.
+  // Brand schemes, mirrored from app/src/constants/theme.ts (BrandSchemes). Transit Navy is the chosen brand. Status colors never change.
   const BRANDS = {
     graphite: { name: 'Graphite', desc: 'Neutral. Only the status colors carry color.',
       light: { bg: '#FFFFFF', surface: '#F6F7F9', text: '#111418', text2: '#4A5260', divider: '#E3E6EB', outline: '#C9CED6', pill: '#E3E6EB', tonal: '#EDF0F3', track: '#ECEEF1', sheet: '#FFFFFF', handle: '#C9CED6', primary: '#111418', 'on-primary': '#FFFFFF', link: '#111418', ok: '#007A6E', 'snack-bg': '#2B3036', 'snack-ink': '#F2F4F7', 'snack-action': '#7FD9CC' },
@@ -77,7 +77,7 @@
   // ---------------------------------------------------------------- state
   const S = {
     onboarded: false, tab: 'status', mapView: 'map', sheet: 'peek', selectedId: 'center', statusId: 'center',
-    dataset: 'one', zoom: 'area', appearance: 'system', brand: 'graphite', k: 1,
+    dataset: 'one', zoom: 'area', appearance: 'system', brand: 'transitNavy', k: 1,
     conn: 'online', offlineSince: null,
     center: { state: 'clear', clearSince: START - 30 * 60, since: null, stoppedAt: null, detectedAt: null, lastReading: null },
     age: 3, ageOthers: 5, frozen: false, speed: 1,
@@ -579,15 +579,6 @@
       '<div class="inset stack" style="gap:10px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--divider)"><span class="t-body">Minimum blockage before alerting</span>' + seg([[1, '1 min'], [3, '3 min'], [5, '5 min']], S.minBlock, 'minBlock') + '<span class="t-sec muted">Blockages shorter than this won\'t alert you.</span></div>' +
       navRow('commute', 'Commute windows', 'Only alert at set times, like weekdays 7 to 9 AM', commute.length > 10 ? 'Set' : commute) + navRow('quiet', 'Quiet hours', 'No alerts overnight or while you sleep', quiet.length > 4 ? 'On' : quiet) +
       '<h2 class="sec-h" style="padding-top:24px">Appearance</h2><div class="pad">' + seg([['system', 'System'], ['light', 'Light'], ['dark', 'Dark']], S.appearance, 'appearance') + '</div>' +
-      '<h2 class="sec-h" style="padding-top:24px">Brand colors <span style="font-weight:500">· exploring options</span></h2><div class="inset stack" role="radiogroup" aria-label="Brand colors">' +
-      Object.keys(BRANDS).map((key) => {
-        const b = BRANDS[key];
-        const p = b[theme()];
-        const on = S.brand === key;
-        return '<button type="button" class="brand-opt" role="radio" aria-checked="' + on + '"' + fk('brand', key) + '><span class="radio' + (on ? ' on' : '') + '"></span>' +
-          '<span class="brand-sw" aria-hidden="true"><i style="background:' + p.bg + '"></i><i style="background:' + p.surface + '"></i><i style="background:' + p.primary + '"></i><i style="background:' + p.text + '"></i></span>' +
-          '<span class="stack" style="flex:1;gap:2px"><span class="t-body" style="font-weight:600;line-height:1.4">' + b.name + '</span><span class="t-sec muted">' + b.desc + '</span></span></button>';
-      }).join('') + '</div><p class="t-disc inset" style="padding-top:10px">Brand colors change neutrals and buttons only. Crossing status colors stay the same in every option.</p>' +
       '<h2 class="sec-h" style="padding-top:24px">About</h2>' + navRow('aboutHow', 'How detection works', '', '') + navRow('aboutSensors', 'Sensors', '', '1 online') + navRow('feedback', 'Send feedback', '', '') +
       '<div class="inset stack" style="gap:4px;padding-top:16px;padding-bottom:16px;border-bottom:1px solid var(--divider)"><span class="t-body">Privacy</span><span class="t-sec muted">No account. No location. We store an anonymous device token for alerts.</span></div>' +
       '<div class="pad" style="padding-top:16px">' + disclaimer + '<p class="t-disc" style="padding:4px 0 24px">Version 1.0.0 · mockup</p></div></div>' + nav('settings') + '</div>';
@@ -874,6 +865,7 @@
     conn(d) { const was = S.conn; S.conn = d.id; if (d.id !== 'online' && was === 'online') S.offlineSince = simNow - 2 * 60; if (d.id === 'online') S.age = 0; },
     appearance(d) { S.appearance = d.id; },
     k(d) { S.k = Number(d.id); },
+    brand(d) { S.brand = d.id; },
     perm(d) { S.permission = d.id; S.settingsCard = null; },
     lock() { S.locked = true; S.shade = false; S.headsUp = null; },
     shade() { S.shade = true; S.locked = false; },
@@ -970,6 +962,7 @@
       '<label class="ctl">Connection' + opt('conn', S.conn, [['online', 'Online'], ['phone', 'Phone offline'], ['server', 'Server down']]) + '</label>' +
       '<label class="ctl">Theme' + opt('appearance', S.appearance, [['system', 'System'], ['light', 'Light'], ['dark', 'Dark']]) + '</label>' +
       '<label class="ctl">Text size' + opt('k', S.k, [[1, '100%'], [2, '200%']]) + '</label>' +
+      '<label class="ctl">Brand (chosen: Transit Navy)' + opt('brand', S.brand, Object.keys(BRANDS).map((k) => [k, BRANDS[k].name])) + '</label>' +
       '<label class="ctl">Notification permission' + opt('perm', S.permission, [['unasked', 'Not asked'], ['granted', 'Allowed'], ['denied', 'Denied']]) + '</label>' +
       '<div class="opts"><button type="button" class="act" data-demo="lock" data-fk="d-lock">Lock phone</button><button type="button" class="act" data-demo="shade" data-fk="d-shade">Open shade</button></div>' +
       '<p class="note">Tap the phone\'s status bar to open the shade. Esc works like the back gesture.</p></section>' +

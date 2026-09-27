@@ -17,13 +17,21 @@ All sizes are dp, type is sp, frame is 412 x 915. Token names in `code` refer to
 - Touch targets are at least 48 dp. Text passes WCAG AA (4.5:1, 3:1 at 24 sp and up). Icons and marker rings pass 3:1.
 - Every time and duration uses tabular numerals.
 
-## Brand color candidates (not decided)
+## Brand: Transit Navy
 
-Five schemes are under review: Graphite (default), Transit Navy, Cobalt, Prairie Slate and Railtie. They're in `tokens.json` (`color.brandCandidates`) and in `app/src/constants/theme.ts` (`BrandSchemes`). You can flip between them in the mockup under Settings > Brand colors.
+Transit Navy was chosen on 2026-09-27: deep navy on warm paper, like transit wayfinding. Its values are `color.neutral` in `tokens.json` and `DefaultBrand` in `app/src/constants/theme.ts`.
 
-- A brand scheme changes the neutrals (background, surfaces, text, dividers) and the primary color, which drives filled buttons, switches, selection and links.
-- Status card, marker, timeline and notification colors never change with the brand.
-- None of the candidates uses red, amber, teal-green or purple, so a brand color can't be mistaken for a crossing state. All pass AA.
+| Role | Light | Dark |
+|---|---|---|
+| Background | #FBFAF7 | #0D1522 |
+| Surface | #F1EFE9 | #152033 |
+| Text | #13213A | #EEF2F8 |
+| Secondary text | #4B566A | #AEB9CB |
+| Primary (filled buttons, switches, links) | #1B3A66 on #FFFFFF | #A9C4EC on #0D1522 |
+| Selected (nav indicator, segments) | #DCE4F0 | #23395C |
+
+- The brand changes neutrals and primary only. Status card, marker, timeline and notification colors never change.
+- The other candidates (Graphite, Cobalt, Prairie Slate, Railtie) stay in `tokens.json` and `BrandSchemes` for reference.
 
 ## Components
 

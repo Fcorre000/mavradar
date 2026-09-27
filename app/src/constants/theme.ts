@@ -36,9 +36,9 @@ type Palette = {
 };
 
 /**
- * Brand color candidates. Graphite is the approved v2 look. The others are options still being
- * compared; each keeps AA contrast and avoids hues that could be mistaken for a crossing state
- * (no red, amber, teal-green or purple).
+ * Brand schemes. Transit Navy is the chosen brand (2026-09-27) and the default. The other
+ * candidates stay for reference; each keeps AA contrast and avoids hues that could be mistaken
+ * for a crossing state (no red, amber, teal-green or purple).
  */
 export const BrandSchemes = {
   graphite: {
@@ -119,7 +119,7 @@ export const BrandSchemes = {
 } as const satisfies Record<string, { name: string; light: Palette; dark: Palette }>;
 
 export type BrandScheme = keyof typeof BrandSchemes;
-export const DefaultBrand: BrandScheme = 'graphite';
+export const DefaultBrand: BrandScheme = 'transitNavy';
 
 export const Colors: { light: Palette; dark: Palette } = {
   light: BrandSchemes[DefaultBrand].light,

@@ -1,4 +1,4 @@
-/* MavRadar interactive mockup. Values mirror docs/design/tokens.json. */
+/* MavRadar interactive mockup. Values mirror docs/design/tokens.json (brand: Transit Navy). */
 
 * { box-sizing: border-box; }
 html, body { margin: 0; }
@@ -29,9 +29,9 @@ a { color: inherit; }
   background: var(--bg); color: var(--text);
 }
 .screen[data-theme="light"] {
-  --bg: #FFFFFF; --surface: #F6F7F9; --text: #111418; --text2: #4A5260; --divider: #E3E6EB; --outline: #C9CED6;
-  --pill: #E3E6EB; --tonal: #EDF0F3; --track: #ECEEF1; --sheet: #FFFFFF; --handle: #C9CED6; --scrim: rgba(0,0,0,0.45);
-  --snack-bg: #2B3036; --snack-ink: #F2F4F7; --snack-action: #7FD9CC; --ok: #007A6E;
+  --bg: #FBFAF7; --surface: #F1EFE9; --text: #13213A; --text2: #4B566A; --divider: #E3E0D8; --outline: #C8C4BA;
+  --pill: #DCE4F0; --tonal: #E8ECF3; --track: #EAE7E0; --sheet: #FFFFFF; --handle: #C8C4BA; --scrim: rgba(0,0,0,0.45);
+  --snack-bg: #1B2A42; --snack-ink: #EEF2F8; --snack-action: #A9C4EC; --ok: #007A6E; --primary: #1B3A66; --on-primary: #FFFFFF; --link: #1B3A66;
   --moving: #C62828; --stopped-bar: #8E1B1B; --gap: #6B7280; --bar: #AEB4BD;
   --i-clear: #007A6E; --i-clear-glyph: #FFFFFF; --i-unknown: #3D4450;
   --notif: #FFFFFF; --notif-body: #2A2F36; --chev: #EDF0F3;
@@ -40,9 +40,9 @@ a { color: inherit; }
   --wall: #C9D1DA; --lockwall: #AFB9C5; --shade: #EEF0F3;
 }
 .screen[data-theme="dark"] {
-  --bg: #121212; --surface: #1B1E22; --text: #F2F4F7; --text2: #B6BDC8; --divider: #2C3137; --outline: #3A4048;
-  --pill: #2C3137; --tonal: #262A30; --track: #2C3137; --sheet: #1B1E22; --handle: #5A616B; --scrim: rgba(0,0,0,0.6);
-  --snack-bg: #E3E6EB; --snack-ink: #111418; --snack-action: #00594F; --ok: #7FD9CC;
+  --bg: #0D1522; --surface: #152033; --text: #EEF2F8; --text2: #AEB9CB; --divider: #22304A; --outline: #33425E;
+  --pill: #23395C; --tonal: #1C2A42; --track: #22304A; --sheet: #152033; --handle: #4A5A78; --scrim: rgba(0,0,0,0.6);
+  --snack-bg: #DCE4F0; --snack-ink: #13213A; --snack-action: #1B3A66; --ok: #7FD9CC; --primary: #A9C4EC; --on-primary: #0D1522; --link: #A9C4EC;
   --moving: #EF5350; --stopped-bar: #C0392B; --gap: #8A919C; --bar: #5A616B;
   --i-clear: #7FD9CC; --i-clear-glyph: #0E2A27; --i-unknown: #C9CED6;
   --notif: #26282C; --notif-body: #DDE1E6; --chev: #34373C;
@@ -263,8 +263,3 @@ a { color: inherit; }
 .widget { position: relative; overflow: hidden; border-radius: 24px; background: var(--c-bg); color: var(--c-ink); display: flex; }
 .widget.w22 { width: 176px; height: 176px; padding: 16px; flex-direction: column; gap: 2px; }
 .widget.w41 { width: 364px; height: 80px; padding: 0 16px; align-items: center; gap: 12px; }
-
-/* brand scheme picker (Settings) */
-.brand-opt { display: flex; align-items: center; gap: 14px; min-height: 64px; padding: 8px 0; border-bottom: 1px solid var(--divider); text-align: left; width: 100%; }
-.brand-sw { display: flex; flex-shrink: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--outline); }
-.brand-sw i { display: block; width: 18px; height: 36px; }
