@@ -97,7 +97,9 @@ export function useApp<T>(selector: (s: AppState) => T): T {
   return useSyncExternalStore(subscribe, () => selector(state), () => selector(state));
 }
 
-/** Crossings the app shows: just Center St, or all 12 in the demo's multi-crossing mode. */
+const LAUNCH_CROSSINGS: Crossing[] = [CENTER_ST];
+
+/** Crossings the app shows: just Center St, or all 12 in the demo's multi-crossing mode. Stable references, safe as a selector. */
 export function visibleCrossings(s: AppState): Crossing[] {
-  return s.demo.dataset === 'many' ? DEMO_CROSSINGS : [CENTER_ST];
+  return s.demo.dataset === 'many' ? DEMO_CROSSINGS : LAUNCH_CROSSINGS;
 }
