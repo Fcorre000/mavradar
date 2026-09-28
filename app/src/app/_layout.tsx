@@ -5,19 +5,23 @@ import {
   AtkinsonHyperlegibleNext_700Bold,
   useFonts,
 } from '@expo-google-fonts/atkinson-hyperlegible-next';
-import { DarkTheme, DefaultTheme, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, router, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { useColorScheme } from 'react-native';
+import { StyleSheet } from 'react-native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
 import AppTabs from '@/components/app-tabs';
-import { registerDevice } from '@/lib/push';
+import { PrimingSheet } from '@/components/priming-sheet';
+import { Colors } from '@/constants/theme';
+import { useScheme } from '@/hooks/use-theme';
+import { startApp } from '@/state/actions';
 
 SplashScreen.preventAutoHideAsync();
 
-export default function TabLayout() {
-  const colorScheme = useColorScheme();
+export default function RootLayout() {
+  const scheme = useScheme();
   // Loaded at runtime so no native rebuild is needed. Move to the expo-font config plugin
   // with the next batch of native changes (the docs recommend it for Android and iOS).
   const [fontsLoaded, fontError] = useFonts({
@@ -27,24 +31,36 @@ export default function TabLayout() {
     AtkinsonHyperlegibleNext_700Bold,
   });
 
-  // Setup-phase smoke test (Amendment 003, section 8). Permission prompting moves into
-  // onboarding once the template screens are replaced.
+  // No permission prompt here: alerts are only requested after the priming sheet, when the
+  // person asks for them. Tapping a notification opens Status for that crossing.
   useEffect(() => {
-    registerDevice().catch((e) => console.warn('Device registration failed', e));
+    startApp(() => router.navigate('/'));
   }, []);
 
   useEffect(() => {
     if (fontError) console.warn('Brand font failed to load, using the system font', fontError);
-  }, [fontError]);
+    if (fontsLoaded || fontError) SplashScreen.hideAsync();
+  }, [fontsLoaded, fontError]);
 
   // Keep the native splash up until the font is ready, so text never flashes in the fallback.
-  // The splash overlay hides it once it mounts. On a load error, carry on with the system font.
   if (!fontsLoaded && !fontError) return null;
 
+  const palette = Colors[scheme];
+  const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
+  const navTheme: Theme = {
+    ...base,
+    colors: { ...base.colors, background: palette.background, card: palette.backgroundElement, text: palette.text, primary: palette.primary, border: palette.divider },
+  };
+
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <AnimatedSplashOverlay />
-      <AppTabs />
-    </ThemeProvider>
+    <GestureHandlerRootView style={styles.root}>
+      <ThemeProvider value={navTheme}>
+        <AppTabs />
+        <PrimingSheet />
+        <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+      </ThemeProvider>
+    </GestureHandlerRootView>
   );
 }
+
+const styles = StyleSheet.create({ root: { flex: 1 } });

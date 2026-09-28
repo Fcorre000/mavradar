@@ -6,9 +6,13 @@
 import { Colors } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 
-export function useTheme() {
+/** 'light' or 'dark'. Follows Settings > Appearance, which sets the app's color scheme. */
+export function useScheme(): 'light' | 'dark' {
   const scheme = useColorScheme();
-  const theme = scheme === 'unspecified' ? 'light' : scheme;
+  return scheme === 'dark' ? 'dark' : 'light';
+}
 
-  return Colors[theme];
+/** The brand palette (Transit Navy) for the current scheme. */
+export function useTheme() {
+  return Colors[useScheme()];
 }

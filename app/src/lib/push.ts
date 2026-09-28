@@ -4,14 +4,11 @@ import { signInAnonymously } from 'firebase/auth';
 import { doc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { Platform } from 'react-native';
 
+import type { PermissionState } from '@/domain/alerts';
+import { SERVICE_STATUS_CHANNEL, TRAIN_ALERTS_CHANNEL } from '@/lib/channels';
 import { auth, db } from '@/lib/firebase';
 
-// Android channel importance can't be raised once a channel exists, and the user owns it
-// from then on. Same one-shot rule as iOS Time Sensitive: train-alerts carries real train
-// events and nothing else. Status, tests, and anything that isn't a train go on
-// service-status. Channel IDs must match what the server sets in each FCM message.
-export const TRAIN_ALERTS_CHANNEL = 'train-alerts';
-export const SERVICE_STATUS_CHANNEL = 'service-status';
+export { SERVICE_STATUS_CHANNEL, TRAIN_ALERTS_CHANNEL };
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -41,17 +38,33 @@ export async function createNotificationChannels() {
   });
 }
 
+const toPermissionState = (p: Notifications.NotificationPermissionsStatus): PermissionState =>
+  p.granted ? 'granted' : p.canAskAgain ? 'undetermined' : 'denied';
+
+/** Current notification permission, without prompting. */
+export async function getAlertPermission(): Promise<PermissionState> {
+  return toPermissionState(await Notifications.getPermissionsAsync());
+}
+
+/**
+ * Shows the system permission prompt. Only call this after the in-app priming sheet, when the
+ * person has asked for alerts. Never at launch: Android treats two denials as permanent.
+ */
+export async function requestAlertPermission(): Promise<PermissionState> {
+  await createNotificationChannels();
+  const result = await Notifications.requestPermissionsAsync();
+  return result.granted ? 'granted' : 'denied';
+}
+
 // The one place token registration happens. On Android the device token is an FCM token.
 // On iOS it is a raw APNs token, which FCM v1 can't send to; Amendment 003 section 5.2
 // picks the iOS path before the first iOS build, and only this function should change.
-export async function registerDevice(): Promise<string | null> {
+// It never prompts; it returns null unless permission was already granted.
+export async function registerDevice(subscriptions?: string[]): Promise<string | null> {
   if (!Device.isDevice) return null;
+  if ((await getAlertPermission()) !== 'granted') return null;
 
   await createNotificationChannels();
-
-  const { granted } = await Notifications.requestPermissionsAsync();
-  if (!granted) return null;
-
   const { data: token } = await Notifications.getDevicePushTokenAsync();
   const user = auth.currentUser ?? (await signInAnonymously(auth)).user;
 
@@ -59,7 +72,12 @@ export async function registerDevice(): Promise<string | null> {
   // re-registering on launch never clobbers subscriptions or quiet hours.
   await setDoc(
     doc(db, 'devices', token),
-    { uid: user.uid, platform: Platform.OS, updatedAt: serverTimestamp() },
+    {
+      uid: user.uid,
+      platform: Platform.OS,
+      updatedAt: serverTimestamp(),
+      ...(subscriptions ? { subscriptions: subscriptions.slice(0, 20) } : {}),
+    },
     { merge: true },
   );
   return token;
