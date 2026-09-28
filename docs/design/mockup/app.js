@@ -76,7 +76,7 @@
 
   // ---------------------------------------------------------------- state
   const S = {
-    onboarded: false, tab: 'status', mapView: 'map', sheet: 'peek', selectedId: 'center', statusId: 'center',
+    tab: 'status', mapView: 'map', sheet: 'peek', selectedId: 'center', statusId: 'center',
     dataset: 'one', zoom: 'area', appearance: 'system', brand: 'transitNavy', k: 1,
     conn: 'online', offlineSince: null,
     center: { state: 'clear', clearSince: START - 30 * 60, since: null, stoppedAt: null, detectedAt: null, lastReading: null },
@@ -325,20 +325,6 @@
       chip = '<span class="chip" aria-label="Watching Center St">' + svg(14, '<rect x="5" y="5" width="38" height="38" rx="9" style="fill:none;stroke:currentColor;stroke-width:5"/><path d="M17 17L31 31M31 17L17 31" style="stroke:currentColor;stroke-width:5;stroke-linecap:round"/>') + live('chip', (e.state === 'stopped' ? 'Stopped ' : 'Blocked ') + m + 'm') + '</span>';
     }
     return '<div class="sysbar"><button type="button" class="sysbar-hit" data-act="shade" aria-label="Open notification shade"></button><span style="position:relative">' + live('clock', clock(simNow)) + '</span>' + chip + '<span class="spacer"></span>' + I.wifi + I.batt + '</div>';
-  }
-
-  function welcomeView() {
-    return '<div class="view welcome stack">' +
-      '<div style="display:flex;align-items:center;gap:10px;margin-top:8px">' + I.status.replace('width="24" height="24"', 'width="28" height="28"') + '<span style="font-size:20px;font-weight:700">MavRadar</span></div>' +
-      '<div data-theme="' + theme() + '" data-s="blocked" class="card" aria-hidden="true" style="min-height:0">' +
-      '<span class="example" style="color:var(--c-bg)">Example</span><span class="ico" style="width:36px;height:36px">' + cardIcon('blocked', 36) + '</span>' +
-      '<span class="t-kicker">Train on crossing</span><span style="font-size:40px;line-height:1.08;font-weight:700">Blocked</span><span style="font-size:24px;font-weight:600">Blocked for 7 min</span>' +
-      '<span class="fresh t-sec">' + svg(10, '<circle cx="24" cy="24" r="24" style="fill:var(--c-ink)"/>') + 'Live · updated 8 s ago</span></div>' +
-      '<div class="stack" style="gap:12px"><h1 style="margin:0;font-size:calc(28px * min(var(--k),1.5));line-height:1.22">Know if Center St is blocked before you get there.</h1>' +
-      '<p class="t-body muted" style="margin:0">MavRadar uses a sensor at the tracks to show live crossing status. No account, and no location needed.</p></div>' +
-      '<div style="flex:1"></div>' +
-      '<div style="display:flex;align-items:flex-start;gap:10px;padding:14px 16px;border-radius:16px;background:var(--surface)">' + I.info + '<span class="t-sec">Travel information only. Always obey crossing signals and gates.</span></div>' +
-      '<button type="button" class="btn filled" style="justify-content:center"' + fk('start') + '><span class="t-btn">See live status</span></button></div>';
   }
 
   function statusView() {
@@ -653,7 +639,7 @@
     }
     if (S.snack) {
       let bottom = 92;
-      if (S.onboarded && S.tab === 'map' && S.mapView === 'map' && !S.mapFails) bottom = 80 + sheetHeight() + 12;
+      if (S.tab === 'map' && S.mapView === 'map' && !S.mapFails) bottom = 80 + sheetHeight() + 12;
       h += '<div class="snack" role="status" style="bottom:' + bottom + 'px"><span>' + esc(S.snack.text) + '</span>' + (S.snack.undo ? '<button type="button"' + fk('snackUndo') + '>Undo</button>' : '') + '</div>';
     }
     const n = S.headsUp && S.notifs.find((x) => x.key === S.headsUp);
@@ -684,7 +670,6 @@
   const LO = document.getElementById('L-over');
   const LS = document.getElementById('L-sys');
   function appHtml() {
-    if (!S.onboarded) return welcomeView();
     if (S.tab === 'map') return mapView();
     if (S.tab === 'history') return historyView();
     if (S.tab === 'settings') return settingsView();
@@ -787,7 +772,6 @@
 
   // ---------------------------------------------------------------- actions
   const A = {
-    start() { S.onboarded = true; S.tab = 'status'; },
     tab(d) { S.tab = d.id; S.overlay = null; if (d.id === 'map' && S.sheet === 'none') S.sheet = 'peek'; },
     toggleFollow(d, el) { const id = el.dataset.cid || d.id; requestFollow(id, !S.following.has(id)); },
     directions() { snack('Opens Google Maps with directions via the West St underpass.'); },
@@ -846,7 +830,7 @@
       S.expanded[key] = !cur;
       if (key.indexOf('hu-') === 0) clearTimeout(headsTimer);
     },
-    nOpen() { S.headsUp = null; S.shade = false; S.locked = false; S.onboarded = true; S.tab = 'status'; S.statusId = 'center'; },
+    nOpen() { S.headsUp = null; S.shade = false; S.locked = false; S.tab = 'status'; S.statusId = 'center'; },
     nDirections() { S.headsUp = null; snack('Opens Google Maps with directions via the West St underpass.'); },
     nMute() { S.mutedToday = true; S.headsUp = null; S.notifs = S.notifs.filter((x) => x.key !== 'crossing'); snack('Center St alerts muted for today.'); },
     nStopWatch() { S.watching = false; },
@@ -873,7 +857,6 @@
     mapFails() { S.mapFails = !S.mapFails; },
     historyEmpty() { S.historyEmpty = !S.historyEmpty; },
     tip() { S.tip = !S.tip; },
-    onboarding() { S.onboarded = false; S.overlay = null; S.tab = 'status'; },
     reset() { window.location.reload(); }
   };
 
@@ -969,7 +952,7 @@
       '<section aria-label="App data"><h2>App data</h2>' +
       '<label class="ctl">Crossings' + opt('dataset', S.dataset, [['one', '1 crossing (launch)'], ['many', '12 mock crossings']]) + '</label>' +
       '<div class="opts"><button type="button" data-demo="mapFails" data-fk="d-mapFails" aria-pressed="' + S.mapFails + '">Map fails to load</button><button type="button" data-demo="historyEmpty" data-fk="d-historyEmpty" aria-pressed="' + S.historyEmpty + '">Empty history</button><button type="button" data-demo="tip" data-fk="d-tip" aria-pressed="' + S.tip + '">Second-visit tip</button></div>' +
-      '<div class="opts"><button type="button" class="act" data-demo="onboarding" data-fk="d-onboarding">Replay onboarding</button><button type="button" class="act" data-demo="reset" data-fk="d-reset">Reset everything</button></div></section>' +
+      '<div class="opts"><button type="button" class="act" data-demo="reset" data-fk="d-reset">Reset everything</button></div></section>' +
       '<section aria-label="Widgets"><h2>Home screen widgets (designed, not in v1)</h2><div class="widgets" data-theme="' + th + '" style="background:' + wBg + '">' + w22 + w41 + '</div><p class="note">Widgets follow the same stale rule: no fresh data means Unknown.</p></section>' +
       '<p class="note">Travel information only. Always obey crossing signals and gates. This page is a design mockup, not the app.</p>';
   }
