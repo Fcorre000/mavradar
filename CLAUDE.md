@@ -32,6 +32,8 @@ npm run android  # expo start --android
 npm run ios      # expo start --ios
 npm run web      # expo start --web
 npm run lint     # expo lint
+npm test         # jest (domain rules: freshness, alerts, copy, clustering)
+npx expo start --go   # run in Expo Go on a phone (no push); the app runs on demo data
 npx expo-doctor  # should pass 21/21
 eas build -p android --profile development   # dev client APK
 ```
@@ -43,7 +45,7 @@ firebase emulators:exec --only firestore "<test command>"   # test rules locally
 firebase deploy --only firestore:rules
 ```
 
-No test suite exists yet in any subproject. Builds go through EAS cloud builds, never local Xcode or Android Studio (the dev machine is an 8GB M1 and deliberately has neither Xcode nor the Android emulator). **Android is the first platform**; test push on a physical Android phone. Code stays cross-platform, and iOS builds wait on Apple Developer enrollment.
+The app has Jest tests for its domain rules; `edge/` and `server/` have none yet. Builds go through EAS cloud builds, never local Xcode or Android Studio (the dev machine is an 8GB M1 and deliberately has neither Xcode nor the Android emulator). **Android is the first platform**; test push on a physical Android phone. Code stays cross-platform, and iOS builds wait on Apple Developer enrollment.
 
 Expo SDK 57 changed significantly. Check the versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing app code (see `app/AGENTS.md`). Node version is in `.nvmrc`.
 
@@ -52,7 +54,9 @@ Expo SDK 57 changed significantly. Check the versioned docs at https://docs.expo
 - `app/app.config.ts` replaced `app.json`. Android package and iOS bundle ID are `io.github.fcorre000.mavradar` (permanent). Scheme is `mavradar`.
 - `google-services.json` stays gitignored. Locally it sits in `app/`; EAS gets it from the `GOOGLE_SERVICES_JSON` file secret.
 - Firebase JS SDK config comes from `EXPO_PUBLIC_FIREBASE_*` env vars (`app/.env`, see `app/.env.example`).
-- Token registration lives in one function, `registerDevice()` in `app/src/lib/push.ts`. Keep it that way; the iOS token path (Amendment 003, 5.2) is still undecided.
+- Token registration lives in one function, `registerDevice()` in `app/src/lib/push.ts`. Keep it that way; the iOS token path (Amendment 003, 5.2) is still undecided. It never prompts: the permission prompt only follows the in-app priming sheet.
+- Crossing data comes from `source` in `app/src/data/index.ts`. It is the simulated `DemoEngine` (controls in Settings > Demo) until the server writes `crossings/{usdotId}`; then swap in `FirestoreSource`. Screens never know which one is active.
+- Design specs and tokens: `docs/design/` (`SPECS.md`, `tokens.json`, and the HTML mockup). `app/src/constants/theme.ts` mirrors `tokens.json`.
 
 ## Hard rules
 
