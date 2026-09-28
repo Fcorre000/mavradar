@@ -1,10 +1,12 @@
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { ClockIcon, CloseIcon, Dot, RouteIcon } from '@/components/icons';
 import { DemoBadge, Header, Screen, useBottomInset, useLargeText } from '@/components/layout';
 import { InfoRow, SwitchRow } from '@/components/rows';
+import { ChoiceSheet } from '@/components/sheet-modal';
 import { Snackbar } from '@/components/snackbar';
 import { StatusCard } from '@/components/status-card';
 import { T } from '@/components/text';
@@ -16,7 +18,7 @@ import { effectiveState } from '@/domain/freshness';
 import { formatTime } from '@/domain/time';
 import { useTheme } from '@/hooks/use-theme';
 import { demo, dismissTip, openDirections, toggleFollow } from '@/state/actions';
-import { useApp } from '@/state/store';
+import { setUi, useApp } from '@/state/store';
 import { source } from '@/data';
 
 export default function StatusScreen() {
@@ -27,6 +29,7 @@ export default function StatusScreen() {
   const crossingId = useApp((s) => s.ui.statusCrossingId);
   const following = useApp((s) => s.prefs.following);
   const showTip = useApp((s) => s.demo.showTip || (s.prefs.launches >= 2 && !s.prefs.tipDismissed && s.prefsLoaded));
+  const [switching, setSwitching] = useState(false);
 
   const crossing = crossingById(crossingId);
   const isFollowing = following.includes(crossing.id);
@@ -46,7 +49,18 @@ export default function StatusScreen() {
       <Header
         title={crossing.name}
         subtitle={`${crossing.city}, TX · USDOT ${crossing.id}`}
-        right={source.kind === 'demo' ? <DemoBadge /> : null}
+        right={
+          <View style={styles.headerRight}>
+            {following.length > 1 ? (
+              <Pressable onPress={() => setSwitching(true)} accessibilityRole="button" accessibilityLabel="Switch crossing" style={styles.switchBtn}>
+                <T v="secondary" weight={700} style={styles.underline}>
+                  Switch
+                </T>
+              </Pressable>
+            ) : null}
+            {source.kind === 'demo' ? <DemoBadge /> : null}
+          </View>
+        }
       />
       <ScrollView contentContainerStyle={styles.content}>
         <StatusCard e={e} copy={copy} onRetry={demo.retry} />
@@ -96,6 +110,14 @@ export default function StatusScreen() {
       </View>
       <View style={{ height: bottomInset }} />
       <Snackbar bottom={bottomInset + 12} />
+      <ChoiceSheet
+        visible={switching}
+        title="Show on Status"
+        value={crossing.id}
+        options={following.map((id) => ({ value: id, label: crossingById(id).name, sub: crossingById(id).city }))}
+        onPick={(id) => setUi({ statusCrossingId: id })}
+        onClose={() => setSwitching(false)}
+      />
     </Screen>
   );
 }
@@ -108,4 +130,6 @@ const styles = StyleSheet.create({
   tipLink: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center' },
   tipClose: { width: 48, height: 48, marginTop: -10, alignItems: 'center', justifyContent: 'center' },
   underline: { textDecorationLine: 'underline' },
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  switchBtn: { minHeight: 48, paddingHorizontal: 10, justifyContent: 'center' },
 });
