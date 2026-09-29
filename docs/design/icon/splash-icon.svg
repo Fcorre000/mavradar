@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" ><defs><clipPath id="tile"><rect width="100" height="100" rx="22.5"/></clipPath></defs><g clip-path="url(#tile)">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#25497E"/><stop offset="1" stop-color="#112749"/></linearGradient>
+  <linearGradient id="sh" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#081223" stop-opacity="0.45"/><stop offset="0.8" stop-color="#081223" stop-opacity="0"/></linearGradient>
+  <linearGradient id="sw" gradientUnits="userSpaceOnUse" x1="19.79" y1="20.82" x2="80.21" y2="20.82"><stop offset="0" stop-color="#DCE8F8" stop-opacity="0.342"/><stop offset="1" stop-color="#DCE8F8" stop-opacity="0.475"/></linearGradient>
+  <radialGradient id="rg" cx="42.95" cy="28.28" r="20" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#DCE8F8" stop-opacity="0.41800000000000004"/><stop offset="1" stop-color="#DCE8F8" stop-opacity="0"/></radialGradient>
+  <linearGradient id="en" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#F4F8FE"/><stop offset="1" stop-color="#C4D8F4"/></linearGradient>
+  <linearGradient id="ca" x1="0.2" y1="0" x2="0.8" y2="1"><stop offset="0" stop-color="#88A9DB"/><stop offset="1" stop-color="#5F82BA"/></linearGradient>
+  <linearGradient id="lb" gradientUnits="userSpaceOnUse" x1="59.4" y1="33.09" x2="70" y2="33.09"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0.45"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+  <clipPath id="ring"><circle cx="50" cy="50" r="42"/></clipPath>
+</defs>
+<rect x="-50" y="-50" width="200" height="200" fill="url(#bg)"/>
+<path d="M79.7 20.3L136.3 76.9L76.9 136.3L20.3 79.7Z" fill="url(#sh)"/>
+<circle cx="50" cy="50" r="42" fill="#DCE8F8" fill-opacity="0.1" stroke="#DCE8F8" stroke-opacity="0.2" stroke-width="0.6"/>
+<circle cx="50" cy="50" r="28" fill="#DCE8F8" fill-opacity="0.15"/>
+<circle cx="50" cy="50" r="14" fill="#DCE8F8" fill-opacity="0.22"/>
+<path d="M50 50L19.79 20.82A42 42 0 0 1 80.21 20.82Z" fill="url(#sw)"/>
+<circle cx="42.95" cy="28.28" r="20" fill="url(#rg)"/>
+<path d="M59.55 29.75L101.95 72.15L68.75 69.22L26.35 26.82L56.61 37.83Z" fill="url(#sh)" transform="translate(42.95 28.28) scale(1.25) translate(-42.95 -28.28)"/>
+<g clip-path="url(#ring)">
+<g transform="translate(42.95 28.28) scale(1.25) translate(-42.95 -28.28) rotate(20 56.16 33.09)">
+  <g fill="#DCE8F8" opacity="0.35"><rect x="23.16" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="27.76" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="32.36" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="36.96" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="41.56" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="46.16" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="50.76" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="55.36" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="59.96" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="64.56" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="69.16" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="73.76" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="78.36" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="82.96" y="27.39" width="1.6" height="11.4" rx="0.6"/><rect x="87.56" y="27.39" width="1.6" height="11.4" rx="0.6"/></g>
+  <path d="M8 29.59H104M8 36.59H104" stroke="#DCE8F8" stroke-opacity="0.75" stroke-width="1.4" stroke-linecap="round" fill="none"/>
+  <path d="M59.4 32.19L70 29.69V36.49L59.4 33.99Z" fill="url(#lb)"/>
+  <g fill="#081223" opacity="0.35" transform="translate(1.16 0.85)"><rect x="26" y="28.99" width="14" height="8.2" rx="1"/><path d="M42.4 28.79H55.2L58.6 30.9Q59.4 31.4 59.4 32.3V33.88Q59.4 34.78 58.6 35.28L55.2 37.39H42.4Q41.2 37.39 41.2 36.19V29.99Q41.2 28.79 42.4 28.79Z"/></g>
+  <g fill="url(#ca)" opacity="1"><rect x="24.8" y="32.19" width="1.4" height="1.8" rx="0.4"/><rect x="26" y="28.99" width="14" height="8.2" rx="1"/></g>
+  <rect x="27.2" y="32.39" width="11.6" height="1.4" rx="0.5" fill="#112749" opacity="0.35"/>
+  <path d="M29.5 29.8V36.4M33 29.8V36.4M36.5 29.8V36.4" stroke="#112749" stroke-opacity="0.3" stroke-width="0.5" fill="none"/>
+  <g fill="url(#en)"><rect x="39.8" y="32.19" width="1.6" height="1.8" rx="0.4"/><path d="M42.4 28.79H55.2L58.6 30.9Q59.4 31.4 59.4 32.3V33.88Q59.4 34.78 58.6 35.28L55.2 37.39H42.4Q41.2 37.39 41.2 36.19V29.99Q41.2 28.79 42.4 28.79Z"/></g>
+  <rect x="42.2" y="30.49" width="8.4" height="5.2" rx="0.8" fill="none" stroke="#112749" stroke-opacity="0.35" stroke-width="0.5"/>
+  <g fill="none" stroke="#112749" stroke-opacity="0.45" stroke-width="0.5"><circle cx="44" cy="33.09" r="1.1"/><circle cx="46.4" cy="33.09" r="1.1"/><circle cx="48.8" cy="33.09" r="1.1"/></g>
+  <rect x="51.2" y="29.39" width="4" height="7.4" rx="0.8" fill="#112749" opacity="0.5"/>
+  <rect x="54.5" y="30.09" width="1" height="6" rx="0.3" fill="#112749" opacity="0.8"/>
+  <path d="M56.2 31.1L58.4 32.5M56.2 35.08L58.4 33.68" stroke="#112749" stroke-opacity="0.35" stroke-width="0.45" stroke-linecap="round" fill="none"/>
+  <circle cx="58.5" cy="33.09" r="0.75" fill="#FFFFFF" opacity="0.95"/>
+  <g fill="#FFFFFF" opacity="0.35"><rect x="27" y="29.6" width="8" height="1" rx="0.5"/><rect x="42.2" y="29.4" width="8.6" height="1" rx="0.5"/></g>
+</g>
+</g></g></svg>

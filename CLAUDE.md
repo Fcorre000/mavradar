@@ -57,6 +57,7 @@ Expo SDK 57 changed significantly. Check the versioned docs at https://docs.expo
 - Token registration lives in one function, `registerDevice()` in `app/src/lib/push.ts`. Keep it that way; the iOS token path (Amendment 003, 5.2) is still undecided. It never prompts: the permission prompt only follows the in-app priming sheet.
 - Crossing data comes from `source` in `app/src/data/index.ts`. It is the simulated `DemoEngine` (controls in Settings > Demo) until the server writes `crossings/{usdotId}`; then swap in `FirestoreSource`. Screens never know which one is active.
 - Design specs and tokens: `docs/design/` (`SPECS.md`, `tokens.json`, and the HTML mockup). `app/src/constants/theme.ts` mirrors `tokens.json`.
+- App icons, the notification icon, splash mark and favicon are generated from one SVG source: `node docs/design/icon/build-icons.mjs` (needs Google Chrome). Edit the script, not the PNGs.
 
 ## Hard rules
 

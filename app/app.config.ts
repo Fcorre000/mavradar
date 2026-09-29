@@ -19,12 +19,12 @@ const config: ExpoConfig = {
   slug: 'mavradar',
   version: '1.0.0',
   orientation: 'portrait',
+  // All icon files are built from one source by docs/design/icon/build-icons.mjs.
   icon: './assets/images/icon.png',
   scheme: 'mavradar',
   userInterfaceStyle: 'automatic',
   ios: {
     bundleIdentifier: APP_ID,
-    icon: './assets/expo.icon',
     entitlements: {
       // Only ever spent on real train events. iOS asks the user once.
       'com.apple.developer.usernotifications.time-sensitive': true,
@@ -36,7 +36,7 @@ const config: ExpoConfig = {
     // gitignored app/google-services.json is used.
     googleServicesFile: process.env.GOOGLE_SERVICES_JSON ?? './google-services.json',
     adaptiveIcon: {
-      backgroundColor: '#E6F4FE',
+      backgroundColor: NAVY,
       foregroundImage: './assets/images/android-icon-foreground.png',
       backgroundImage: './assets/images/android-icon-background.png',
       monochromeImage: './assets/images/android-icon-monochrome.png',
@@ -69,6 +69,8 @@ const config: ExpoConfig = {
     [
       'expo-notifications',
       {
+        // Status bar icon: white with alpha on transparent, 96 px.
+        icon: './assets/images/notification-icon.png',
         color: NAVY,
         // FCM messages that arrive without a channel_id land here, never on train-alerts.
         defaultChannel: 'service-status',
