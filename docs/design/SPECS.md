@@ -13,7 +13,7 @@ All sizes are dp, type is sp, frame is 412 x 915. Token names in `code` refer to
 - Never show Clear when data is stale. Live is 30 s or less, Delayed is 30 to 90 s, and past 90 s the crossing is Unknown. Unknown never shows the last state word, only the time of the last reading.
 - Durations count up ("Blocked for 7 min"). Under 1 minute say "Blocked just now". Past 60 minutes say "1 h 12 min". No arrival countdowns, anywhere.
 - Every state has a word, a shape and a color. Color is never the only cue.
-- "Travel information only. Always obey crossing signals and gates." appears on Status, in the map sheet, on the welcome screen and in the store listing.
+- "Travel information only. Always obey crossing signals and gates." appears on Status, in the map sheet, in Settings and in the store listing. Status is the first screen anyone sees, so the line is on screen from the first launch.
 - Touch targets are at least 48 dp. Text passes WCAG AA (4.5:1, 3:1 at 24 sp and up). Icons and marker rings pass 3:1.
 - Every time and duration uses tabular numerals.
 
@@ -138,6 +138,15 @@ At 200% font scale the header, card and everything down to the rows scroll. Only
 | Sheet peek | 120 above an 80 nav bar |
 | Snackbar | 12 side margins, 12 above the sheet, min 48 tall, radius 8 |
 | Priming sheet | Modal, top radius 28, padding 24, scrim at 45% |
+
+## First launch
+
+There is no welcome or onboarding screen. Checking a crossing is often time critical, so the app opens straight on live Status for Center St.
+
+- No account, no location question and no permission prompt at launch.
+- The notification priming sheet appears only when the person asks for alerts: Follow in the map sheet, the star in the List, the alerts switch on Status, or an alert switch in Settings. After that comes the Android dialog.
+- On the second visit, Status can show one dismissible tip ("Set your commute hours so alerts only come when you drive") in place of the Today timeline.
+- Tapping any notification opens Status for that crossing.
 
 ## Notifications
 
