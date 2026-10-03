@@ -7,6 +7,7 @@ import { effectiveState } from '@/domain/freshness';
 import type { Connection, ReportedState, SourceSnapshot } from '@/domain/types';
 import { deliverAlert, onAlertTapped } from '@/lib/alert-delivery';
 import { getAlertPermission, registerDevice, requestAlertPermission } from '@/lib/push';
+import { withThemeTransition } from '@/lib/theme-transition';
 
 import { loadPrefs, localDay, savePrefs, type Prefs } from './prefs';
 import { getState, setState, setUi, type AppState } from './store';
@@ -61,7 +62,8 @@ export function setPrefs(patch: Partial<Prefs>) {
   const prefs = { ...getState().prefs, ...patch };
   setState({ prefs });
   savePrefs(prefs);
-  if (patch.appearance) applyAppearance(patch.appearance);
+  const { appearance } = patch;
+  if (appearance) withThemeTransition(() => applyAppearance(appearance));
   if (patch.following && getState().permission === 'granted') syncDevice();
 }
 

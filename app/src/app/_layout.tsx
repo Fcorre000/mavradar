@@ -9,11 +9,12 @@ import { DarkTheme, DefaultTheme, router, ThemeProvider, type Theme } from 'expo
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
-import { StyleSheet } from 'react-native';
+import { Platform, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import AppTabs from '@/components/app-tabs';
 import { PrimingSheet } from '@/components/priming-sheet';
+import { ThemeFade } from '@/components/theme-fade';
 import { Colors } from '@/constants/theme';
 import { useScheme } from '@/hooks/use-theme';
 import { startApp } from '@/state/actions';
@@ -58,6 +59,8 @@ export default function RootLayout() {
         <AppTabs />
         <PrimingSheet />
         <StatusBar style={scheme === 'dark' ? 'light' : 'dark'} />
+        {/* Web follows the browser's scheme; the app can't switch it, so there is nothing to cover. */}
+        {Platform.OS !== 'web' ? <ThemeFade /> : null}
       </ThemeProvider>
     </GestureHandlerRootView>
   );

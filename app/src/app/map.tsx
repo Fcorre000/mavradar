@@ -47,7 +47,9 @@ export default function MapScreen() {
     for (const c of crossings) out[c.id] = effectiveState(snapshot.readings[c.id], snapshot).state;
     return out;
   }, [crossings, snapshot]);
-  const snapPoints = useMemo(() => [PEEK, HALF, '88%'], []);
+  // The sheet runs to the bottom of the screen, behind the floating iOS tab bar, so it reads as one
+  // surface with it instead of a card with a flat bottom edge. Snap heights add that inset back.
+  const snapPoints = useMemo(() => [PEEK + bottomInset, HALF + bottomInset, '88%'], [bottomInset]);
 
   const collapse = useCallback(() => {
     if (sheetIndex > 0) sheetRef.current?.snapToIndex(0);
@@ -158,7 +160,6 @@ export default function MapScreen() {
           index={0}
           snapPoints={snapPoints}
           enableDynamicSizing={false}
-          bottomInset={bottomInset}
           onChange={(index, position) => {
             setSheetIndex(index);
             setSheetTop(position);
@@ -166,7 +167,7 @@ export default function MapScreen() {
           backgroundStyle={{ backgroundColor: theme.sheet, borderTopLeftRadius: Radius.sheet, borderTopRightRadius: Radius.sheet }}
           handleIndicatorStyle={{ backgroundColor: theme.sheetHandle, width: 32 }}
           accessibilityLabel={`${selected.name} details`}>
-          <BottomSheetScrollView>
+          <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset }}>
             <CrossingSheet crossing={crossingById(selected.id)} e={e} copy={copy} following={following.includes(selected.id)} events={snapshot.events} now={snapshot.now} />
           </BottomSheetScrollView>
         </BottomSheet>
