@@ -1,56 +1,131 @@
-# Welcome to your Expo app 👋
+# MavRadar app
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expo (React Native) app, SDK 57, expo-router, TypeScript. This guide gets it running in **Expo Go** on a phone from a fresh machine, on Windows or Mac. Expo Go runs the app on demo data with no push notifications. Testing push needs the dev client build (see the end).
 
-## Get started
+## 1. Install the tools
 
-1. Install dependencies
+You need Git, **Node 22** (the version in `/.nvmrc`), and the Expo Go app on your phone (Play Store or App Store, it must support SDK 57).
 
-   ```bash
-   npm install
-   ```
+Use Node 22, not whatever is newest. Newer Node versions break the Jest tests (`SecurityError: Cannot initialize local storage without a --localstorage-file path`).
 
-2. Start the app
+**Windows** (PowerShell):
 
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```powershell
+node -v                                   # if this prints anything other than v22.x, remove that Node first:
+winget uninstall --id OpenJS.NodeJS --exact
+winget install --id OpenJS.NodeJS.22 --exact
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+The uninstall needs admin rights. If it fails with exit code 1603, run it from a PowerShell opened with "Run as administrator". Close and reopen your terminal after installing so it picks up the new Node.
 
-### Other setup steps
+**Mac** (Terminal), using nvm:
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+```bash
+brew install nvm                          # then follow brew's printed steps to add nvm to your shell
+nvm install                               # run from the repo root, reads .nvmrc
+nvm use
+```
 
-## Learn more
+Check with `node -v`. It should print `v22.x`.
 
-To learn more about developing your project with Expo, look at the following resources:
+## 2. Clone and install dependencies
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Same on both platforms:
 
-## Join the community
+```bash
+git clone https://github.com/Fcorre000/mavradar.git
+cd mavradar/app
+npm ci
+npm test                                  # should pass every suite; if not, check your Node version
+```
 
-Join our community of developers creating universal apps.
+Use `npm ci`, not `npm install`, so you get exactly the versions in `package-lock.json`.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+## 3. Get the two gitignored config files
+
+The repo is public, so two files never get committed and **a git pull will never bring them**. Every new machine has to fetch them once from Firebase. You need access to the `mavradar-4a74a` Firebase project.
+
+| File | What breaks without it |
+|---|---|
+| `app/google-services.json` | Expo can't read the config: `Could not parse Expo config: android.googleServicesFile` and the phone hangs on loading |
+| `app/.env` | App crashes on launch: `Firebase: Error (auth/invalid-api-key)`, followed by "Route is missing the required default export" warnings |
+
+Install the Firebase CLI and log in with the Google account that has access to the project:
+
+```bash
+npm install -g firebase-tools
+firebase login
+```
+
+From `app/`, download `google-services.json`:
+
+```bash
+firebase apps:sdkconfig ANDROID --project mavradar-4a74a --out google-services.json
+```
+
+Then create `.env` from the template:
+
+```powershell
+Copy-Item .env.example .env               # Windows
+```
+
+```bash
+cp .env.example .env                      # Mac
+```
+
+Print the web app config and copy two values into `.env`:
+
+```bash
+firebase apps:sdkconfig WEB --project mavradar-4a74a
+```
+
+`apiKey` goes in `EXPO_PUBLIC_FIREBASE_API_KEY` and `appId` goes in `EXPO_PUBLIC_FIREBASE_APP_ID`. No quotes, no spaces around the `=`.
+
+If you'd rather click: Firebase console > Project settings > Your apps. The Android app has a "Download google-services.json" button, and the Web app shows `apiKey` and `appId`.
+
+## 4. Log in to Expo
+
+```bash
+npx expo login
+```
+
+If you skip this, the dev server stops and asks "Log in / Proceed anonymously" the first time your phone connects. The phone sits on the loading screen until you answer in the terminal. Picking "Proceed anonymously" also works.
+
+## 5. Run it
+
+From `app/`:
+
+```bash
+npx expo start --go --clear
+```
+
+Scan the QR code. On Android, use the scanner inside Expo Go. On iPhone, use the Camera app. The phone and computer must be on the same Wi-Fi.
+
+Use `--clear` the first time and any time you change `.env`, because Expo bakes the `EXPO_PUBLIC_*` values into the bundle.
+
+## Warnings you can ignore in Expo Go
+
+- `expo-notifications ... removed from Expo Go` and `not fully supported in Expo Go`. Push needs the dev client build.
+- `An update for expo is available` and `npx expo-doctor` reporting a few patch version mismatches. Harmless.
+
+## Troubleshooting
+
+| Symptom | Fix |
+|---|---|
+| Phone stuck loading, terminal shows "Log in / Proceed anonymously" | Answer the prompt, or run `npx expo login` |
+| `Could not parse Expo config: android.googleServicesFile` | `app/google-services.json` is missing, see step 3 |
+| `auth/invalid-api-key` and "missing the required default export" | `app/.env` is missing or empty, see step 3, then restart with `--clear` |
+| Jest fails with `--localstorage-file` | Wrong Node version, install Node 22 (step 1), then `npm ci` again |
+| Phone can't reach the dev server at all | On Windows, allow Node through the firewall when prompted. Otherwise run `npx expo start --go --tunnel` |
+| `node -v` still shows the old version on Windows | Open a new terminal |
+
+## Other commands
+
+```bash
+npm test                                  # Jest tests for the domain rules
+npm run lint                              # expo lint
+npx expo-doctor                           # project health check
+eas build -p android --profile development   # dev client APK, needed to test push
+```
+
+To test push, install the dev client APK on a physical Android phone and run `npm start` instead of `npx expo start --go`.
