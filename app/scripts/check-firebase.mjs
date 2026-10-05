@@ -13,6 +13,16 @@ const PACKAGE = 'io.github.fcorre000.mavradar';
 const PROBE_DOC = 'crossings/794978C'; // Center St
 
 let failed = false;
+
+// Windows editors and PowerShell can save files as UTF-16 or with a byte order mark. Expo and the
+// Gradle plugin can't read those, and the values look fine in the editor, so name it plainly.
+function encodingProblem(path) {
+  const b = readFileSync(path);
+  if ((b[0] === 0xff && b[1] === 0xfe) || (b[0] === 0xfe && b[1] === 0xff)) return 'is saved as UTF-16';
+  if (b[0] === 0xef && b[1] === 0xbb && b[2] === 0xbf) return 'is saved with a byte order mark (BOM)';
+  return null;
+}
+const ENCODING_FIX = 'Re-save it as plain "UTF-8" (VS Code: click the encoding in the status bar > Save with Encoding > UTF-8).';
 const ok = (msg) => console.log(`  ok    ${msg}`);
 const fail = (msg, fix) => {
   failed = true;
@@ -23,6 +33,8 @@ console.log('google-services.json');
 let projectNumber;
 if (!existsSync('google-services.json')) {
   fail('app/google-services.json is missing', 'Run the "firebase apps:sdkconfig ANDROID" command in README step 3, from app/.');
+} else if (encodingProblem('google-services.json')) {
+  fail(`app/google-services.json ${encodingProblem('google-services.json')}`, ENCODING_FIX);
 } else {
   try {
     const g = JSON.parse(readFileSync('google-services.json', 'utf8'));
@@ -44,6 +56,8 @@ let apiKey;
 let appId;
 if (!existsSync('.env')) {
   fail('app/.env is missing', 'Copy .env.example to .env and fill in both values (README step 3).');
+} else if (encodingProblem('.env')) {
+  fail(`app/.env ${encodingProblem('.env')}`, ENCODING_FIX);
 } else {
   process.loadEnvFile('.env');
   apiKey = process.env.EXPO_PUBLIC_FIREBASE_API_KEY?.trim();
