@@ -83,6 +83,29 @@ firebase apps:sdkconfig WEB --project mavradar-4a74a
 
 If you'd rather click: Firebase console > Project settings > Your apps. The Android app has a "Download google-services.json" button, and the Web app shows `apiKey` and `appId`.
 
+### Check it
+
+Expo Go can't tell you whether these are right: it only crashes when a value is missing, and a wrong key goes unnoticed until push testing. So check from `app/`:
+
+```bash
+npm run check:firebase
+```
+
+It checks both files, then signs in to Firebase as a throwaway anonymous user, reads one crossing the way the app does, and deletes that user again. Every line should say `ok`:
+
+```
+google-services.json
+  ok    project mavradar-4a74a, package io.github.fcorre000.mavradar
+.env
+  ok    API key is filled in
+  ok    Web app ID matches the project
+Firebase project (live)
+  ok    API key accepted, anonymous sign-in works
+  ok    Firestore reachable and rules allow signed-in reads (no crossing doc yet, expected)
+```
+
+Any `FAIL` line says what to fix. "No crossing doc yet" is a pass: the read was allowed, and the server just hasn't written crossing data yet.
+
 ## 4. Log in to Expo
 
 ```bash
@@ -115,6 +138,7 @@ Use `--clear` the first time and any time you change `.env`, because Expo bakes 
 | Phone stuck loading, terminal shows "Log in / Proceed anonymously" | Answer the prompt, or run `npx expo login` |
 | `Could not parse Expo config: android.googleServicesFile` | `app/google-services.json` is missing, see step 3 |
 | `auth/invalid-api-key` and "missing the required default export" | `app/.env` is missing or empty, see step 3, then restart with `--clear` |
+| Not sure step 3 worked | `npm run check:firebase` from `app/` |
 | Jest fails with `--localstorage-file` | Wrong Node version, install Node 22 (step 1), then `npm ci` again |
 | Phone can't reach the dev server at all | On Windows, allow Node through the firewall when prompted. Otherwise run `npx expo start --go --tunnel` |
 | `node -v` still shows the old version on Windows | Open a new terminal |
@@ -123,6 +147,7 @@ Use `--clear` the first time and any time you change `.env`, because Expo bakes 
 
 ```bash
 npm test                                  # Jest tests for the domain rules
+npm run check:firebase                    # checks google-services.json and .env against Firebase
 npm run lint                              # expo lint
 npx expo-doctor                           # project health check
 eas build -p android --profile development   # dev client APK, needed to test push

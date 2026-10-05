@@ -51,7 +51,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "check:firebase": "node scripts/check-firebase.mjs"
   },
   "private": true,
   "jest": {
