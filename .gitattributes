@@ -1,0 +1,28 @@
+# One line-ending rule for everyone, whatever each machine's Git settings are. Without it, Windows Git
+# (CRLF) and WSL or Mac Git (LF) see each other's checkouts as changed, and branch switches fail with
+# "Your local changes would be overwritten". Text files are stored and checked out with LF; every
+# editor and tool in this project (VS Code, Node, Metro, Python) handles LF on Windows.
+* text=auto eol=lf
+
+# Windows-only scripts need CRLF to run.
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Never touch binaries.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary
+*.ttf binary
+*.otf binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.zip binary
+*.apk binary
+*.aab binary
+*.jks binary
+*.keystore binary
