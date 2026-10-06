@@ -14,6 +14,8 @@ import { Platform } from 'react-native';
 type Palette = {
   text: string;
   textSecondary: string;
+  accent: string;
+  onAccent: string;
   background: string;
   /** Raised or grouped surfaces: nav bar, chips, cards that are not status cards. */
   backgroundElement: string;
@@ -44,13 +46,13 @@ export const BrandSchemes = {
   graphite: {
     name: 'Graphite',
     light: {
-      text: '#111418', textSecondary: '#4A5260', background: '#FFFFFF', backgroundElement: '#F6F7F9', backgroundSelected: '#E3E6EB',
+      text: '#111418', textSecondary: '#4A5260', accent: '#F58025', onAccent: '#FFFFFF', background: '#FFFFFF', backgroundElement: '#F6F7F9', backgroundSelected: '#E3E6EB',
       divider: '#E3E6EB', outline: '#C9CED6', tonal: '#EDF0F3', track: '#ECEEF1', sheet: '#FFFFFF', sheetHandle: '#C9CED6',
       primary: '#111418', onPrimary: '#FFFFFF', link: '#111418', sensorOk: '#007A6E',
       snackbarBackground: '#2B3036', snackbarText: '#F2F4F7', snackbarAction: '#7FD9CC',
     },
     dark: {
-      text: '#F2F4F7', textSecondary: '#B6BDC8', background: '#121212', backgroundElement: '#1B1E22', backgroundSelected: '#2C3137',
+      text: '#F2F4F7', textSecondary: '#B6BDC8', accent: '#F58025', onAccent: '#FFFFFF', background: '#121212', backgroundElement: '#1B1E22', backgroundSelected: '#2C3137',
       divider: '#2C3137', outline: '#3A4048', tonal: '#262A30', track: '#2C3137', sheet: '#1B1E22', sheetHandle: '#5A616B',
       primary: '#F2F4F7', onPrimary: '#121212', link: '#F2F4F7', sensorOk: '#7FD9CC',
       snackbarBackground: '#E3E6EB', snackbarText: '#111418', snackbarAction: '#00594F',
@@ -59,13 +61,13 @@ export const BrandSchemes = {
   transitNavy: {
     name: 'Transit Navy',
     light: {
-      text: '#13213A', textSecondary: '#4B566A', background: '#FBFAF7', backgroundElement: '#F1EFE9', backgroundSelected: '#DCE4F0',
+      text: '#13213A', textSecondary: '#4B566A', accent: '#F58025', onAccent: '#FFFFFF', background: '#FBFAF7', backgroundElement: '#F1EFE9', backgroundSelected: '#DCE4F0',
       divider: '#E3E0D8', outline: '#C8C4BA', tonal: '#E8ECF3', track: '#EAE7E0', sheet: '#FFFFFF', sheetHandle: '#C8C4BA',
       primary: '#1B3A66', onPrimary: '#FFFFFF', link: '#1B3A66', sensorOk: '#007A6E',
       snackbarBackground: '#1B2A42', snackbarText: '#EEF2F8', snackbarAction: '#A9C4EC',
     },
     dark: {
-      text: '#EEF2F8', textSecondary: '#AEB9CB', background: '#0D1522', backgroundElement: '#152033', backgroundSelected: '#23395C',
+      text: '#EEF2F8', textSecondary: '#AEB9CB', accent: '#F58025', onAccent: '#FFFFFF', background: '#0D1522', backgroundElement: '#152033', backgroundSelected: '#23395C',
       divider: '#22304A', outline: '#33425E', tonal: '#1C2A42', track: '#22304A', sheet: '#152033', sheetHandle: '#4A5A78',
       primary: '#A9C4EC', onPrimary: '#0D1522', link: '#A9C4EC', sensorOk: '#7FD9CC',
       snackbarBackground: '#DCE4F0', snackbarText: '#13213A', snackbarAction: '#1B3A66',
@@ -74,13 +76,13 @@ export const BrandSchemes = {
   cobalt: {
     name: 'Cobalt',
     light: {
-      text: '#0F1523', textSecondary: '#4A5366', background: '#FFFFFF', backgroundElement: '#F4F6FB', backgroundSelected: '#DDE6FF',
+      text: '#0F1523', textSecondary: '#4A5366', accent: '#F58025', onAccent: '#FFFFFF', background: '#FFFFFF', backgroundElement: '#F4F6FB', backgroundSelected: '#DDE6FF',
       divider: '#E1E6F0', outline: '#C3CBDA', tonal: '#EAF0FF', track: '#E8ECF4', sheet: '#FFFFFF', sheetHandle: '#C3CBDA',
       primary: '#2350C8', onPrimary: '#FFFFFF', link: '#2350C8', sensorOk: '#007A6E',
       snackbarBackground: '#1A2233', snackbarText: '#F0F3FA', snackbarAction: '#9DB6FF',
     },
     dark: {
-      text: '#F0F3FA', textSecondary: '#B2BACB', background: '#0E1117', backgroundElement: '#171C27', backgroundSelected: '#24345E',
+      text: '#F0F3FA', textSecondary: '#B2BACB', accent: '#F58025', onAccent: '#FFFFFF', background: '#0E1117', backgroundElement: '#171C27', backgroundSelected: '#24345E',
       divider: '#262D3C', outline: '#384257', tonal: '#1E2638', track: '#262D3C', sheet: '#171C27', sheetHandle: '#4B5670',
       primary: '#9DB6FF', onPrimary: '#0E1117', link: '#9DB6FF', sensorOk: '#7FD9CC',
       snackbarBackground: '#DDE6FF', snackbarText: '#0F1523', snackbarAction: '#2350C8',
@@ -89,13 +91,13 @@ export const BrandSchemes = {
   prairieSlate: {
     name: 'Prairie Slate',
     light: {
-      text: '#1C2227', textSecondary: '#525A61', background: '#F7F5F0', backgroundElement: '#EFECE5', backgroundSelected: '#DDE3E7',
+      text: '#1C2227', textSecondary: '#525A61', accent: '#F58025', onAccent: '#FFFFFF', background: '#F7F5F0', backgroundElement: '#EFECE5', backgroundSelected: '#DDE3E7',
       divider: '#E2DED5', outline: '#C6C1B6', tonal: '#E8ECEE', track: '#E7E3DB', sheet: '#FFFDF9', sheetHandle: '#C6C1B6',
       primary: '#3B5163', onPrimary: '#FFFFFF', link: '#3B5163', sensorOk: '#007A6E',
       snackbarBackground: '#27323B', snackbarText: '#EEF0F1', snackbarAction: '#B7C8D6',
     },
     dark: {
-      text: '#EEF0F1', textSecondary: '#B3BBC1', background: '#121517', backgroundElement: '#1B2024', backgroundSelected: '#2B3A45',
+      text: '#EEF0F1', textSecondary: '#B3BBC1', accent: '#F58025', onAccent: '#FFFFFF', background: '#121517', backgroundElement: '#1B2024', backgroundSelected: '#2B3A45',
       divider: '#2A3136', outline: '#3B454C', tonal: '#232A30', track: '#2A3136', sheet: '#1B2024', sheetHandle: '#525E66',
       primary: '#B7C8D6', onPrimary: '#121517', link: '#B7C8D6', sensorOk: '#7FD9CC',
       snackbarBackground: '#DDE3E7', snackbarText: '#1C2227', snackbarAction: '#3B5163',
@@ -104,13 +106,13 @@ export const BrandSchemes = {
   railtie: {
     name: 'Railtie',
     light: {
-      text: '#231B15', textSecondary: '#5A5048', background: '#FAF7F2', backgroundElement: '#F2EDE5', backgroundSelected: '#E8DDD0',
+      text: '#231B15', textSecondary: '#5A5048', accent: '#F58025', onAccent: '#FFFFFF', background: '#FAF7F2', backgroundElement: '#F2EDE5', backgroundSelected: '#E8DDD0',
       divider: '#E6DFD4', outline: '#CBC1B3', tonal: '#F0E8DE', track: '#EAE3D8', sheet: '#FFFDF9', sheetHandle: '#CBC1B3',
       primary: '#4A3528', onPrimary: '#FFFFFF', link: '#4A3528', sensorOk: '#007A6E',
       snackbarBackground: '#33271E', snackbarText: '#F4EEE7', snackbarAction: '#E2CDB5',
     },
     dark: {
-      text: '#F4EEE7', textSecondary: '#C0B4A7', background: '#15110E', backgroundElement: '#1F1915', backgroundSelected: '#3A2E24',
+      text: '#F4EEE7', textSecondary: '#C0B4A7', accent: '#F58025', onAccent: '#FFFFFF', background: '#15110E', backgroundElement: '#1F1915', backgroundSelected: '#3A2E24',
       divider: '#30271F', outline: '#45382C', tonal: '#2A221B', track: '#30271F', sheet: '#1F1915', sheetHandle: '#5E4F41',
       primary: '#E2CDB5', onPrimary: '#15110E', link: '#E2CDB5', sensorOk: '#7FD9CC',
       snackbarBackground: '#E8DDD0', snackbarText: '#231B15', snackbarAction: '#4A3528',
