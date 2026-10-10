@@ -185,25 +185,25 @@ edge/
 
 ### Trace
 
-| Method | Message |
-| --- | --- |
-| `RadarSource.detections()` | SD1 messages 1 and 2 |
-| `Detector.on_detection()` | SD1 message 3 |
-| `TrainClassifier.classify()` | SD1 message 4 |
-| `DetectorState.on_track()`, new `CrossingEvent` | SD1 message 5 |
-| `EventBuffer.store()` | SD1 message 6 |
-| `EventBuffer.oldest_pending()` | SD1 messages 7 and 8 |
-| `Uplink.send_next_event()`, `Transport.post()` | SD1 messages 9, 10, 12, 14, 16 |
-| `EventBuffer.delete()` | SD1 messages 11 and 13 |
-| `HealthReporter.build_heartbeat()` | SD5 message 1 |
-| `Detector.current_status()` | SD5 messages 2 and 3 |
-| `Uplink.send_heartbeat()` | SD5 messages 4 to 6 |
-| `Calibrator.start()` | SD10 message 1 |
-| `Detector.pause()` | SD10 messages 2 and 3 |
-| `RadarSource.range_frames()` | SD10 messages 4 and 5 |
-| `Calibrator.confirm()`, `MapStore.save()` | SD10 messages 11 and 12 |
-| `Calibrator.reject()` | SD10 message 14 |
-| `Detector.resume()` | SD10 messages 8, 13 and 15 |
+| Method                                              | Message                        |
+| --------------------------------------------------- | ------------------------------ |
+| `RadarSource.detections()`                        | SD1 messages 1 and 2           |
+| `Detector.on_detection()`                         | SD1 message 3                  |
+| `TrainClassifier.classify()`                      | SD1 message 4                  |
+| `DetectorState.on_track()`, new `CrossingEvent` | SD1 message 5                  |
+| `EventBuffer.store()`                             | SD1 message 6                  |
+| `EventBuffer.oldest_pending()`                    | SD1 messages 7 and 8           |
+| `Uplink.send_next_event()`, `Transport.post()`  | SD1 messages 9, 10, 12, 14, 16 |
+| `EventBuffer.delete()`                            | SD1 messages 11 and 13         |
+| `HealthReporter.build_heartbeat()`                | SD5 message 1                  |
+| `Detector.current_status()`                       | SD5 messages 2 and 3           |
+| `Uplink.send_heartbeat()`                         | SD5 messages 4 to 6            |
+| `Calibrator.start()`                              | SD10 message 1                 |
+| `Detector.pause()`                                | SD10 messages 2 and 3          |
+| `RadarSource.range_frames()`                      | SD10 messages 4 and 5          |
+| `Calibrator.confirm()`, `MapStore.save()`       | SD10 messages 11 and 12        |
+| `Calibrator.reject()`                             | SD10 message 14                |
+| `Detector.resume()`                               | SD10 messages 8, 13 and 15     |
 
 ---
 
@@ -462,49 +462,49 @@ server/
 
 ### Trace
 
-| Method | Message |
-| --- | --- |
-| `IngestController.post_event()` | SD2 message 1 |
-| `NodeAuthenticator.verify()` | SD2 messages 2 to 5; SD5 messages 7 to 10 |
-| validation in `post_event()` | SD2 messages 6 and 7 |
-| `EventLog.check_and_mark()` | SD2 messages 8 to 12 |
-| `CrossingTracker.apply()` | SD2 messages 13 and 14 |
-| `AlertPolicy.recipients()` | SD2 messages 15 and 18; SD4 messages 8, 10, 16, 18, 21, 23; SD6 messages 9 and 12 |
-| `SubscriptionMap.followers()` | SD2 messages 16 and 17; SD6 messages 10 and 11 |
-| `NotificationService.send()` | SD2 messages 19 and 23; SD4 messages 11, 19, 24; SD6 message 13 |
-| `FcmClient.multicast()` | SD2 messages 20 to 22; SD4 message 12; SD6 message 14 |
-| `EventLog.mark_pushed()` | SD2 message 24 |
-| `CrossingRepository.save_state()` | SD3 messages 1 and 2; SD6 messages 6 and 7 |
-| `AlertLog.record()` | SD3 messages 3 and 4 |
-| `CrossingRepository.add_blockage()`, `update_summary()` | SD3 messages 5 and 6 |
-| `TokenRegistry.remove()` | SD3 messages 7 and 8 |
-| `SubscriptionMap.drop()` | SD3 message 9 |
-| `EventLog.mark_done()`, `CrossingEventStore.append()` | SD3 message 10 |
-| acknowledgement (or 503) from `post_event()` | SD3 messages 11 and 12 |
-| `AlertLog.open_blockage()` | SD4 message 1 |
-| `BlockageChecks.schedule()` | SD4 message 2 |
-| `TaskQueue.schedule()` | SD4 messages 3 and 4 |
-| `IngestController.post_blockage_check()` | SD4 messages 5 and 15 |
-| `BlockageChecks.run_check()` | SD4 messages 6 and 14 |
-| `CrossingTracker.is_blocking()` | SD4 message 7 |
-| `AlertLog.who_was_told()` | SD4 messages 9, 17 and 22 |
-| `AlertLog.mark_told()` | SD4 messages 13 and 20 |
-| `AlertLog.close_blockage()` | SD4 message 25 |
-| `IngestController.post_heartbeat()` | SD5 messages 5 and 22 |
-| `NodeMonitor.record()` | SD5 messages 11 and 12 |
-| `CrossingTracker.reconcile()` | SD5 messages 13 to 15 |
-| health limits in `NodeMonitor.record()` | SD5 messages 16 and 17 |
-| `CrossingRepository.refresh_last_reading()` | SD5 messages 18 and 19 |
-| Cloud Logging write in `NodeMonitor.record()` | SD5 message 20 |
-| `NodeRepository.save_health()` | SD5 message 21 |
-| `IngestController.post_check_nodes()` | SD6 messages 1 and 16 |
-| `NodeMonitor.check()` | SD6 messages 2 and 3 |
-| `CrossingTracker.mark_offline()` | SD6 messages 4 and 5 |
-| `NodeRepository.mark_offline()` | SD6 message 8 |
-| `TokenRegistry.load_all()`, `SubscriptionMap.upsert()` at startup | SD8 messages 1 to 4 |
-| `IngestController.post_sync_devices()` | SD8 messages 5 and 13 |
-| `TokenRegistry.changed_since()` | SD8 messages 6 to 9 and 12 |
-| `SubscriptionMap.upsert()` | SD8 messages 10 and 11 |
+| Method                                                                | Message                                                                           |
+| --------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| `IngestController.post_event()`                                     | SD2 message 1                                                                     |
+| `NodeAuthenticator.verify()`                                        | SD2 messages 2 to 5; SD5 messages 7 to 10                                         |
+| validation in `post_event()`                                        | SD2 messages 6 and 7                                                              |
+| `EventLog.check_and_mark()`                                         | SD2 messages 8 to 12                                                              |
+| `CrossingTracker.apply()`                                           | SD2 messages 13 and 14                                                            |
+| `AlertPolicy.recipients()`                                          | SD2 messages 15 and 18; SD4 messages 8, 10, 16, 18, 21, 23; SD6 messages 9 and 12 |
+| `SubscriptionMap.followers()`                                       | SD2 messages 16 and 17; SD6 messages 10 and 11                                    |
+| `NotificationService.send()`                                        | SD2 messages 19 and 23; SD4 messages 11, 19, 24; SD6 message 13                   |
+| `FcmClient.multicast()`                                             | SD2 messages 20 to 22; SD4 message 12; SD6 message 14                             |
+| `EventLog.mark_pushed()`                                            | SD2 message 24                                                                    |
+| `CrossingRepository.save_state()`                                   | SD3 messages 1 and 2; SD6 messages 6 and 7                                        |
+| `AlertLog.record()`                                                 | SD3 messages 3 and 4                                                              |
+| `CrossingRepository.add_blockage()`, `update_summary()`           | SD3 messages 5 and 6                                                              |
+| `TokenRegistry.remove()`                                            | SD3 messages 7 and 8                                                              |
+| `SubscriptionMap.drop()`                                            | SD3 message 9                                                                     |
+| `EventLog.mark_done()`, `CrossingEventStore.append()`             | SD3 message 10                                                                    |
+| acknowledgement (or 503) from `post_event()`                        | SD3 messages 11 and 12                                                            |
+| `AlertLog.open_blockage()`                                          | SD4 message 1                                                                     |
+| `BlockageChecks.schedule()`                                         | SD4 message 2                                                                     |
+| `TaskQueue.schedule()`                                              | SD4 messages 3 and 4                                                              |
+| `IngestController.post_blockage_check()`                            | SD4 messages 5 and 15                                                             |
+| `BlockageChecks.run_check()`                                        | SD4 messages 6 and 14                                                             |
+| `CrossingTracker.is_blocking()`                                     | SD4 message 7                                                                     |
+| `AlertLog.who_was_told()`                                           | SD4 messages 9, 17 and 22                                                         |
+| `AlertLog.mark_told()`                                              | SD4 messages 13 and 20                                                            |
+| `AlertLog.close_blockage()`                                         | SD4 message 25                                                                    |
+| `IngestController.post_heartbeat()`                                 | SD5 messages 5 and 22                                                             |
+| `NodeMonitor.record()`                                              | SD5 messages 11 and 12                                                            |
+| `CrossingTracker.reconcile()`                                       | SD5 messages 13 to 15                                                             |
+| health limits in `NodeMonitor.record()`                             | SD5 messages 16 and 17                                                            |
+| `CrossingRepository.refresh_last_reading()`                         | SD5 messages 18 and 19                                                            |
+| Cloud Logging write in `NodeMonitor.record()`                       | SD5 message 20                                                                    |
+| `NodeRepository.save_health()`                                      | SD5 message 21                                                                    |
+| `IngestController.post_check_nodes()`                               | SD6 messages 1 and 16                                                             |
+| `NodeMonitor.check()`                                               | SD6 messages 2 and 3                                                              |
+| `CrossingTracker.mark_offline()`                                    | SD6 messages 4 and 5                                                              |
+| `NodeRepository.mark_offline()`                                     | SD6 message 8                                                                     |
+| `TokenRegistry.load_all()`, `SubscriptionMap.upsert()` at startup | SD8 messages 1 to 4                                                               |
+| `IngestController.post_sync_devices()`                              | SD8 messages 5 and 13                                                             |
+| `TokenRegistry.changed_since()`                                     | SD8 messages 6 to 9 and 12                                                        |
+| `SubscriptionMap.upsert()`                                          | SD8 messages 10 and 11                                                            |
 
 ---
 
@@ -570,20 +570,20 @@ classDiagram
 
 ### Existing files and what changes
 
-| Object | File | Status | Change the blueprint calls for |
-| --- | --- | --- | --- |
-| CrossingSource | `data/source.ts` | exists | Add `getHistory(crossingId, rangeDays)` (OQ11). |
-| DemoEngine | `data/demo-engine.ts` | exists | Implement `getHistory` from `demo-history.ts`. |
-| FirestoreSource | `data/firestore-source.ts` | exists, unused | Read `getHistory` from `crossings/{id}/summary/{7d or 30d}`. Map the contract's `nodes` summary onto `sensorName` and `sensorBatteryOk`. |
-| Store | `state/store.ts` | exists | None. |
-| AppActions | `state/actions.ts` | exists | `onSnapshot`: run local alerts only when `source.kind === 'demo'` (OQ10). `syncDevice`: pass the alert preferences (OQ9). |
-| AlertRules | `domain/alerts.ts` | exists | Add `approaching` to `AlertKind` and `AlertType` (D1), off by default, for the demo and for the Settings switch. |
-| FreshnessRule | `domain/freshness.ts` | exists | None. Its 30 s and 90 s thresholds are now part of the contract (section 4). |
-| PushRegistrar | `lib/push.ts` | exists | `registerDevice(subscriptions, preferences)` writes the preference fields in section 4. |
-| AlertTapHandler | `lib/alert-delivery.ts` | exists | Add `openLastTapped` using `getLastNotificationResponseAsync()` for cold starts (SD9 finding). |
-| History screen | `app/history.tsx` | exists | Read from `source.getHistory()` instead of `DEMO_HISTORY`. |
-| Settings | `app/settings.tsx` | exists | Say so when a follow is past the 20-crossing cap (UC4 7b). An "Approaching" alert switch, hidden while no crossing allows approaching pushes (OQ19). |
-| Firestore rules | `firestore.rules` | exists | Allow the preference fields on `devices/{token}` (OQ9) and reads of `crossings/{id}/summary/{range}` (OQ11). |
+| Object          | File.                               | Status         | Change the blueprint calls for                                                                                                                       |
+| --------------- | --------------------------------------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| CrossingSource  | `data/source.ts`                                  | exists         | Add `getHistory(crossingId, rangeDays)` (OQ11).                                                                                                    |
+| DemoEngine      | `data/demo-engine.ts`                             | exists         | Implement `getHistory` from `demo-history.ts`.                                                                                                   |
+| FirestoreSource | `data/firestore-source.ts`                        | exists, unused | Read `getHistory` from `crossings/{id}/summary/{7d or 30d}`. Map the contract's `nodes` summary onto `sensorName` and `sensorBatteryOk`.   |
+| Store           | `state/store.ts`                                  | exists         | None.                                                                                                                                                |
+| AppActions      | `state/actions.ts`                                | exists         | `onSnapshot`: run local alerts only when `source.kind === 'demo'` (OQ10). `syncDevice`: pass the alert preferences (OQ9).                      |
+| AlertRules      | `domain/alerts.ts`                                | exists         | Add `approaching` to `AlertKind` and `AlertType` (D1), off by default, for the demo and for the Settings switch.                               |
+| FreshnessRule   | `domain/freshness.ts`                             | exists         | None. Its 30 s and 90 s thresholds are now part of the contract (section 4).                                                                         |
+| PushRegistrar   | `lib/push.ts`                                     | exists         | `registerDevice(subscriptions, preferences)` writes the preference fields in section 4.                                                            |
+| AlertTapHandler | `lib/alert-delivery.ts`                           | exists         | Add `openLastTapped` using `getLastNotificationResponseAsync()` for cold starts (SD9 finding).                                                   |
+| History screen  | `app/history.tsx`                                 | exists         | Read from `source.getHistory()` instead of `DEMO_HISTORY`.                                                                                       |
+| Settings        | `app/settings.tsx`                                | exists         | Say so when a follow is past the 20-crossing cap (UC4 7b). An "Approaching" alert switch, hidden while no crossing allows approaching pushes (OQ19). |
+| Firestore rules | `firestore.rules`                                 | exists         | Allow the preference fields on `devices/{token}` (OQ9) and reads of `crossings/{id}/summary/{range}` (OQ11).                                     |
 
 ### Interface change
 
@@ -610,15 +610,15 @@ export interface HistoryStats {
 
 ### Trace
 
-| Method | Message |
-| --- | --- |
-| `AppActions.toggleFollow()` / `confirmPriming()` adding the follow | SD7 message 1 |
-| `PushRegistrar.registerDevice()` | SD7 messages 2 to 16 |
-| `AppActions` snackbar | SD7 message 17 |
-| `AlertTapHandler.onAlertTapped()` / `openLastTapped()` | SD9 messages 2 to 5 |
-| `Store` read by `StatusScreen` | SD9 message 6 |
-| `CrossingSource.subscribe()` | SD9 messages 7 to 10 |
-| `FreshnessRule.effectiveState()` | SD9 messages 11 and 12 |
+| Method                                                                 | Message                |
+| ---------------------------------------------------------------------- | ---------------------- |
+| `AppActions.toggleFollow()` / `confirmPriming()` adding the follow | SD7 message 1          |
+| `PushRegistrar.registerDevice()`                                     | SD7 messages 2 to 16   |
+| `AppActions` snackbar                                                | SD7 message 17         |
+| `AlertTapHandler.onAlertTapped()` / `openLastTapped()`             | SD9 messages 2 to 5    |
+| `Store` read by `StatusScreen`                                     | SD9 message 6          |
+| `CrossingSource.subscribe()`                                         | SD9 messages 7 to 10   |
+| `FreshnessRule.effectiveState()`                                     | SD9 messages 11 and 12 |
 
 `getHistory` has no sequence diagram; it serves UC8, which is a brief use case. It is a single document read.
 
@@ -639,14 +639,14 @@ The one place the shape of every message and stored document is written down. Ed
 
 Every request carries the node's key as `Authorization: Bearer <node key>` (OQ3). The key lives in the node's environment and in Secret Manager, never in the repo.
 
-| Response | Meaning | What the node does (SD1, SD5) |
-| --- | --- | --- |
-| `200 {"eventId": "...", "status": "accepted"}` | Processed | Delete from the buffer |
-| `200 {"eventId": "...", "status": "duplicate"}` | Seen before | Delete from the buffer |
-| `401` | Unknown node or wrong key | Keep, log, retry later |
-| `422 {"error": "..."}` | Invalid, will never succeed | Delete and log |
-| `503` | Pushed, but the database writes didn't finish (SD3) | Keep, back off, retry with the same `eventId`; the server won't push again |
-| `5xx`, timeout, no network | Temporary | Keep, back off, retry with the same `eventId` |
+| Response                                          | Meaning                                             | What the node does (SD1, SD5)                                                |
+| ------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------- |
+| `200 {"eventId": "...", "status": "accepted"}`  | Processed                                           | Delete from the buffer                                                       |
+| `200 {"eventId": "...", "status": "duplicate"}` | Seen before                                         | Delete from the buffer                                                       |
+| `401`                                           | Unknown node or wrong key                           | Keep, log, retry later                                                       |
+| `422 {"error": "..."}`                          | Invalid, will never succeed                         | Delete and log                                                               |
+| `503`                                           | Pushed, but the database writes didn't finish (SD3) | Keep, back off, retry with the same `eventId`; the server won't push again |
+| `5xx`, timeout, no network                      | Temporary                                           | Keep, back off, retry with the same `eventId`                              |
 
 ### `POST /events`: a CrossingEvent
 
@@ -737,71 +737,71 @@ The app reads the first four; the rest are server-only. "Writer" is who writes t
 
 **`crossings/{usdotId}`**: current state. Writer: server. Reader: app (`FirestoreSource`).
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `state` | string | One of the five `ReportedState` values |
-| `since` | Timestamp or null | Start of the current blockage |
-| `stoppedAt` | Timestamp or null | When the train stopped |
-| `detectedAt` | Timestamp or null | When an approaching train was seen |
-| `clearSince` | Timestamp or null | When the crossing last cleared |
-| `lastReadingAt` | Timestamp | Last heartbeat's arrival time; refreshed every 30 s (OQ7) |
-| `sensor` | map | `{ name, batteryOk }`, derived from the crossing's nodes (OQ12, D2); kept so the app works unchanged |
-| `nodeIds` | array of strings | The nodes watching this crossing (zero to two) |
-| `alertMode` | string | `logOnly`, `blockedAndCleared` or `all` (D1, UC13). Stays `blockedAndCleared` while one node sits at the crossing (OQ19). |
-| `updatedAt` | Timestamp | Server write time |
+| Field             | Type              | Notes                                                                                                                             |
+| ----------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `state`         | string            | One of the five `ReportedState` values                                                                                          |
+| `since`         | Timestamp or null | Start of the current blockage                                                                                                     |
+| `stoppedAt`     | Timestamp or null | When the train stopped                                                                                                            |
+| `detectedAt`    | Timestamp or null | When an approaching train was seen                                                                                                |
+| `clearSince`    | Timestamp or null | When the crossing last cleared                                                                                                    |
+| `lastReadingAt` | Timestamp         | Last heartbeat's arrival time; refreshed every 30 s (OQ7)                                                                         |
+| `sensor`        | map               | `{ name, batteryOk }`, derived from the crossing's nodes (OQ12, D2); kept so the app works unchanged                            |
+| `nodeIds`       | array of strings  | The nodes watching this crossing (zero to two)                                                                                    |
+| `alertMode`     | string            | `logOnly`, `blockedAndCleared` or `all` (D1, UC13). Stays `blockedAndCleared` while one node sits at the crossing (OQ19). |
+| `updatedAt`     | Timestamp         | Server write time                                                                                                                 |
 
 These are exactly the fields `FirestoreSource.toReading()` already reads, plus three new ones the app can ignore.
 
 **`crossings/{usdotId}/events/{blockageId}`**: one finished blockage (BlockageEvent). Writer: server, after the blockage clears. Reader: app.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `start` | Timestamp | |
-| `end` | Timestamp | The SRS's blockage history asks for start, end and duration |
-| `durationMin` | number | |
-| `stopped` | boolean | Whether the train stopped during it |
+| Field           | Type      | Notes                                                       |
+| --------------- | --------- | ----------------------------------------------------------- |
+| `start`       | Timestamp |                                                             |
+| `end`         | Timestamp | The SRS's blockage history asks for start, end and duration |
+| `durationMin` | number    |                                                             |
+| `stopped`     | boolean   | Whether the train stopped during it                         |
 
 **`crossings/{usdotId}/summary/{range}`**, with `range` either `7d` or `30d`: history statistics (OQ11). Writer: server, after each blockage and once a day. Reader: app (`getHistory`).
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `rangeDays` | number | 7 or 30 |
-| `count` | number | Blockages in the range |
-| `typicalMin` | number | Median duration |
-| `longestMin` | number | |
-| `longestStopped` | boolean | Whether the longest one involved a stopped train |
-| `hours` | array of 24 numbers | Average blockages per hour of day, midnight first |
-| `updatedAt` | Timestamp | |
+| Field              | Type                | Notes                                             |
+| ------------------ | ------------------- | ------------------------------------------------- |
+| `rangeDays`      | number              | 7 or 30                                           |
+| `count`          | number              | Blockages in the range                            |
+| `typicalMin`     | number              | Median duration                                   |
+| `longestMin`     | number              |                                                   |
+| `longestStopped` | boolean             | Whether the longest one involved a stopped train  |
+| `hours`          | array of 24 numbers | Average blockages per hour of day, midnight first |
+| `updatedAt`      | Timestamp           |                                                   |
 
 Same shape as the app's `RangeStats` in `data/demo-history.ts`, so History switches from demo to live with no layout change.
 
 **`devices/{fcmToken}`**: one phone. Writer: the app, through `registerDevice()`; deletes by the server when FCM reports the token invalid. Reader: server (`TokenRegistry`).
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `uid` | string | Anonymous auth uid; authorizes writes, isn't the identity (Amendment 002, 4.1) |
-| `platform` | string | `android` or `ios` |
-| `updatedAt` | Timestamp | Must equal the request time (rules) |
-| `subscriptions` | array of up to 20 crossing IDs | Followed crossings |
-| `alertTypes` | map of booleans | `approaching`, `blocked`, `stopped`, `cleared` (new, OQ9) |
-| `minBlockMin` | number | 1, 3 or 5 (new, OQ9) |
-| `quietHours` | map or null | `{ start: "22:00", end: "06:00" }` while quiet hours are on (new, OQ9; the field is already allowed) |
-| `commuteWindows` | array or null | `[{ days: [1,2,3,4,5], start: "07:00", end: "09:00" }, ...]` while commute windows are on (new, OQ9) |
-| `timeZone` | string | IANA name, like `America/Chicago`, so the server reads quiet hours and commute windows in the phone's local time (new, OQ9) |
+| Field               | Type                           | Notes                                                                                                                         |
+| --------------------------- | ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `uid`                     | string                         | Anonymous auth uid; authorizes writes, isn't the identity (Amendment 002, 4.1)                                                |
+| `platform`                | string                         | `android` or `ios`                                                                                                        |
+| `updatedAt`               | Timestamp                      | Must equal the request time (rules)                                                                                           |
+| `subscriptions`           | array of up to 20 crossing IDs | Followed crossings                                                                                                            |
+| `alertTypes`              | map of booleans                | `approaching`, `blocked`, `stopped`, `cleared` (new, OQ9)                                                             |
+| `minBlockMin`             | number                         | 1, 3 or 5 (new, OQ9)                                                                                                          |
+| `quietHours`              | map or null                    | `{ start: "22:00", end: "06:00" }` while quiet hours are on (new, OQ9; the field is already allowed)                        |
+| `commuteWindows`          | array or null                  | `[{ days: [1,2,3,4,5], start: "07:00", end: "09:00" }, ...]` while commute windows are on (new, OQ9)                        |
+| `timeZone`                | string                         | IANA name, like `America/Chicago`, so the server reads quiet hours and commute windows in the phone's local time (new, OQ9) |
 
-None of these identify a person. "Mute today" stays on the phone.
+None of these identify a person. "Mute today" stays on the phone for now, which breaks it on live data; see [OQ22](00_README.md#open-questions).
 
 **`nodes/{nodeId}`**: server-only. Writer: server.
 
-| Field | Type | Notes |
-| --- | --- | --- |
-| `crossingId` | string | The crossing it watches |
-| `side` | string | `atCrossing`, `east` or `west` (D4) |
-| `lastSeenAt` | Timestamp | Updated in memory every heartbeat, written here every 5 minutes |
-| `status` | string | `online`, `calibrating`, `offline` |
-| `health` | map | `batteryVoltage`, `enclosureTempC`, `uptimeSec`, `signalDbm`, `bufferedEvents` |
-| `flags` | array of strings | Out-of-range readings for the maintainer (UC12) |
-| `softwareVersion`, `mapVersion` | string | |
+| Field                               | Type             | Notes                                                                                    |
+| ----------------------------------- | ---------------- | ---------------------------------------------------------------------------------------- |
+| `crossingId`                      | string           | The crossing it watches                                                                  |
+| `side`                            | string           | `atCrossing`, `east` or `west` (D4)                                                |
+| `lastSeenAt`                      | Timestamp        | Updated in memory every heartbeat, written here every 5 minutes                          |
+| `status`                          | string           | `online`, `calibrating`, `offline`                                                 |
+| `health`                          | map              | `batteryVoltage`, `enclosureTempC`, `uptimeSec`, `signalDbm`, `bufferedEvents` |
+| `flags`                           | array of strings | Out-of-range readings for the maintainer (UC12)                                          |
+| `softwareVersion`, `mapVersion` | string           |                                                                                          |
 
 **Server-only logs**: the CrossingEvent log (every accepted event, including log-only ones; feeds false-alarm measurement and `EventLog` reloads), the alert log (each alert, its channel, and sent and failed counts), and open blockage records (`AlertLog`, OQ16). Their exact layout is the server team's choice, since nothing else reads them.
 
@@ -811,13 +811,13 @@ None of these identify a person. "Mute today" stays on the phone.
 
 The server runs at `max-instances=1` because these live in the instance's memory. To scale out, each moves to a shared store. None of this is needed for one crossing.
 
-| In memory today | Why it can't be split as is | Where it would move |
-| --- | --- | --- |
-| `CrossingTracker` current state | Two instances would disagree about a crossing | Firestore transaction on the crossing document, or Memorystore (Redis) |
-| `EventLog` recent IDs and their states | Both instances could accept one retried event | A create-if-absent write keyed by `eventId` |
-| `AlertLog` open blockages | Who-was-told would diverge | Firestore transaction per blockage |
-| `NodeMonitor` last-seen times | Both could send "status unknown" | Already triggered by one Cloud Scheduler job; last-seen would move to Firestore |
-| `SubscriptionMap` | Fine to duplicate | Stays in memory; each instance loads and syncs every device |
-| Blockage checks | Already outside the server | Cloud Tasks (D5) |
+| In memory today                          | Why it can't be split as is                   | Where it would move                                                             |
+| ---------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------------------- |
+| `CrossingTracker` current state        | Two instances would disagree about a crossing | Firestore transaction on the crossing document, or Memorystore (Redis)          |
+| `EventLog` recent IDs and their states | Both instances could accept one retried event | A create-if-absent write keyed by `eventId`                                   |
+| `AlertLog` open blockages              | Who-was-told would diverge                    | Firestore transaction per blockage                                              |
+| `NodeMonitor` last-seen times          | Both could send "status unknown"              | Already triggered by one Cloud Scheduler job; last-seen would move to Firestore |
+| `SubscriptionMap`                      | Fine to duplicate                             | Stays in memory; each instance loads and syncs every device                     |
+| Blockage checks                          | Already outside the server                    | Cloud Tasks (D5)                                                                |
 
 Each of these adds a network round trip on the hot path, which is the main reason to stay at one instance until the load actually demands more.

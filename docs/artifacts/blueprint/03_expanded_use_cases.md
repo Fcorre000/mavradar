@@ -14,7 +14,7 @@ Four open questions were tagged for this phase. The flows below were written wit
 | --- | --- | --- |
 | [OQ2](00_README.md#open-questions) Offline detection | Both. The app's freshness rule keeps guarding the screen; the server also detects a silent node, because only it can push a "status unknown" note. | UC3 exists; UC2 step 3 |
 | [OQ6](00_README.md#open-questions) Who creates `eventId` | The node, when it records the event. The same ID travels with every retry. | UC1 steps 1 and 3 |
-| [OQ9](00_README.md#open-questions) Preferences the server knows | Alert types, minimum blockage time, quiet hours and commute windows go on the device document. "Mute today" stays on the phone. | UC1 step 5, UC4 step 7 |
+| [OQ9](00_README.md#open-questions) Preferences the server knows | Alert types, minimum blockage time, quiet hours and commute windows go on the device document. "Mute today" stays on the phone (reopened as [OQ22](00_README.md#open-questions): that breaks it on live data). | UC1 step 5, UC4 step 7 |
 | [OQ13](00_README.md#open-questions) When the node gets its ack | After the push and after the Firestore writes. (First assumed "before the writes"; revised by [D5](00_README.md#decisions), because Cloud Run with request-based billing may never run work after a response.) | UC1 steps 7 to 10 |
 
 It also builds on decisions [D1](00_README.md#decisions) (alert types switch on in stages, per crossing) and [D2](00_README.md#decisions) (one node per crossing for now), and on [OQ1](00_README.md#open-questions)'s lean: the node runs the state machine and sends state changes. Phase 5 draws the alternative.

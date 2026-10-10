@@ -202,7 +202,7 @@ The exceptions, which no sequence diagram will reach:
 
 ## Open questions
 
-Each has a recommendation. None are decided until the team says so. OQ1 to OQ5 come from the brief, OQ6 to OQ15 came out of the Phase 0 inventory of the existing code, and OQ16 and OQ17 came out of writing the expanded use cases, OQ18 and OQ19 out of drawing the state machines, OQ20 out of the design patterns, and OQ21 out of checking the blueprint against the team's Confluence research.
+Each has a recommendation. None are decided until the team says so. OQ1 to OQ5 come from the brief, OQ6 to OQ15 came out of the Phase 0 inventory of the existing code, and OQ16 and OQ17 came out of writing the expanded use cases, OQ18 and OQ19 out of drawing the state machines, OQ20 out of the design patterns, OQ21 out of checking the blueprint against the team's Confluence research, and OQ22 out of walking through the app's class diagram after the merge.
 
 | # | Question | Recommendation | Settle by |
 | --- | --- | --- | --- |
@@ -227,6 +227,7 @@ Each has a recommendation. None are decided until the team says so. OQ1 to OQ5 c
 | OQ19 | **With one node at the crossing, is an approaching push worth sending?** The node sees a train only about 100 m out, a few seconds before it arrives and usually after the gates are down. | Keep detecting it and showing it on the status screen, but leave approaching *pushes* off (alert mode stays at blocked and cleared) until spaced nodes give real warning. A few seconds' notice can't change anyone's route, and every approaching push spends trust in the one-shot `train-alerts` channel. D1's staging allows this with no design change: it is just where the crossing's alert mode stops. | Settled as recommended (Fernando, 2026-10-08) |
 | OQ20 | **How many server instances?** The current crossing state, the dedupe log, node last-seen times and open blockage records live in the instance's memory (07, Singleton card). A second instance would hold its own copy and disagree with the first. | `min-instances=1` and `max-instances=1`. One instance easily carries one crossing and a few hundred phones. 08 section 5 lists what would move to a shared store to scale out. | Settled as recommended (Fernando, 2026-10-08) |
 | OQ21 | **Cloud Run billing mode.** The design's background work (timers, the follower listener, writes after the response) needs CPU between requests, which only instance-based billing gives, at about $45 a month. | Request-based billing, with every background job turned into a request from Cloud Tasks or Cloud Scheduler, at about $5 to $10 a month. See D5. | Settled (Fernando, 2026-10-09) |
+| OQ22 | **Does "Mute today" work on live data?** OQ9 kept it on the phone. That works on demo data, where the phone decides every alert, but live alerts are FCM pushes from the server, and Android shows a notification message without running any app code. A muted phone would still get every live train alert, and nothing would tell the person. | Add `mutedUntil` (Timestamp or null) to `devices/{token}`: the end of the phone's local day when "Mute today" is tapped, null when it is turned off. AlertPolicy skips a device whose `mutedUntil` is still in the future, for train alerts only; "status unknown" notes on `service-status` ignore mute, matching `shouldDeliver()` today. One write per tap, and it identifies no one. Rejected: data-only pushes that the app filters itself, because Android can delay or drop them while the app is closed, which is wrong for a safety alert. | With A3, since it is the same device document and rules change |
 
 ## Docs outside this blueprint to update
 
@@ -248,6 +249,7 @@ Things this blueprint found in the existing app code. None of them were changed:
 - **Cold-start notification taps (SD9).** `onAlertTapped` uses a response listener; a tap that launches the app from fully closed may arrive before it exists. Expo's `getLastNotificationResponseAsync()` covers that case. Check on the dev build.
 - **The 20-crossing cap is silent (UC4 7b).** Follows past 20 work on the phone but get no pushes, and nothing says so.
 - **History runs on fixed demo numbers (OQ11).**
+- **"Mute today" never reaches the server (OQ22).** On live data a muted phone would still get every train push.
 
 ## Status
 
