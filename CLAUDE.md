@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 MavRadar detects freight trains approaching a grade crossing with a 24GHz radar and pushes real-time alerts to a mobile app, so people can divert before they're stuck. The first site is the Center St crossing near UT Arlington, where students can divert to the West St underpass. The design is framed for any blocked crossing and for cities and emergency dispatch, not only UTA students. No public freight train position data exists, so the system detects trains directly.
 
-Read `docs/MAVRADAR_HANDOFF.md` and then its amendments in order (`docs/MAVRADAR_HANDOFF_AMENDMENT_001.md` through `_003.md`) before doing significant work. The handoff has the original architecture and reasoning; the amendments supersede it where they disagree. Do not relitigate decisions documented there without new information.
+Read `docs/MAVRADAR_HANDOFF.md` and then its amendments in order (`docs/MAVRADAR_HANDOFF_AMENDMENT_001.md` through `_003.md`) before doing significant work. The handoff has the original architecture and reasoning; the amendments supersede it where they disagree. The design blueprint in `docs/artifacts/blueprint/` (decisions D1 to D5, start at its `00_README.md`) builds on them and is the plan for `edge/`, `server/` and the app's remaining work; where it changes an amendment, it says so. Do not relitigate decisions documented there without new information.
 
 ## Repo layout
 
@@ -15,12 +15,12 @@ Read `docs/MAVRADAR_HANDOFF.md` and then its amendments in order (`docs/MAVRADAR
 | `app/` | Expo (React Native) mobile app, SDK 57, expo-router, TypeScript |
 | `edge/` | Python detection service for the field node (not started) |
 | `server/` | FastAPI ingest and fan-out on Cloud Run (not started) |
-| `docs/` | Architecture handoff and amendments, course constraints |
+| `docs/` | Architecture handoff and amendments, design blueprint (`docs/artifacts/blueprint/`), architecture diagram, course constraints |
 | `firestore.rules`, `firebase.json` | Firestore rules and project config (project `mavradar-4a74a`) |
 
 Data path: `OPS243-C radar -> Pi Zero 2 W -> uplink -> ingest API -> alert filter -> FCM -> phone`. The Firestore write happens after the push, never before. Latency is the tiebreaker for any architectural choice.
 
-Field nodes sit about 550 m down the track on each side of the crossing (one node until money allows two), because a node at the crossing gives only a few seconds of warning. The uplink is a swappable transport; a Waveshare SIM7080G Cat-M HAT is on the BOM pending the procurement exception.
+While there is one field node, it sits at the crossing, within radar range, so it sees blocked, stopped and cleared directly. When a second node is funded, the two are spaced out, one on each side, for early warning (blueprint D4). A node at the crossing sees an approaching train only seconds ahead, so approaching pushes stay off until then (OQ19). The uplink is a swappable transport; a Waveshare SIM7080G Cat-M HAT is on the BOM pending the procurement exception.
 
 ## Commands
 
@@ -43,6 +43,12 @@ Firebase (run from the repo root):
 ```bash
 firebase emulators:exec --only firestore "<test command>"   # test rules locally (Java is installed)
 firebase deploy --only firestore:rules
+```
+
+Docs (run from the repo root, needs Google Chrome):
+
+```bash
+node docs/artifacts/architecture/build-diagram.mjs   # re-render MavRadar_Architecture_Diagram.png; edit diagram.html, not the PNG
 ```
 
 The app has Jest tests for its domain rules; `edge/` and `server/` have none yet. Builds go through EAS cloud builds, never local Xcode or Android Studio (the dev machine is an 8GB M1 and deliberately has neither Xcode nor the Android emulator). **Android is the first platform**; test push on a physical Android phone. Code stays cross-platform, and iOS builds wait on Apple Developer enrollment.
@@ -72,7 +78,7 @@ Expo SDK 57 changed significantly. Check the versioned docs at https://docs.expo
 
 - Native app, not PWA (iOS web push is unreliable for safety alerts).
 - FCM token multicast, not topics (topics optimize throughput, not latency). The feature research's per-crossing topics idea is superseded.
-- Cloud Run with `min-instances=1` in `us-central1`, not Cloud Functions (no cold start in the hot path; keeps the FCM credential off the Pi).
+- Cloud Run with `min-instances=1` in `us-central1`, not Cloud Functions (no cold start in the hot path; keeps the FCM credential off the Pi). Request-based billing and `max-instances=1`, so there is no background work: timers are Cloud Tasks and Cloud Scheduler requests, and the push, the Firestore writes and the node's ack all happen inside the request, in that order (blueprint D5).
 - Native device push token via `getDevicePushTokenAsync`, not the Expo push service.
 - Firebase Anonymous Auth for token registration, no signup. Device docs are keyed on the push token, not the uid.
 - Firestore `(default)` database, `us-central1`, Native mode. Data is keyed by USDOT crossing ID (`crossings/{usdotId}`), with a BlockageEvent log from the first deploy.

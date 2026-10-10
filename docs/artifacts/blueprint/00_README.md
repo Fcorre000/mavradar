@@ -231,12 +231,12 @@ Each has a recommendation. None are decided until the team says so. OQ1 to OQ5 c
 
 ## Docs outside this blueprint to update
 
-This session only writes files in `docs/artifacts/blueprint/`. These need a matching change elsewhere, in their own PR:
+The blueprint session only wrote files in `docs/artifacts/blueprint/`. These need a matching change elsewhere:
 
-- **Node placement (D4):** `CLAUDE.md` (What this is), `edge/README.md`, and the architecture diagram (`MavRadar_Architecture_Diagram.png`, "Node A, ~550 m up the track") still say 550 m down the track. Amendment 003 section 5 should get a short follow-up amendment rather than an edit, since amendments are a record.
+- **Node placement (D4):** `CLAUDE.md`, `edge/README.md` and the architecture diagram were updated on 2026-10-10. The diagram now has an editable source, `docs/artifacts/architecture/diagram.html`. Still to do: Amendment 003 section 5 should get a short follow-up amendment rather than an edit, since amendments are a record.
 - **`eventId` origin (OQ6):** Amendment 003 section 4.3 says the server creates it; the node does now.
 - **City dashboard (D3):** the SRS draft still lists 3.7 as High priority.
-- **Follower map (D5):** Amendment 002 section 5 and `server/README.md` say the map is kept fresh by a Firestore snapshot listener; it is now a once-a-minute sync, and the server runs with request-based billing. The architecture diagram's "1 Send push, 2 Write DB, 3 Reply 200" order is right and stays.
+- **Follower map (D5):** `server/README.md`, `CLAUDE.md` and the architecture diagram were updated on 2026-10-10 (once-a-minute sync, request-based billing, Cloud Tasks and Scheduler). Still to do: Amendment 002 section 5 still describes a Firestore snapshot listener and needs a follow-up amendment.
 - **Confluence, "Cloud and Database Options for MavRadar":** updated on 2026-10-09 to match D5 (see its "Updated after the design blueprint" section).
 
 ## Findings for the app

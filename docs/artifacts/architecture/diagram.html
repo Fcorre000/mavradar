@@ -1,0 +1,304 @@
+<!doctype html>
+<!--
+  Source for docs/artifacts/MavRadar_Architecture_Diagram.png. Edit this file, then run
+  `node docs/artifacts/architecture/build-diagram.mjs` from the repo root. Coordinates are in output pixels.
+  Content follows the design blueprint (docs/artifacts/blueprint), decisions D1 to D5.
+-->
+<html>
+<head>
+<meta charset="utf-8">
+<title>MavRadar architecture</title>
+<style>
+  @font-face { font-family: 'DV'; src: url('https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans.ttf'); font-weight: 400; }
+  @font-face { font-family: 'DV'; src: url('https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSans-Bold.ttf'); font-weight: 700; }
+  @font-face { font-family: 'DVM'; src: url('https://cdn.jsdelivr.net/npm/dejavu-fonts-ttf@2.37.3/ttf/DejaVuSansMono.ttf'); }
+  :root { --ink: #1b2026; --gray: #5b6470; --faint: #8a939e; --line: #c9cfd6; --panel: #eef1f4; --hot: #c2410c; --peach: #fdebdd; }
+  html, body { margin: 0; background: #f6f7f8; }
+  body { width: 2396px; height: 1685px; position: relative; font-family: 'DV', sans-serif; color: var(--ink); }
+  .card { position: absolute; inset: 0; background: #fff; border-radius: 14px; }
+  .panel { position: absolute; background: var(--panel); border-radius: 12px; }
+  .ph { position: absolute; font-weight: 700; font-size: 21px; letter-spacing: 3px; }
+  .psub { position: absolute; font-size: 18px; color: var(--gray); }
+  .box { position: absolute; box-sizing: border-box; background: #fff; border: 2px solid var(--ink); border-radius: 7px; padding: 14px 22px; }
+  .box.soft { border-color: var(--line); }
+  .box.hot { border-color: var(--hot); }
+  .box.later { background: transparent; border: 2px dashed #9aa3ad; }
+  .box.later .t { color: #9aa3ad; }
+  .t { font-weight: 700; font-size: 21px; line-height: 30px; }
+  .s { font-size: 18px; line-height: 26px; color: var(--gray); }
+  .l { font-size: 19px; line-height: 28px; }
+  .m { font-family: 'DVM', monospace; font-size: 18px; line-height: 25px; }
+  .gap { margin-top: 10px; }
+  .list .l { margin-top: 10px; }
+  .list .s { margin-top: 0; }
+  hr { border: 0; border-top: 1.5px solid var(--line); margin: 14px 0 6px; }
+  .at { position: absolute; left: 22px; right: 22px; }
+  .peach { position: absolute; left: 22px; right: 22px; background: var(--peach); border-radius: 6px; padding: 12px 14px; }
+  .peach .s { font-size: 17.5px; }
+  .lab { position: absolute; font-size: 17px; line-height: 22px; white-space: nowrap; }
+  .lab.hot { color: var(--hot); font-weight: 700; }
+  .lab.faint { color: var(--faint); }
+  svg { position: absolute; inset: 0; }
+</style>
+</head>
+<body>
+<div class="card"></div>
+
+<!-- ================================================================ panels -->
+<div class="panel" style="left:30px;top:30px;width:629px;height:1445px"></div>
+<div class="ph" style="left:60px;top:52px">FIELD</div>
+<div class="psub" style="left:60px;top:82px">Private property, 50+ ft from the rail</div>
+
+<div class="panel" style="left:704px;top:30px;width:1047px;height:1445px"></div>
+<div class="ph" style="left:734px;top:52px">GOOGLE CLOUD</div>
+<div class="psub" style="left:734px;top:82px">One Firebase / GCP project · us-central1</div>
+
+<div class="panel" style="left:1797px;top:30px;width:569px;height:1445px"></div>
+<div class="ph" style="left:1826px;top:52px">USERS</div>
+<div class="psub" style="left:1826px;top:82px">No accounts, no personal data</div>
+
+<div class="panel" style="left:30px;top:1505px;width:2336px;height:150px"></div>
+<div class="ph" style="left:60px;top:1525px">BUILD &amp; DEPLOY</div>
+<div class="psub" style="left:330px;top:1527px">Each folder of the repo ships to its own target</div>
+
+<!-- ================================================================ field -->
+<div class="box" style="left:60px;top:135px;width:348px;height:164px;padding-right:8px">
+  <div class="t">OPS243-C radar</div>
+  <div class="s">24 GHz, aimed down the tracks</div>
+  <div class="l gap">Doppler: speed, direction</div>
+  <div class="l">FMCW: distance, stopped trains</div>
+</div>
+<div class="box later" style="left:426px;top:135px;width:203px;height:164px;padding:14px 14px">
+  <div class="t" style="font-size:19px">Node B (later)</div>
+  <div class="s">With two nodes:</div>
+  <div class="s">one each side,</div>
+  <div class="s">spaced out</div>
+  <div class="s">Same hardware</div>
+</div>
+<div class="lab" style="left:216px;top:313px">USB serial</div>
+
+<div class="box" style="left:60px;top:352px;width:569px;height:372px">
+  <div class="t">Raspberry Pi Zero 2 W · edge service</div>
+  <div class="s">Python · Node A, at the crossing for now</div>
+  <hr>
+  <div class="list">
+    <div class="l">Read speed, distance and echo strength</div>
+    <div class="l">Keep only detections in the track's distance band</div>
+    <div class="l">Train = strong echo lasting 10+ s</div>
+    <div class="l">Stopped train = new object vs. baseline</div>
+    <div class="l">State: Clear / Approaching / Blocked / Stopped</div>
+    <div class="l">Outbox (SQLite): retry if the link drops</div>
+    <div class="s">Event IDs are made here, so a retry is never a repeat</div>
+  </div>
+</div>
+
+<div class="box" style="left:60px;top:779px;width:569px;height:120px">
+  <div class="t">Uplink (HTTPS only, swappable)</div>
+  <div class="l">LTE Cat-M, Waveshare SIM7080G</div>
+  <div class="s">pending UTA approval · fallback: host Wi-Fi</div>
+</div>
+<div class="lab hot" style="left:658px;top:784px">event</div>
+<div class="lab" style="left:644px;top:868px">heartbeat</div>
+
+<div class="box soft" style="left:60px;top:940px;width:569px;height:190px">
+  <div class="t">Alerts switch on in stages</div>
+  <div class="l"><b>1</b> Log only (first weeks): no alerts sent</div>
+  <div class="l"><b>2</b> Blocked, stopped and cleared</div>
+  <div class="l"><b>3</b> Approaching, once two nodes are spaced out</div>
+  <div class="s gap">Raw readings saved and checked against ground truth</div>
+</div>
+
+<div class="box soft" style="left:60px;top:1170px;width:569px;height:160px">
+  <div class="t">Heartbeat sender</div>
+  <div class="l">Every 30 s: battery, signal, uptime</div>
+  <div class="l">Silent 90 s: node offline, crossing Unknown</div>
+  <div class="s gap">Goes out through the same uplink</div>
+</div>
+
+<!-- ================================================================ google cloud -->
+<div class="box hot" style="left:748px;top:134px;width:435px;height:776px">
+  <div class="t">Cloud Run · FastAPI ingest</div>
+  <div class="s">Always warm: min 1, max 1 instance</div>
+  <div class="s">Request-based billing</div>
+  <hr style="margin-top:12px">
+  <div class="at l" style="top:126px">Order on every event:</div>
+  <div class="peach" style="top:164px">
+    <div class="l"><b>1</b> Send push <b>2</b> Write DB <b>3</b> Reply 200</div>
+    <div class="s" style="margin-top:4px">Never block an alert on a database write</div>
+    <div class="s">DB write fails: 503, no second push</div>
+  </div>
+  <div class="at l" style="top:308px">Check the node's device key</div>
+  <div class="at l" style="top:352px">Event log: new → pushed → done</div>
+  <div class="at l" style="top:396px">Crossing state machine</div>
+  <div class="at l" style="top:440px">Who gets it: alert mode, alert types,</div>
+  <div class="at s" style="top:468px">quiet hours, commute windows, lateness</div>
+  <div class="at l" style="top:512px">In-memory map: crossing → tokens</div>
+  <div class="at s" style="top:540px">refreshed from devices every minute</div>
+  <div class="at l" style="top:686px">Accepts node events + heartbeats</div>
+  <div class="at s" style="top:714px">HTTPS POST, *.run.app address</div>
+</div>
+<div class="lab hot" style="left:1211px;top:212px">1 push</div>
+<div class="lab" style="left:1210px;top:622px">2 write</div>
+<div class="lab" style="left:1205px;top:770px">followers</div>
+<div class="lab" style="left:1201px;top:808px">every min</div>
+
+<div class="box hot" style="left:1302px;top:134px;width:420px;height:212px">
+  <div class="t">Firebase Cloud Messaging</div>
+  <div class="s">FCM HTTP v1 · free</div>
+  <div class="l gap">High priority (gets through Doze)</div>
+  <div class="l">Multicast to followers' tokens</div>
+  <div class="s gap">Train alerts channel: real trains only</div>
+  <div class="s">Service status: sensor and test notes</div>
+</div>
+
+<div class="box soft" style="left:1302px;top:400px;width:420px;height:88px">
+  <div class="t">Firebase Auth</div>
+  <div class="s">Anonymous sign-in · auto-cleanup off</div>
+</div>
+
+<div class="box" style="left:1302px;top:515px;width:420px;height:395px">
+  <div class="t">Firestore (default)</div>
+  <div class="s">Rules guard every app read/write</div>
+  <hr>
+  <div class="at" style="top:104px"><div class="m">crossings/{usdotId}</div><div class="s">state, alert mode · watched live</div></div>
+  <div class="at" style="top:160px"><div class="m">…/events/{blockageId}</div><div class="s">finished blockages</div></div>
+  <div class="at" style="top:216px"><div class="m">…/summary/{7d, 30d}</div><div class="s">pre-computed history</div></div>
+  <div class="at" style="top:272px"><div class="m">devices/{fcmToken}</div><div class="s">follows + alert preferences</div></div>
+  <div class="at" style="top:328px"><div class="m">nodes/{nodeId}</div><div class="s">health every 5 min</div></div>
+</div>
+
+<div class="lab" style="left:850px;top:930px">heartbeats</div>
+<div class="lab" style="left:966px;top:930px">timed requests</div>
+
+<div class="box soft" style="left:748px;top:975px;width:282px;height:115px">
+  <div class="t">Cloud Logging</div>
+  <div class="s">Raw heartbeats and</div>
+  <div class="s">sensor telemetry</div>
+</div>
+
+<div class="box soft" style="left:748px;top:1120px;width:382px;height:150px">
+  <div class="t">Cloud Tasks + Scheduler</div>
+  <div class="s">Timers, sent in as requests</div>
+  <div class="l gap">Blockage checks: 1, 3, 5 min</div>
+  <div class="l">Every minute: nodes, followers</div>
+</div>
+
+<div class="box soft" style="left:748px;top:1296px;width:382px;height:152px">
+  <div class="t">Billing</div>
+  <div class="s">Blaze plan · $10 budget alert</div>
+  <div class="l gap">Est. $5 to $10 a month</div>
+  <div class="s">mostly the always-warm Cloud Run</div>
+</div>
+
+<div class="lab" style="left:1180px;top:1004px">serves status</div>
+<div class="lab faint" style="left:1183px;top:1228px">dual-write</div>
+
+<div class="box soft" style="left:1302px;top:975px;width:420px;height:115px">
+  <div class="t">Firebase Hosting (CDN)</div>
+  <div class="l">Cached GET /status (~2 s)</div>
+  <div class="s">No database reads per web visitor</div>
+</div>
+
+<div class="box later" style="left:1302px;top:1180px;width:420px;height:150px">
+  <div class="t">Postgres (later)</div>
+  <div class="s">Cloud SQL or Neon</div>
+  <div class="s">SQL reports, 7/30-day history,</div>
+  <div class="s">CSV / JSON exports</div>
+</div>
+
+<!-- ================================================================ users -->
+<div class="lab hot" style="left:1738px;top:212px">notify</div>
+<div class="lab" style="left:1744px;top:420px">sign in</div>
+<div class="lab" style="left:1757px;top:598px">live</div>
+<div class="lab" style="left:1752px;top:718px">read</div>
+<div class="lab" style="left:1736px;top:773px">register</div>
+
+<div class="box" style="left:1826px;top:134px;width:509px;height:776px">
+  <div class="t">MavRadar app</div>
+  <div class="s">Expo / React Native · Android first</div>
+  <hr>
+  <div class="at l" style="top:96px">Notification, even when app is closed</div>
+  <div class="at s" style="top:124px">Tap opens the Status screen</div>
+  <div class="at l" style="top:296px">Signs in anonymously</div>
+  <div class="at l" style="top:476px">Status: watches followed crossings</div>
+  <div class="at s" style="top:504px">Clear · Approaching · Blocked · Stopped · Unknown</div>
+  <div class="at l" style="top:597px">History: summary + recent events</div>
+  <div class="at l" style="top:652px">Registers its push token</div>
+  <div class="at s" style="top:680px">plus follows and alert preferences</div>
+  <div class="at l" style="top:716px">Map / List · Settings · Detour button</div>
+  <div class="at s" style="top:744px">Detour opens Maps to West St underpass</div>
+</div>
+
+<div class="psub" style="left:1826px;top:935px">iOS later: Apple push (APNs) via FCM</div>
+
+<div class="box soft" style="left:1826px;top:975px;width:509px;height:115px">
+  <div class="t">Blog site + public status page</div>
+  <div class="s">Web visitors, anyone with the link</div>
+  <div class="s">Free host subdomain (no domain purchase)</div>
+</div>
+
+<div class="box later" style="left:1826px;top:1180px;width:509px;height:150px">
+  <div class="t">City / dispatch access (later)</div>
+  <div class="s">Most likely an open public API</div>
+  <div class="s">Blockage history, busiest hours,</div>
+  <div class="s">downloadable reports</div>
+</div>
+
+<!-- ================================================================ build & deploy -->
+<div class="box soft" style="left:60px;top:1564px;width:374px;height:72px;padding:8px 20px">
+  <div class="l">GitHub monorepo (public)</div><div class="s">Branch + reviewed PR to main</div>
+</div>
+<div class="box soft" style="left:509px;top:1564px;width:434px;height:72px;padding:8px 20px">
+  <div class="l">app/ → EAS cloud build</div><div class="s">Android builds · Expo Go for now</div>
+</div>
+<div class="box soft" style="left:973px;top:1564px;width:375px;height:72px;padding:8px 20px">
+  <div class="l">server/ → Cloud Run deploy</div><div class="s">Runs as its own service account</div>
+</div>
+<div class="box soft" style="left:1378px;top:1564px;width:389px;height:72px;padding:8px 20px">
+  <div class="l">firestore.rules → Firebase</div><div class="s">Rules live in the repo, not the console</div>
+</div>
+<div class="box soft" style="left:1797px;top:1564px;width:539px;height:72px;padding:8px 20px">
+  <div class="l">edge/ → Pi over SSH / Tailscale</div><div class="s">No secrets in the repo · keys in EAS / GCP secrets</div>
+</div>
+
+<!-- ================================================================ arrows -->
+<svg width="2396" height="1685" viewBox="0 0 2396 1685">
+  <defs>
+    <marker id="a" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto">
+      <path d="M0 1.5 L15 8 L0 14.5 Z" fill="#1b2026"/>
+    </marker>
+    <marker id="h" markerUnits="userSpaceOnUse" markerWidth="24" markerHeight="22" refX="22" refY="11" orient="auto">
+      <path d="M0 1 L23 11 L0 21 Z" fill="#c2410c"/>
+    </marker>
+    <marker id="g" markerUnits="userSpaceOnUse" markerWidth="16" markerHeight="16" refX="14" refY="8" orient="auto">
+      <path d="M0 1.5 L15 8 L0 14.5 Z" fill="#8a939e"/>
+    </marker>
+  </defs>
+  <g fill="none" stroke="#1b2026" stroke-width="2" marker-end="url(#a)">
+    <path d="M202 299 V350"/>                          <!-- radar to Pi -->
+    <path d="M344 724 V777"/>                          <!-- Pi to uplink -->
+    <path d="M629 860 H746"/>                          <!-- heartbeat -->
+    <path d="M60 1250 H42 V850 H58"/>                  <!-- heartbeat sender into uplink -->
+    <path d="M1183 650 H1300"/>                        <!-- 2 write -->
+    <path d="M1826 444 H1724"/>                        <!-- sign in -->
+    <path d="M1722 625 H1824"/>                        <!-- live -->
+    <path d="M1722 745 H1824"/>                        <!-- read -->
+    <path d="M1826 800 H1724"/>                        <!-- register -->
+    <path d="M838 910 V973"/>                          <!-- heartbeats to logging -->
+    <path d="M1105 1120 V912"/>                        <!-- timers call Cloud Run -->
+    <path d="M1150 910 V1032 H1300"/>                  <!-- serves status -->
+    <path d="M1722 1032 H1824"/>                       <!-- hosting to blog -->
+  </g>
+  <g fill="none" stroke="#c2410c" stroke-width="3.5" marker-end="url(#h)">
+    <path d="M629 815 H746"/>                          <!-- event -->
+    <path d="M1183 240 H1300"/>                        <!-- 1 push -->
+    <path d="M1722 240 H1824"/>                        <!-- notify -->
+  </g>
+  <g fill="none" stroke="#8a939e" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#g)">
+    <path d="M1302 800 H1185"/>                        <!-- followers sync -->
+    <path d="M1168 910 V1255 H1300"/>                  <!-- dual-write -->
+    <path d="M1722 1255 H1824"/>                       <!-- to city access -->
+  </g>
+</svg>
+</body>
+</html>
