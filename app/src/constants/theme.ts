@@ -11,7 +11,7 @@ import { Platform } from 'react-native';
  * Neutral UI colors for one theme. Status colors are separate (see `StatusCard`, `StatusStrong`)
  * and never change with the brand scheme, because they carry meaning.
  */
-type Palette = {
+export type Palette = {
   text: string;
   textSecondary: string;
   background: string;
@@ -36,9 +36,10 @@ type Palette = {
 };
 
 /**
- * Brand schemes. Transit Navy is the chosen brand (2026-09-27) and the default. The other
- * candidates stay for reference; each keeps AA contrast and avoids hues that could be mistaken
- * for a crossing state (no red, amber, teal-green or purple).
+ * Brand schemes: the color themes in Settings > Appearance. Transit Navy is the chosen brand
+ * (2026-09-27) and the default. Each keeps AA contrast and avoids hues that could be mistaken for a
+ * crossing state (no red, amber, teal-green or purple); `__tests__/theme.test.ts` checks both, so
+ * a new theme has to pass it.
  */
 export const BrandSchemes = {
   graphite: {
@@ -121,10 +122,13 @@ export const BrandSchemes = {
 export type BrandScheme = keyof typeof BrandSchemes;
 export const DefaultBrand: BrandScheme = 'transitNavy';
 
-export const Colors: { light: Palette; dark: Palette } = {
-  light: BrandSchemes[DefaultBrand].light,
-  dark: BrandSchemes[DefaultBrand].dark,
-};
+/** Order of the swatches in Settings > Appearance. */
+export const ThemeOrder: BrandScheme[] = ['transitNavy', 'graphite', 'cobalt', 'prairieSlate', 'railtie'];
+
+/** The palette for a color theme in light or dark mode. Components read it through `useTheme()`. */
+export function paletteFor(brand: BrandScheme, scheme: 'light' | 'dark'): Palette {
+  return (BrandSchemes[brand] ?? BrandSchemes[DefaultBrand])[scheme];
+}
 
 export type ThemeColor = keyof Palette;
 

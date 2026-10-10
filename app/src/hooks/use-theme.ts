@@ -3,8 +3,9 @@
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { Colors } from '@/constants/theme';
+import { paletteFor } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { useApp } from '@/state/store';
 
 /** 'light' or 'dark'. Follows Settings > Appearance, which sets the app's color scheme. */
 export function useScheme(): 'light' | 'dark' {
@@ -12,7 +13,8 @@ export function useScheme(): 'light' | 'dark' {
   return scheme === 'dark' ? 'dark' : 'light';
 }
 
-/** The brand palette (Transit Navy) for the current scheme. */
+/** The palette for the chosen color theme (Settings > Appearance) in the current scheme. */
 export function useTheme() {
-  return Colors[useScheme()];
+  const brand = useApp((s) => s.prefs.theme);
+  return paletteFor(brand, useScheme());
 }

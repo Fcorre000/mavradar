@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { BrandSchemes, DefaultBrand, type BrandScheme } from '@/constants/theme';
 import type { AlertType } from '@/domain/alerts';
 
 export type Appearance = 'system' | 'light' | 'dark';
@@ -14,6 +15,8 @@ export interface Prefs {
   /** 0 = off, 1 = 10 PM to 6 AM. */
   quiet: 0 | 1;
   appearance: Appearance;
+  /** Color theme, one of the brand schemes. Status colors are the same in every theme. */
+  theme: BrandScheme;
   tipDismissed: boolean;
   /** App opens, for the one-time second-visit tip. */
   launches: number;
@@ -28,6 +31,7 @@ export const defaultPrefs: Prefs = {
   commute: 0,
   quiet: 0,
   appearance: 'system',
+  theme: DefaultBrand,
   tipDismissed: false,
   launches: 0,
   mutedDay: null,
@@ -40,7 +44,9 @@ export async function loadPrefs(): Promise<Prefs> {
     const raw = await AsyncStorage.getItem(KEY);
     if (!raw) return defaultPrefs;
     const saved = JSON.parse(raw) as Partial<Prefs>;
-    return { ...defaultPrefs, ...saved, alertTypes: { ...defaultPrefs.alertTypes, ...saved.alertTypes } };
+    // A theme saved by an older build may no longer exist.
+    const theme = saved.theme && saved.theme in BrandSchemes ? saved.theme : DefaultBrand;
+    return { ...defaultPrefs, ...saved, theme, alertTypes: { ...defaultPrefs.alertTypes, ...saved.alertTypes } };
   } catch {
     return defaultPrefs;
   }

@@ -2,15 +2,15 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { T } from '@/components/text';
-import { Colors, Radius } from '@/constants/theme';
-import { useScheme } from '@/hooks/use-theme';
+import { Radius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 import { dismissSnack } from '@/state/actions';
 import { useApp } from '@/state/store';
 
 /** Short confirmation at the bottom of the screen, with Undo when the action can be reversed. */
 export function Snackbar({ bottom }: { bottom: number }) {
   const snack = useApp((s) => s.ui.snack);
-  const palette = Colors[useScheme()];
+  const palette = useTheme();
 
   useEffect(() => {
     if (!snack) return;

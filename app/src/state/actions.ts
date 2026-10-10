@@ -59,9 +59,11 @@ function onSnapshot(snapshot: SourceSnapshot) {
 // ---------------------------------------------------------------- preferences
 
 export function setPrefs(patch: Partial<Prefs>) {
-  const prefs = { ...getState().prefs, ...patch };
-  setState({ prefs });
-  savePrefs(prefs);
+  const { theme, ...rest } = patch;
+  savePrefs({ ...getState().prefs, ...patch });
+  setState((s) => ({ prefs: { ...s.prefs, ...rest } }));
+  // A new color theme switches under the cross-fade, so text and backgrounds change together.
+  if (theme) withThemeTransition(() => setState((s) => ({ prefs: { ...s.prefs, theme } })));
   const { appearance } = patch;
   if (appearance) withThemeTransition(() => applyAppearance(appearance));
   if (patch.following && getState().permission === 'granted') syncDevice();

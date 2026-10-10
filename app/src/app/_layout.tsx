@@ -15,14 +15,16 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import AppTabs from '@/components/app-tabs';
 import { PrimingSheet } from '@/components/priming-sheet';
 import { ThemeFade } from '@/components/theme-fade';
-import { Colors } from '@/constants/theme';
-import { useScheme } from '@/hooks/use-theme';
+import { useScheme, useTheme } from '@/hooks/use-theme';
 import { startApp } from '@/state/actions';
+import { useApp } from '@/state/store';
 
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const scheme = useScheme();
+  const palette = useTheme();
+  const prefsLoaded = useApp((s) => s.prefsLoaded);
   // Loaded at runtime so no native rebuild is needed. Move to the expo-font config plugin
   // with the next batch of native changes (the docs recommend it for Android and iOS).
   const [fontsLoaded, fontError] = useFonts({
@@ -40,13 +42,13 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontError) console.warn('Brand font failed to load, using the system font', fontError);
-    if (fontsLoaded || fontError) SplashScreen.hideAsync();
-  }, [fontsLoaded, fontError]);
+    if ((fontsLoaded || fontError) && prefsLoaded) SplashScreen.hideAsync();
+  }, [fontsLoaded, fontError, prefsLoaded]);
 
-  // Keep the native splash up until the font is ready, so text never flashes in the fallback.
-  if (!fontsLoaded && !fontError) return null;
+  // Keep the native splash up until the font and saved settings are ready, so text never flashes
+  // in the fallback font and a chosen theme never flashes the default one.
+  if ((!fontsLoaded && !fontError) || !prefsLoaded) return null;
 
-  const palette = Colors[scheme];
   const base = scheme === 'dark' ? DarkTheme : DefaultTheme;
   const navTheme: Theme = {
     ...base,

@@ -31,7 +31,18 @@ Transit Navy was chosen on 2026-09-27: deep navy on warm paper, like transit way
 | Selected (nav indicator, segments) | #DCE4F0 | #23395C |
 
 - The brand changes neutrals and primary only. Status card, marker, timeline and notification colors never change.
-- The other candidates (Graphite, Cobalt, Prairie Slate, Railtie) stay in `tokens.json` and `BrandSchemes` for reference.
+
+### Color themes (Settings > Appearance)
+
+People can pick a color theme. Transit Navy is the default; the others are the brand candidates that were kept: Graphite, Cobalt, Prairie Slate and Railtie (`brandCandidates` in `tokens.json`, `BrandSchemes` in `app/src/constants/theme.ts`). The design canvas has them on its "Color themes (Settings)" page.
+
+- Appearance has two settings: **Mode** (System, Light, Dark) and **Color theme** (five swatches, in that order). Each swatch shows its theme's background with its primary inside, in the current mode. The chosen one has a ring and a check, and its name shows below ("Transit Navy (default)"). A line under it says status colors stay the same in every theme.
+- A theme only swaps the palette. Every component reads colors through `useTheme()`; no component sets its own hex value. That is what keeps dark mode and every theme correct together.
+- A new theme must pass `app/src/constants/__tests__/theme.test.ts`, in light and dark:
+  - 4.5:1 for every text pair (text and secondary text on background, surfaces, sheet and selected; button labels; links; snackbar).
+  - 3:1 for filled buttons and switch tracks against the background and sheet.
+  - No brand surface or primary in a status hue: red, orange or amber (Blocked, Stopped, Approaching), teal-green (Clear) or purple, unless it is a near-neutral tint (chroma under 0.2). Orange and amber backgrounds are out for this reason; they read as Approaching.
+- The choice is saved on the phone with the other preferences. The splash screen stays up until it loads, so the default theme never flashes first. Changing it uses the same cross-fade as changing the mode.
 
 ## Components
 
