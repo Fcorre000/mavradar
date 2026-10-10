@@ -23,7 +23,7 @@ export function Segmented<V extends string | number>({
 }) {
   const theme = useTheme();
   return (
-    <View style={[styles.group, { borderColor: theme.outline, backgroundColor: theme.sheet }, style]} accessibilityRole="radiogroup" accessibilityLabel={label}>
+    <View style={[styles.group, { borderColor: theme.outline, backgroundColor: '#E5E7EB' }, style]} accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map((o, i) => {
         const on = o.value === value;
         return (
@@ -33,9 +33,9 @@ export function Segmented<V extends string | number>({
             disabled={o.disabled}
             accessibilityRole="radio"
             accessibilityState={{ checked: on, disabled: o.disabled }}
-            style={[styles.item, i > 0 && { borderLeftWidth: 1, borderLeftColor: theme.outline }, on && { backgroundColor: theme.backgroundSelected }]}>
-            {on ? <CheckIcon color={theme.text} /> : null}
-            <T v="secondary" weight={on ? 700 : 500} color={o.disabled ? theme.textSecondary : theme.text} style={o.disabled ? styles.struck : null}>
+            style={[styles.item, i > 0 && { borderLeftWidth: 1, borderLeftColor: theme.outline }, { backgroundColor: on ? '#93C5FD' : '#2563EB' }]}>
+            {on ? <CheckIcon color="#172554" /> : null}
+            <T v="secondary" weight={on ? 700 : 500} color={on ? '#172554' : '#FFFFFF'} style={o.disabled ? styles.struck : null}>
               {o.label}
             </T>
           </Pressable>

@@ -56,9 +56,9 @@ export function CrossingSheet({ crossing, e, copy, following, events, now }: { c
           accessibilityRole="button"
           accessibilityState={{ selected: following }}
           accessibilityLabel={following ? `Following ${crossing.name}. Tap to unfollow.` : `Follow ${crossing.name}`}
-          style={[styles.follow, { backgroundColor: theme.tonal }]}>
-          {following ? <CheckIcon size={18} color={theme.text} /> : <PlusIcon color={theme.text} />}
-          <T v="secondary" weight={700}>
+          style={[styles.follow, { backgroundColor: '#2563EB' }]}>
+          {following ? <CheckIcon size={18} color="#FFFFFF" /> : <PlusIcon color="#FFFFFF"/>}
+          <T v="secondary" weight={700} color="#FFFFFF">
             {following ? 'Following' : 'Follow'}
           </T>
         </Pressable>
@@ -71,6 +71,7 @@ export function CrossingSheet({ crossing, e, copy, following, events, now }: { c
           variant={e.state === 'clear' ? 'tonal' : 'filled'}
           icon={(c) => <RouteIcon color={c} />}
           onPress={openDirections}
+          style={{ backgroundColor: '#2563EB' }}
         />
         <View>
           <InfoRow label="Sensor" value={e.state === 'unknown' ? copy.sensor : `${copy.sensor} · East node · battery OK`} />
@@ -104,7 +105,8 @@ export function CrossingSheet({ crossing, e, copy, following, events, now }: { c
         </View>
         <Button
           label="Open in Status"
-          variant="outline"
+          variant="brand"
+          color="#2563EB"
           center
           onPress={() => {
             setUi({ statusCrossingId: crossing.id });

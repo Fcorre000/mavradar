@@ -5,13 +5,14 @@ import { T } from '@/components/text';
 import { Radius, Size } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-type Variant = 'filled' | 'tonal' | 'outline' | 'text';
+type Variant = 'filled' | 'tonal' | 'outline' | 'text' | 'brand';
 
 type Props = {
   label: string;
   sublabel?: string;
   icon?: (color: string) => ReactNode;
   variant?: Variant;
+  color?: string;
   onPress: () => void;
   accessibilityLabel?: string;
   style?: StyleProp<ViewStyle>;
@@ -20,10 +21,27 @@ type Props = {
 };
 
 /** 56 dp buttons (48 for text and outline). Filled uses the brand primary. */
-export function Button({ label, sublabel, icon, variant = 'filled', onPress, accessibilityLabel, style, center }: Props) {
+export function Button({ label, sublabel, icon, variant = 'filled', color, onPress, accessibilityLabel, style, center }: Props) {
   const theme = useTheme();
-  const bg = variant === 'filled' ? theme.primary : variant === 'tonal' ? theme.tonal : 'transparent';
-  const fg = variant === 'filled' ? theme.onPrimary : theme.text;
+
+  const bg =
+    color ??
+    (variant === 'brand'
+      ? '#2563EB'
+      : variant === 'filled'
+        ? theme.primary
+        : variant === 'tonal'
+          ? theme.tonal
+          : 'transparent');
+
+  const fg = color
+    ? '#FFFFFF'
+    : variant === 'brand'
+        ? '#FFFFFF'
+        : variant === 'filled'
+          ? theme.onPrimary
+          : theme.text;
+
   return (
     <Pressable
       onPress={onPress}
@@ -43,7 +61,7 @@ export function Button({ label, sublabel, icon, variant = 'filled', onPress, acc
           {label}
         </T>
         {sublabel ? (
-          <T v="buttonSub" color={variant === 'filled' ? fg : theme.textSecondary}>
+          <T v="buttonSub" color={color ? '#FFFFFF' : variant === 'filled' || variant === 'brand' ? fg : theme.textSecondary}>
             {sublabel}
           </T>
         ) : null}

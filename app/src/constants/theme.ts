@@ -21,6 +21,8 @@ type Palette = {
   backgroundElement: string;
   /** Selected state: nav indicator, pressed segment. */
   backgroundSelected: string;
+  actionSurface: string;
+  actionOutline: string;
   divider: string;
   outline: string;
   tonal: string;
@@ -61,8 +63,8 @@ export const BrandSchemes = {
   transitNavy: {
     name: 'Transit Navy',
     light: {
-      text: '#13213A', textSecondary: '#4B566A', accent: '#F58025', onAccent: '#FFFFFF', background: '#FBFAF7', backgroundElement: '#F1EFE9', backgroundSelected: '#DCE4F0',
-      divider: '#E3E0D8', outline: '#C8C4BA', tonal: '#E8ECF3', track: '#EAE7E0', sheet: '#FFFFFF', sheetHandle: '#C8C4BA',
+      text: '#13213A', textSecondary: '#4B566A', accent: '#F58025', onAccent: '#FFFFFF', background: '#FFB366', backgroundElement: '#FFC78F', backgroundSelected: '#DCEBFF', actionSurface: '#DCEBFF', actionOutline: '#4A90E2',
+      divider: '#4A90E2', outline: '#4A90E2', tonal: '#E8F0FF', track: '#EAE7E0', sheet: '#FFB366', sheetHandle: '#C8C4BA',
       primary: '#1B3A66', onPrimary: '#FFFFFF', link: '#1B3A66', sensorOk: '#007A6E',
       snackbarBackground: '#1B2A42', snackbarText: '#EEF2F8', snackbarAction: '#A9C4EC',
     },

@@ -51,9 +51,9 @@ export function DemoBadge() {
   const theme = useTheme();
   return (
     <View
-      style={[styles.badge, { borderColor: theme.outline }]}
+      style={[styles.badge, { borderColor: theme.accent }]}
       accessibilityLabel="Demo data. These crossing states are simulated.">
-      <T v="kicker" color={theme.textSecondary} weight={600}>
+      <T v="kicker" color={theme.accent} weight={600}>
         Demo
       </T>
     </View>
