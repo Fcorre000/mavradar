@@ -67,7 +67,7 @@ export default function StatusScreen() {
         <T>{copy.explanation}</T>
 
         {showTip ? (
-          <View style={[styles.tip, { backgroundColor: '#DCE8FF', borderColor: '#2563EB' }]}>
+          <View style={[styles.tip, { backgroundColor: theme.backgroundElement, borderColor: theme.divider }]}>
             <ClockIcon color={theme.text} />
             <View style={styles.tipText}>
               <T weight={600}>Set your commute hours so alerts only come when you drive.</T>
@@ -102,8 +102,7 @@ export default function StatusScreen() {
         <Button
           label="Directions via West St underpass"
           sublabel="Opens Google Maps"
-          variant={e.state === 'clear' ? 'brand' : 'filled'}
-          color="#2563EB"
+          variant={e.state === 'clear' ? 'tonal' : 'filled'}
           icon={(c) => <RouteIcon color={c} />}
           onPress={openDirections}
         />
