@@ -12,9 +12,9 @@ const FADE_OUT_MS = 280;
 const COLOR_MS = 200;
 
 /**
- * Full-screen cover for Settings > Appearance changes. It fades in over the old background, the
- * scheme switches underneath while the cover blends to the new background, then it fades out, so
- * text and backgrounds arrive together instead of the text lagging a beat behind.
+ * Full-screen cover for Settings > Appearance changes (mode and color theme). It fades in over the
+ * old background, the colors switch underneath while the cover blends to the new background, then
+ * it fades out, so text and backgrounds arrive together instead of the text lagging a beat behind.
  */
 export function ThemeFade() {
   const theme = useTheme();
@@ -27,15 +27,21 @@ export function ThemeFade() {
 
   useEffect(() => {
     let timers: ReturnType<typeof setTimeout>[] = [];
+    let pending: (() => void) | null = null;
     const clear = () => {
       timers.forEach(clearTimeout);
       timers = [];
     };
     setThemeTransitionRunner((apply) => {
       clear();
+      // A change still waiting from a quick earlier tap (say, the theme just before the mode)
+      // applies now instead of being dropped.
+      pending?.();
+      pending = apply;
       opacity.value = withTiming(1, { duration: FADE_IN_MS });
       timers.push(
         setTimeout(() => {
+          pending = null;
           apply();
           timers.push(setTimeout(() => (opacity.value = withTiming(0, { duration: FADE_OUT_MS })), HOLD_MS));
         }, FADE_IN_MS),

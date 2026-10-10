@@ -12,6 +12,7 @@ import { Segmented } from '@/components/segmented';
 import { ChoiceSheet, SheetModal } from '@/components/sheet-modal';
 import { Snackbar } from '@/components/snackbar';
 import { T } from '@/components/text';
+import { ThemePicker } from '@/components/theme-picker';
 import { Layout, Radius } from '@/constants/theme';
 import { source } from '@/data';
 import type { AlertType } from '@/domain/alerts';
@@ -120,16 +121,26 @@ export default function SettingsScreen() {
         </Section>
 
         <Section title="Appearance">
-          <Segmented
-            label="Theme"
-            value={prefs.appearance}
-            onChange={(v) => setPrefs({ appearance: v })}
-            options={[
-              { value: 'system', label: 'System' },
-              { value: 'light', label: 'Light' },
-              { value: 'dark', label: 'Dark' },
-            ]}
-          />
+          <View style={styles.block}>
+            <T>Mode</T>
+            <Segmented
+              label="Mode"
+              value={prefs.appearance}
+              onChange={(v) => setPrefs({ appearance: v })}
+              options={[
+                { value: 'system', label: 'System' },
+                { value: 'light', label: 'Light' },
+                { value: 'dark', label: 'Dark' },
+              ]}
+            />
+          </View>
+          <View style={styles.block}>
+            <T>Color theme</T>
+            <ThemePicker value={prefs.theme} onChange={(v) => setPrefs({ theme: v })} />
+            <T v="secondary" color={theme.textSecondary}>
+              Crossing status colors stay the same in every theme.
+            </T>
+          </View>
         </Section>
 
         <Section title="About">
