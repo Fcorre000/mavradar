@@ -14,4 +14,6 @@ Things to carry over from the handoff when this starts:
 
 Configuration comes from environment variables. See `.env.example`.
 
+Before writing code here, read `docs/PYTHON_BACKEND_GUIDE.md`: tooling (uv, Ruff, strict Pyright), async and Cloud Run rules, and the PR checklist.
+
 Read `docs/MAVRADAR_HANDOFF.md` and its amendments (latest: `docs/MAVRADAR_HANDOFF_AMENDMENT_003.md`) before starting here, then the design blueprint: `docs/artifacts/blueprint/08_design_class_diagrams.md` sections 2 and 4 have the classes and the shared contract, and `09_build_order.md` the tasks (S1 to S7).

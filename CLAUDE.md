@@ -14,7 +14,7 @@ Read `docs/MAVRADAR_HANDOFF.md` and then its amendments in order (`docs/MAVRADAR
 |---|---|
 | `app/` | Expo (React Native) mobile app, SDK 57, expo-router, TypeScript |
 | `edge/` | Python detection service for the field node (not started) |
-| `server/` | FastAPI ingest and fan-out on Cloud Run (not started) |
+| `server/` | FastAPI ingest and fan-out on Cloud Run (not started). Python, not Rust (decided 2026-10-13). Follow `docs/PYTHON_BACKEND_GUIDE.md` |
 | `docs/` | Architecture handoff and amendments, design blueprint (`docs/artifacts/blueprint/`), architecture diagram, course constraints |
 | `firestore.rules`, `firebase.json` | Firestore rules and project config (project `mavradar-4a74a`) |
 
