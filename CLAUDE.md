@@ -67,7 +67,7 @@ Expo SDK 57 changed significantly. Check the versioned docs at https://docs.expo
 
 ## Hard rules
 
-- **Never commit credentials.** The repo is public. Do not weaken the `.gitignore` entries for `.env`, `*.p8`, `*.p12`, `*.mobileprovision`, `google-services.json`, `GoogleService-Info.plist`, `serviceAccountKey.json`, `*-firebase-adminsdk-*.json`.
+- **Never commit credentials.** The repo is private (since 2026-10-14), but it may be made public later and history keeps everything. Local secrets go in gitignored `.env` files. Do not weaken the `.gitignore` entries for `.env`, `*.p8`, `*.p12`, `*.mobileprovision`, `google-services.json`, `GoogleService-Info.plist`, `serviceAccountKey.json`, `*-firebase-adminsdk-*.json`. EAS cloud builds only see git-tracked files, so build-time values (`GOOGLE_MAPS_ANDROID_API_KEY`, `GOOGLE_SERVICES_JSON`) stay EAS env vars, not `.env`.
 - **Never commit the field unit's deployment coordinates.** Exact mounting location stays out of the repo.
 - **Assume 50+ feet from the nearest rail** in any siting code, config, or docs (railroad right-of-way).
 - **Batch native config changes.** EAS free tier allows 15 Android and 15 iOS builds/month, and every `app.config.ts`/entitlement change triggers a rebuild. Get native config right in one pass.
