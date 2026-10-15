@@ -103,3 +103,10 @@ edge/logs/
 
 # machine-local agent settings (shared .claude/settings.json still commits)
 **/.claude/settings.local.json
+
+# === Claude Code ===
+# Personal settings and preview configs stay per machine.
+.claude/settings.local.json
+.claude/launch.json
+# Impeccable's engine is a platform-specific binary; `npx impeccable install` fetches each person's own.
+.claude/skills/impeccable/scripts/bin/
