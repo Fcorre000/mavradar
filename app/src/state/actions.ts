@@ -168,8 +168,15 @@ export function dismissPriming() {
 
 // ---------------------------------------------------------------- navigation helpers
 
+/** The maps app the detour button opens: Apple Maps on iOS, Google Maps everywhere else. */
+export const DIRECTIONS_APP = Platform.OS === 'ios' ? 'Apple Maps' : 'Google Maps';
+
 export function openDirections() {
-  const url = `https://www.google.com/maps/dir/?api=1&destination=${DETOUR.latitude},${DETOUR.longitude}&travelmode=driving`;
+  const { latitude, longitude } = DETOUR;
+  const url =
+    Platform.OS === 'ios'
+      ? `https://maps.apple.com/?daddr=${latitude},${longitude}&dirflg=d`
+      : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`;
   Linking.openURL(url).catch(() => showSnack("Couldn't open Maps."));
 }
 

@@ -12,7 +12,7 @@ import type { Effective } from '@/domain/freshness';
 import { formatTime, startOfDay } from '@/domain/time';
 import type { BlockageEvent, Crossing } from '@/domain/types';
 import { useScheme, useTheme } from '@/hooks/use-theme';
-import { openDirections, toggleFollow } from '@/state/actions';
+import { DIRECTIONS_APP, openDirections, toggleFollow } from '@/state/actions';
 import { setUi } from '@/state/store';
 
 // Blockages per day for the six days before today, a stand-in until History is live.
@@ -67,7 +67,7 @@ export function CrossingSheet({ crossing, e, copy, following, events, now }: { c
       <View style={styles.section}>
         <Button
           label="Directions via West St underpass"
-          sublabel="Opens Google Maps"
+          sublabel={`Opens ${DIRECTIONS_APP}`}
           variant={e.state === 'clear' ? 'tonal' : 'filled'}
           icon={(c) => <RouteIcon color={c} />}
           onPress={openDirections}

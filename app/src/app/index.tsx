@@ -17,7 +17,7 @@ import { crossingById } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
 import { formatTime } from '@/domain/time';
 import { useTheme } from '@/hooks/use-theme';
-import { demo, dismissTip, openDirections, toggleFollow } from '@/state/actions';
+import { demo, DIRECTIONS_APP, dismissTip, openDirections, toggleFollow } from '@/state/actions';
 import { setUi, useApp } from '@/state/store';
 import { source } from '@/data';
 
@@ -101,7 +101,7 @@ export default function StatusScreen() {
       <View style={styles.pinned}>
         <Button
           label="Directions via West St underpass"
-          sublabel="Opens Google Maps"
+          sublabel={`Opens ${DIRECTIONS_APP}`}
           variant={e.state === 'clear' ? 'tonal' : 'filled'}
           icon={(c) => <RouteIcon color={c} />}
           onPress={openDirections}
