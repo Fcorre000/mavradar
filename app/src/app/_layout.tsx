@@ -5,6 +5,7 @@ import {
   AtkinsonHyperlegibleNext_700Bold,
   useFonts,
 } from '@expo-google-fonts/atkinson-hyperlegible-next';
+import { MaterialSymbols_400Regular } from '@expo-google-fonts/material-symbols/400Regular';
 import { DarkTheme, DefaultTheme, router, ThemeProvider, type Theme } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -13,6 +14,7 @@ import { Platform, StyleSheet } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 import AppTabs from '@/components/app-tabs';
+import { MATERIAL_SYMBOLS } from '@/components/icons';
 import { PrimingSheet } from '@/components/priming-sheet';
 import { ThemeFade } from '@/components/theme-fade';
 import { useScheme, useTheme } from '@/hooks/use-theme';
@@ -32,6 +34,8 @@ export default function RootLayout() {
     AtkinsonHyperlegibleNext_500Medium,
     AtkinsonHyperlegibleNext_600SemiBold,
     AtkinsonHyperlegibleNext_700Bold,
+    // Icons on Android and web; iOS draws SF Symbols natively.
+    ...(Platform.OS === 'ios' ? {} : { [MATERIAL_SYMBOLS]: MaterialSymbols_400Regular }),
   });
 
   // No permission prompt here: alerts are only requested after the priming sheet, when the
