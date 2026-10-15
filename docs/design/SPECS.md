@@ -52,7 +52,7 @@ The main status block on the Status screen.
 
 | Part | Spec |
 |---|---|
-| Container | Full width minus 20 dp side padding. Radius `radius.card` (20). Padding 20. Min height `size.statusCardMinHeight` (288), grows with content. |
+| Container | Full width minus 20 dp side padding. Radius `radius.card` (20). Padding 20. Blocked and Stopped: min height `size.statusCardMinHeight` (288), grows with content. Clear, Approaching and Unknown size to their content, so a calm screen doesn't spend its space on an empty card. |
 | Fill | `color.statusCard.<theme>.<state>.container`. Tinted for Clear, Approaching, Unknown. Solid for Blocked, Stopped. |
 | Unknown border | 2 dp dashed, `border` token. No other state has a border. |
 | Icon | 40 dp, top left, 8 dp below it. Shape per state (circle + check, warning diamond + train, rounded square + X, octagon + pause bars, dashed circle + ?). |
@@ -134,7 +134,7 @@ The main status block on the Status screen.
 | Top inset | 36 (system status bar), y 0 to 36 |
 | Header | 64: name 22/28, city line 14/20 ("Arlington, TX" only; the USDOT ID lives in the map sheet and Settings > Sensors), y 36 to 100 |
 | Gap | 16 (8 header bottom + 8 content top) |
-| Status card | min 288, y 116 to 404 |
+| Status card | Blocked and Stopped min 288, y 116 to 404; calm states size to content |
 | Gap | 16 |
 | Explanation | 16/24, 1 to 2 lines, y 420 to 444 for one line |
 | Gap | 16 |
@@ -166,7 +166,7 @@ There is no welcome or onboarding screen. Checking a crossing is often time crit
 
 - No account, no location question and no permission prompt at launch.
 - The notification priming sheet appears only when the person asks for alerts: Follow in the map sheet, the star in the List, the alerts switch on Status, or an alert switch in Settings. After that comes the Android dialog.
-- On the second visit, Status can show one dismissible tip ("Set your commute hours so alerts only come when you drive") in place of the Today timeline.
+- On the second visit, Status can show one dismissible tip ("Set your commute hours so alerts only come when you drive") under the Today timeline, never in its place.
 - Tapping any notification opens Status for that crossing.
 
 ## Notifications

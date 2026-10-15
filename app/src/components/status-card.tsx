@@ -25,6 +25,8 @@ export function StatusCard({ e, copy, typical, onRetry }: { e: Effective; copy: 
     <View
       style={[
         styles.card,
+        // Only Blocked and Stopped hold the tall card; calm states shrink to their content.
+        !tinted && { minHeight: Size.statusCardMinHeight },
         { backgroundColor: c.container },
         c.border ? { borderWidth: 2, borderStyle: 'dashed', borderColor: c.border } : null,
         e.state === 'stopped' && { paddingBottom: Layout.cardPadding + Size.stripeBand },
@@ -107,7 +109,6 @@ function StripeBand() {
 
 const styles = StyleSheet.create({
   card: {
-    minHeight: Size.statusCardMinHeight,
     borderRadius: Radius.card,
     padding: Layout.cardPadding,
     gap: 6,

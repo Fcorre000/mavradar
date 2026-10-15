@@ -74,6 +74,9 @@ export default function StatusScreen() {
         <StatusCard e={e} copy={copy} typical={typical} onRetry={demo.retry} />
         <T>{copy.explanation}</T>
 
+        <TodayTimeline events={events} e={e} now={snapshot.now} onPress={() => router.navigate('/history')} />
+
+        {/* The second-visit tip sits under the timeline; it never takes the timeline's place. */}
         {showTip ? (
           <View style={[styles.tip, { backgroundColor: theme.backgroundElement, borderColor: theme.divider }]}>
             <ClockIcon color={theme.text} />
@@ -89,9 +92,7 @@ export default function StatusScreen() {
               <CloseIcon color={theme.textSecondary} />
             </Pressable>
           </View>
-        ) : (
-          <TodayTimeline events={events} e={e} now={snapshot.now} onPress={() => router.navigate('/history')} />
-        )}
+        ) : null}
 
         <View>
           <SwitchRow label={`Alerts for ${crossing.name}`} value={isFollowing} onChange={() => toggleFollow(crossing.id)} />
