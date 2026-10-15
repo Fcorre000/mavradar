@@ -110,3 +110,5 @@ edge/logs/
 .claude/launch.json
 # Impeccable's engine is a platform-specific binary; `npx impeccable install` fetches each person's own.
 .claude/skills/impeccable/scripts/bin/
+# Impeccable's local run history (critique snapshots); the shared report is docs/design/audit/AUDIT.md.
+.impeccable/
