@@ -1,5 +1,4 @@
-import BottomSheet, { BottomSheetScrollView } from '@gorhom/bottom-sheet';
-import { router } from 'expo-router';
+import BottomSheet, { BottomSheetBackdrop, BottomSheetScrollView, type BottomSheetBackdropProps } from '@gorhom/bottom-sheet';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -33,7 +32,9 @@ export default function MapScreen() {
   const selectedId = useApp((s) => s.ui.selectedCrossingId);
   const mapView = useApp((s) => s.ui.mapView);
   const sheetRef = useRef<BottomSheet>(null);
+  const listSheetRef = useRef<BottomSheet>(null);
   const [sheetIndex, setSheetIndex] = useState(0);
+  const [listSheetOpen, setListSheetOpen] = useState(false);
   const [screenHeight, setScreenHeight] = useState(0);
   const [sheetTop, setSheetTop] = useState(0);
 
@@ -55,14 +56,16 @@ export default function MapScreen() {
     if (sheetIndex > 0) sheetRef.current?.snapToIndex(0);
   }, [sheetIndex]);
 
+  // A tap in the list opens the crossing's sheet over the list, so you stay where you were, whether
+  // or not the map is available.
   const openFromList = (id: string) => {
-    if (MAP_AVAILABLE) {
-      setUi({ selectedCrossingId: id, mapView: 'map' });
-    } else {
-      setUi({ statusCrossingId: id });
-      router.navigate('/');
-    }
+    setUi({ selectedCrossingId: id });
+    listSheetRef.current?.snapToIndex(1);
   };
+  const renderBackdrop = useCallback(
+    (props: BottomSheetBackdropProps) => <BottomSheetBackdrop {...props} appearsOnIndex={0} disappearsOnIndex={-1} pressBehavior="close" />,
+    [],
+  );
 
   const toggle = (
     <Segmented
@@ -100,40 +103,65 @@ export default function MapScreen() {
     </View>
   );
 
+  const sheetHeight = screenHeight && sheetTop ? screenHeight - sheetTop : PEEK + bottomInset;
+  const sheetBackground = { backgroundColor: theme.sheet, borderTopLeftRadius: Radius.sheet, borderTopRightRadius: Radius.sheet };
+  const sheetHandle = { backgroundColor: theme.sheetHandle, width: 32 };
+  const details = (
+    <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset }}>
+      <CrossingSheet crossing={crossingById(selected.id)} e={e} copy={copy} following={following.includes(selected.id)} events={snapshot.events} now={snapshot.now} />
+    </BottomSheetScrollView>
+  );
+
   if (listMode) {
     return (
       <Screen>
-        <View style={[styles.listTop, { paddingTop: insets.top + 8 }]}>{toggle}</View>
-        {!MAP_AVAILABLE ? (
-          <View style={[styles.inlineBanner, { backgroundColor: theme.backgroundElement }]}>
-            <MapOffIcon color={theme.text} />
-            <T weight={600}>Map unavailable. Showing list.</T>
-          </View>
-        ) : null}
-        {offline ? <View style={styles.inlineWrap}>{offlineBanner}</View> : null}
-        <CrossingList
-          crossings={crossings}
-          snapshot={snapshot}
-          following={following}
-          onOpen={openFromList}
-          footer={
-            crossings.length === 1 ? (
-              <View style={styles.footer}>
-                {coverage}
-                <T v="disclaimer" color={theme.textSecondary}>
-                  {DISCLAIMER}
-                </T>
-              </View>
-            ) : null
-          }
-        />
-        <View style={{ height: bottomInset }} />
-        <Snackbar bottom={bottomInset + 12} />
+        <View style={styles.fill} onLayout={(ev) => setScreenHeight(ev.nativeEvent.layout.height)}>
+          <View style={[styles.listTop, { paddingTop: insets.top + 8 }]}>{toggle}</View>
+          {!MAP_AVAILABLE ? (
+            <View style={[styles.inlineBanner, { backgroundColor: theme.backgroundElement }]}>
+              <MapOffIcon color={theme.text} />
+              <T weight={600}>Map unavailable. Showing list.</T>
+            </View>
+          ) : null}
+          {offline ? <View style={styles.inlineWrap}>{offlineBanner}</View> : null}
+          <CrossingList
+            crossings={crossings}
+            snapshot={snapshot}
+            following={following}
+            onOpen={openFromList}
+            footer={
+              crossings.length === 1 ? (
+                <View style={styles.footer}>
+                  {coverage}
+                  <T v="disclaimer" color={theme.textSecondary}>
+                    {DISCLAIMER}
+                  </T>
+                </View>
+              ) : null
+            }
+          />
+          <View style={{ height: bottomInset }} />
+          <BottomSheet
+            ref={listSheetRef}
+            index={-1}
+            snapPoints={snapPoints}
+            enableDynamicSizing={false}
+            enablePanDownToClose
+            backdropComponent={renderBackdrop}
+            onChange={(index, position) => {
+              setListSheetOpen(index >= 0);
+              setSheetTop(position);
+            }}
+            backgroundStyle={sheetBackground}
+            handleIndicatorStyle={sheetHandle}
+            accessibilityLabel={`${selected.name} details`}>
+            {details}
+          </BottomSheet>
+          <Snackbar bottom={listSheetOpen ? sheetHeight + 12 : bottomInset + 12} />
+        </View>
       </Screen>
     );
   }
-
-  const sheetHeight = screenHeight && sheetTop ? screenHeight - sheetTop : PEEK + bottomInset;
 
   return (
     <Screen>
@@ -164,12 +192,10 @@ export default function MapScreen() {
             setSheetIndex(index);
             setSheetTop(position);
           }}
-          backgroundStyle={{ backgroundColor: theme.sheet, borderTopLeftRadius: Radius.sheet, borderTopRightRadius: Radius.sheet }}
-          handleIndicatorStyle={{ backgroundColor: theme.sheetHandle, width: 32 }}
+          backgroundStyle={sheetBackground}
+          handleIndicatorStyle={sheetHandle}
           accessibilityLabel={`${selected.name} details`}>
-          <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset }}>
-            <CrossingSheet crossing={crossingById(selected.id)} e={e} copy={copy} following={following.includes(selected.id)} events={snapshot.events} now={snapshot.now} />
-          </BottomSheetScrollView>
+          {details}
         </BottomSheet>
         <Snackbar bottom={sheetHeight + 12} />
       </View>

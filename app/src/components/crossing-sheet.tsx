@@ -20,8 +20,9 @@ const WEEK_PATTERN = [18, 14, 21, 19, 22, 20];
 const DAY = 86_400_000;
 
 /**
- * Map sheet contents. Everything renders at once; the sheet's height decides how much shows:
- * peek (name, state, Follow), half (directions, sensor, disclaimer), full (last 7 days).
+ * Crossing sheet contents, over the map and over the list. Everything renders at once; the sheet's
+ * height decides how much shows: peek (name, state, Follow), half (directions, sensor, disclaimer),
+ * full (last 7 days).
  */
 export function CrossingSheet({ crossing, e, copy, following, events, now }: { crossing: Crossing; e: Effective; copy: StatusCopy; following: boolean; events: BlockageEvent[]; now: number }) {
   const theme = useTheme();

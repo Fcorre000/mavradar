@@ -37,15 +37,22 @@ export function CrossingList({ crossings, snapshot, following, onOpen, footer }:
               const followed = following.includes(c.id);
               return (
                 <View key={c.id} style={[styles.row, { borderBottomColor: theme.divider }]}>
-                  <StateIcon state={e.state} size={Size.listIcon} variant="plain" />
-                  <Pressable onPress={() => onOpen(c.id)} style={styles.main} accessibilityRole="button" accessibilityLabel={copy.a11y}>
-                    <T weight={600}>{c.name}</T>
-                    <T v="secondary" color={theme.textSecondary} tabular>
-                      <T v="secondary" weight={700}>
-                        {copy.word}
+                  {/* The whole row opens the crossing, icon and left padding included; only the star is separate. */}
+                  <Pressable
+                    onPress={() => onOpen(c.id)}
+                    style={({ pressed }) => [styles.main, pressed && styles.pressed]}
+                    accessibilityRole="button"
+                    accessibilityLabel={copy.a11y}>
+                    <StateIcon state={e.state} size={Size.listIcon} variant="plain" />
+                    <View style={styles.text}>
+                      <T weight={600}>{c.name}</T>
+                      <T v="secondary" color={theme.textSecondary} tabular>
+                        <T v="secondary" weight={700}>
+                          {copy.word}
+                        </T>
+                        {copy.listDetail}
                       </T>
-                      {copy.listDetail}
-                    </T>
+                    </View>
                   </Pressable>
                   <Pressable
                     onPress={() => toggleFollow(c.id)}
@@ -68,7 +75,9 @@ export function CrossingList({ crossings, snapshot, following, onOpen, footer }:
 const styles = StyleSheet.create({
   content: { paddingBottom: 24 },
   section: { paddingHorizontal: Layout.screenPadding, paddingTop: 16, paddingBottom: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: Size.listRow, paddingLeft: Layout.screenPadding, paddingRight: 8, borderBottomWidth: StyleSheet.hairlineWidth },
-  main: { flex: 1, gap: 2, paddingVertical: 12 },
+  row: { flexDirection: 'row', alignItems: 'center', minHeight: Size.listRow, paddingRight: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14, alignSelf: 'stretch', paddingLeft: Layout.screenPadding, paddingRight: 6, paddingVertical: 12 },
+  text: { flex: 1, gap: 2 },
+  pressed: { opacity: 0.7 },
   star: { width: Size.touchTarget, height: Size.touchTarget, alignItems: 'center', justifyContent: 'center' },
 });

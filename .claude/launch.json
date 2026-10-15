@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "app-web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "export PATH=\"$HOME/.nvm/versions/node/v22.23.2/bin:$PATH\" && cd /Users/fortnitekorea/Desktop/mavradar/app && BROWSER=none npx expo start --web --port 8082"],
+      "port": 8082
+    }
+  ]
+}
