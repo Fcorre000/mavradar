@@ -16,6 +16,8 @@ All sizes are dp, type is sp, frame is 412 x 915. Token names in `code` refer to
 - "Travel information only. Always obey crossing signals and gates." appears on Status, in the map sheet, in Settings and in the store listing. Status is the first screen anyone sees, so the line is on screen from the first launch.
 - Touch targets are at least 48 dp. Text passes WCAG AA (4.5:1, 3:1 at 24 sp and up). Icons and marker rings pass 3:1.
 - Every time and duration uses tabular numerals.
+- Icons come from each platform's own set: SF Symbols on iOS, Material Symbols on Android and web. Only the state shapes, the map art and the star are drawn by hand.
+- On tablets, content sits in a centered column at most 600 dp wide (`spacing.maxContentWidth`); the map stays full width. iPad runs in every orientation, phones stay portrait.
 
 ## Brand: Transit Navy
 

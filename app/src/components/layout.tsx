@@ -20,9 +20,17 @@ export function useLargeText(): boolean {
   return useWindowDimensions().fontScale >= 1.5;
 }
 
-export function Screen({ children }: { children: ReactNode }) {
+/**
+ * A screen's background plus a centered content column, so a phone layout doesn't stretch across a
+ * tablet. `fullBleed` skips the column, for the map.
+ */
+export function Screen({ children, fullBleed }: { children: ReactNode; fullBleed?: boolean }) {
   const theme = useTheme();
-  return <View style={[styles.screen, { backgroundColor: theme.background }]}>{children}</View>;
+  return (
+    <View style={[styles.screen, { backgroundColor: theme.background }]}>
+      {fullBleed ? children : <View style={styles.column}>{children}</View>}
+    </View>
+  );
 }
 
 /** Screen title block: crossing name, a secondary line, and an optional action on the right. */
@@ -62,6 +70,7 @@ export function DemoBadge() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
+  column: { flex: 1, width: '100%', maxWidth: Layout.maxContentWidth, alignSelf: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Layout.screenPadding, paddingBottom: 8, minHeight: 64 },
   headerText: { flex: 1, gap: 2 },
   badge: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },

@@ -176,7 +176,7 @@ export default function MapScreen() {
   }
 
   return (
-    <Screen>
+    <Screen fullBleed>
       <View style={styles.fill} onLayout={(ev) => setScreenHeight(ev.nativeEvent.layout.height)}>
         <CrossingMap
           crossings={crossings}

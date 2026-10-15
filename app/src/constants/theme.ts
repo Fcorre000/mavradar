@@ -266,6 +266,8 @@ export const Layout = {
   sectionGap: 16,
   topInset: 36,
   actionAboveNav: 12,
+  /** Widest the content column gets on tablets; phones are always narrower. The map stays full width. */
+  maxContentWidth: 600,
 } as const;
 
 export const Radius = {
