@@ -1,6 +1,7 @@
+import { DETOUR } from './crossings';
 import type { Effective } from './freshness';
 import { formatAgo, formatDuration, formatTime, minutesBetween } from './time';
-import type { Crossing, CrossingState } from './types';
+import type { BlockageEvent, Crossing, CrossingState } from './types';
 
 export const STATE_WORD: Record<CrossingState, string> = {
   clear: 'Clear',
@@ -140,5 +141,73 @@ export function statusCopy(crossing: Crossing, e: Effective, now: number, follow
         a11y: `${intro} Status unknown. ${last ? `No sensor data since ${last}.` : 'No sensor data.'} ${dontAssume}${tail}`,
       };
     }
+  }
+}
+
+// ---------------------------------------------------------------- typical duration
+
+/** Fewest past blockages of the same kind before a typical time is shown. Below this the line stays hidden. */
+export const TYPICAL_MIN_SAMPLES = 5;
+const TYPICAL_WINDOW_MS = 30 * 86_400_000;
+
+export interface TypicalCopy {
+  /** Bold part: "Usually about 5 min", "Longer than usual." */
+  lead: string;
+  rest: string;
+  a11y: string;
+}
+
+function median(sorted: number[]): number {
+  const mid = Math.floor(sorted.length / 2);
+  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+}
+
+/**
+ * How long blockages at this crossing usually last, from its finished blockages in the last 30 days.
+ * Moving trains are compared with moving trains and stopped with stopped. It reports the past and
+ * never predicts when this one will clear. Null outside Blocked and Stopped, or with too little history.
+ */
+export function typicalCopy(e: Effective, events: BlockageEvent[], crossingId: string, now: number): TypicalCopy | null {
+  if (e.state !== 'blocked' && e.state !== 'stopped') return null;
+  const stopped = e.state === 'stopped';
+  const durations = events
+    .filter((ev) => ev.crossingId === crossingId && ev.stopped === stopped && ev.start >= now - TYPICAL_WINDOW_MS)
+    .map((ev) => ev.durationMin)
+    .sort((a, b) => a - b);
+  if (durations.length < TYPICAL_MIN_SAMPLES) return null;
+  const typicalMin = Math.max(1, Math.round(median(durations)));
+  const typical = formatDuration(typicalMin);
+  const kind = stopped ? 'Stopped trains' : 'Blockages';
+  if (minutesBetween(e.since ?? now, now) > typicalMin) {
+    return { lead: 'Longer than usual.', rest: `Typical: ${typical}`, a11y: `Longer than usual. ${kind} here typically last ${typical}.` };
+  }
+  return stopped
+    ? { lead: 'Stopped trains here:', rest: `about ${typical}`, a11y: `Stopped trains here usually last about ${typical}.` }
+    : { lead: `Usually about ${typical}`, rest: 'here', a11y: `Blockages here usually last about ${typical}.` };
+}
+
+// ---------------------------------------------------------------- sharing
+
+/**
+ * Plain text for the share sheet, readable in any chat app. Stamped with the time of the last
+ * reading, because a shared message gets read later. Unknown never repeats the last state.
+ */
+export function shareText(crossing: Crossing, e: Effective, now: number): string {
+  const name = `${crossing.name} crossing (${crossing.city})`;
+  const at = formatTime(e.lastAt || now);
+  const sign = 'via MavRadar';
+  const detour = `Detour: ${DETOUR.name}.`;
+  const sofar = (m: number) => `${m < 1 ? 'Under a minute' : formatDuration(m)} so far, as of ${at}.`;
+  switch (e.state) {
+    case 'blocked':
+      return `${name} is blocked by a train. ${sofar(minutesBetween(e.since ?? now, now))}\n${detour}\n${sign}`;
+    case 'stopped':
+      return `${name} is blocked by a stopped train. ${sofar(minutesBetween(e.since ?? now, now))}\n${detour}\n${sign}`;
+    case 'approaching':
+      return `A train is approaching ${name}, as of ${at}.\n${detour}\n${sign}`;
+    case 'clear':
+      return `${name} is clear, as of ${at}.\n${sign}`;
+    default:
+      return `MavRadar can't confirm ${name} right now. Don't assume it's clear.\n${sign}`;
   }
 }

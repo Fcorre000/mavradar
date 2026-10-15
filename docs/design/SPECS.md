@@ -59,10 +59,20 @@ The main status block on the Status screen.
 | Kicker | `typography.scale.kicker`, 6 dp above the state word. "No train detected", "Train detected nearby", "Train on crossing", "Train not moving", or the Unknown cause. |
 | State word | `stateWord` (48/52 bold), sentence case. Wraps to 2 lines if needed, never clips. `maxFontSizeMultiplier` 1.1. |
 | Duration line | Blocked and Stopped: `duration` (32/36) plus `body` "since 2:41 PM" on the same baseline, wrapping below if needed. Other states: `stateLine` (20/26). |
+| Typical line | Blocked and Stopped only, under the duration: a hairline rule at 35% on-container, then an 18 dp clock and one `body` line with a bold lead. "**Usually about 5 min** here", "**Stopped trains here:** about 25 min", or once past it "**Longer than usual.** Typical: 5 min". The median of the crossing's finished blockages of the same kind (moving or stopped) in the last 30 days; hidden with fewer than 5. It reports the past and never counts down. `typicalCopy()` in `domain/copy.ts`. |
 | Freshness line | Pinned to the bottom of the card with `margin-top: auto`, 10 dp above. Filled dot + "Live · updated 8 s ago". Delayed: hollow ring + "Updated 1 min ago · checking" in secondary text (on-container on solid cards). |
 | Stopped stripe | 8 dp band on the bottom edge, 45 degree stripes at 12% white, 6 dp on and 6 dp off. Never behind text (card bottom padding becomes 28). |
-| Accessibility | The card is a polite live region. Reading order: state word, duration, freshness, then the explanation below the card. |
+| Accessibility | The card is a polite live region. Reading order: state word, duration, typical line, freshness, then the explanation below the card. |
 | Motion | Crossfade 200 ms on state change. The live dot pulses every 2 s, off with reduce motion. |
+
+### Share (Status header)
+
+- A 48 dp round button with the share icon at the right end of the Status header, on `tonal`. Label "Share Center St status".
+- Opens the phone's own share sheet (`Share.share`). MavRadar only supplies plain text, built by `shareText()` in `domain/copy.ts`:
+  - Blocked or Stopped: "Center St crossing (Arlington) is blocked by a stopped train. 12 min so far, as of 2:48 PM." then "Detour: West St underpass."
+  - Clear and Approaching: the state "as of" the last reading.
+  - Unknown: "MavRadar can't confirm Center St crossing (Arlington) right now. Don't assume it's clear." Never the last state.
+  - Every message ends "via MavRadar". A live-status link is added once the public status page (UC11) exists.
 
 ### Map marker
 
