@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import Svg, { Circle } from 'react-native-svg';
@@ -32,7 +32,8 @@ type Props = {
  * Apple Maps on iOS, Google Maps on Android (with the JSON style from tokens.json).
  * Markers use the state shapes; below zoom 12 nearby crossings merge into clusters.
  */
-export function CrossingMap({ crossings, states, selectedId, following, onSelect, onDrag, topPadding, bottomPadding }: Props) {
+/** Memoized: it re-renders when a marker's state, the selection or the padding changes, not on every freshness tick. */
+export const CrossingMap = memo(function CrossingMap({ crossings, states, selectedId, following, onSelect, onDrag, topPadding, bottomPadding }: Props) {
   const scheme = useScheme();
   const mapRef = useRef<MapView>(null);
   const initial = useMemo<MapRegion>(
@@ -100,7 +101,7 @@ export function CrossingMap({ crossings, states, selectedId, following, onSelect
       )}
     </MapView>
   );
-}
+});
 
 /**
  * Custom marker views only redraw while tracksViewChanges is on. Markers are keyed by their look,

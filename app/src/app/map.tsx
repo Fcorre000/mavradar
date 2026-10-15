@@ -43,14 +43,26 @@ export default function MapScreen() {
   const selected = crossings.find((c) => c.id === selectedId) ?? crossings[0];
   const e = effectiveState(snapshot.readings[selected.id], snapshot);
   const copy = statusCopy(selected, e, snapshot.now, following.includes(selected.id));
+  // The snapshot ticks every second for freshness; marker states rarely change. Keying on the joined
+  // states keeps the same object until one does, so the memoized map skips the per-second render.
+  const statesKey = crossings.map((c) => effectiveState(snapshot.readings[c.id], snapshot).state).join(',');
   const states = useMemo(() => {
     const out: Record<string, CrossingState> = {};
-    for (const c of crossings) out[c.id] = effectiveState(snapshot.readings[c.id], snapshot).state;
+    const list = statesKey.split(',') as CrossingState[];
+    crossings.forEach((c, i) => (out[c.id] = list[i]));
     return out;
-  }, [crossings, snapshot]);
+  }, [statesKey, crossings]);
   // The sheet runs to the bottom of the screen, behind the floating iOS tab bar, so it reads as one
   // surface with it instead of a card with a flat bottom edge. Snap heights add that inset back.
   const snapPoints = useMemo(() => [PEEK + bottomInset, HALF + bottomInset, '88%'], [bottomInset]);
+
+  const selectOnMap = useCallback(
+    (id: string) => {
+      setUi({ selectedCrossingId: id });
+      if (sheetIndex < 0) sheetRef.current?.snapToIndex(0);
+    },
+    [sheetIndex],
+  );
 
   const collapse = useCallback(() => {
     if (sheetIndex > 0) sheetRef.current?.snapToIndex(0);
@@ -171,10 +183,7 @@ export default function MapScreen() {
           states={states}
           selectedId={selected.id}
           following={following}
-          onSelect={(id) => {
-            setUi({ selectedCrossingId: id });
-            if (sheetIndex < 0) sheetRef.current?.snapToIndex(0);
-          }}
+          onSelect={selectOnMap}
           onDrag={collapse}
           topPadding={insets.top + 120}
           bottomPadding={sheetIndex === 0 ? PEEK + bottomInset : Math.min(sheetHeight, HALF + bottomInset)}
