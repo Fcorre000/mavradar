@@ -1,4 +1,4 @@
-import { Appearance, Linking, Platform } from 'react-native';
+import { Appearance, Linking, Platform, Share } from 'react-native';
 
 import { demoEngine, source } from '@/data';
 import { initialAlertMemory, shouldDeliver, stepAlerts, type AlertType } from '@/domain/alerts';
@@ -178,6 +178,11 @@ export function openDirections() {
       ? `https://maps.apple.com/?daddr=${latitude},${longitude}&dirflg=d`
       : `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}&travelmode=driving`;
   Linking.openURL(url).catch(() => showSnack("Couldn't open Maps."));
+}
+
+/** Opens the phone's share sheet with the crossing's status text. */
+export function shareStatus(message: string) {
+  Share.share({ message }).catch(() => showSnack("Couldn't open sharing."));
 }
 
 export function dismissTip() {

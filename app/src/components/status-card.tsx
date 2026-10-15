@@ -1,11 +1,12 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
+import { ClockIcon } from '@/components/icons';
 import { LiveDot } from '@/components/live-dot';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
 import { Layout, Radius, Size, StatusCard as CardColors } from '@/constants/theme';
-import type { StatusCopy } from '@/domain/copy';
+import type { StatusCopy, TypicalCopy } from '@/domain/copy';
 import type { Effective } from '@/domain/freshness';
 import { useScheme, useTheme } from '@/hooks/use-theme';
 
@@ -13,7 +14,7 @@ import { useScheme, useTheme } from '@/hooks/use-theme';
  * The main status block. Tinted for calm states, solid for Blocked and Stopped. Unknown gets a
  * dashed border and never shows the last state word. A polite live region announces changes.
  */
-export function StatusCard({ e, copy, onRetry }: { e: Effective; copy: StatusCopy; onRetry?: () => void }) {
+export function StatusCard({ e, copy, typical, onRetry }: { e: Effective; copy: StatusCopy; typical?: TypicalCopy | null; onRetry?: () => void }) {
   const scheme = useScheme();
   const theme = useTheme();
   const c = CardColors[scheme][e.state];
@@ -30,7 +31,7 @@ export function StatusCard({ e, copy, onRetry }: { e: Effective; copy: StatusCop
       ]}
       accessible
       accessibilityLiveRegion="polite"
-      accessibilityLabel={`${copy.word}. ${copy.duration ?? copy.line ?? ''}. ${copy.fresh}.`}>
+      accessibilityLabel={`${copy.word}. ${copy.duration ?? copy.line ?? ''}. ${typical ? `${typical.a11y} ` : ''}${copy.fresh}.`}>
       <View style={styles.icon}>
         <StateIcon state={e.state} size={Size.stateIcon} variant="card" />
       </View>
@@ -54,6 +55,20 @@ export function StatusCard({ e, copy, onRetry }: { e: Effective; copy: StatusCop
           {copy.line}
         </T>
       )}
+      {typical ? (
+        <View style={styles.typical}>
+          <View style={[styles.typicalRule, { backgroundColor: c.onContainer }]} />
+          <View style={styles.typicalRow}>
+            <ClockIcon size={18} color={c.onContainer} />
+            <T color={c.onContainer} tabular style={styles.typicalText}>
+              <T weight={700} color={c.onContainer}>
+                {typical.lead}
+              </T>{' '}
+              {typical.rest}
+            </T>
+          </View>
+        </View>
+      ) : null}
       {copy.retry && onRetry ? (
         <Pressable onPress={onRetry} accessibilityRole="button" style={styles.retry}>
           <T weight={700} color={c.onContainer} style={styles.underline}>
@@ -100,6 +115,10 @@ const styles = StyleSheet.create({
   },
   icon: { marginBottom: 8 },
   durationRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'baseline', columnGap: 10, rowGap: 2 },
+  typical: { marginTop: 6, gap: 10 },
+  typicalRule: { height: StyleSheet.hairlineWidth, opacity: 0.35 },
+  typicalRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  typicalText: { flexShrink: 1 },
   retry: { alignSelf: 'flex-start', minHeight: 48, justifyContent: 'center', marginLeft: -12, paddingHorizontal: 12, marginVertical: -8 },
   underline: { textDecorationLine: 'underline' },
   fresh: { marginTop: 'auto', paddingTop: 10, flexDirection: 'row', alignItems: 'center', gap: 8 },

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
-import { ClockIcon, CloseIcon, Dot, RouteIcon } from '@/components/icons';
+import { ClockIcon, CloseIcon, Dot, RouteIcon, ShareIcon } from '@/components/icons';
 import { DemoBadge, Header, Screen, useBottomInset, useLargeText } from '@/components/layout';
 import { InfoRow, SwitchRow } from '@/components/rows';
 import { ChoiceSheet } from '@/components/sheet-modal';
@@ -12,12 +12,12 @@ import { StatusCard } from '@/components/status-card';
 import { T } from '@/components/text';
 import { TodayTimeline } from '@/components/today-timeline';
 import { Layout, Radius } from '@/constants/theme';
-import { DISCLAIMER, statusCopy } from '@/domain/copy';
+import { DISCLAIMER, shareText, statusCopy, typicalCopy } from '@/domain/copy';
 import { crossingById } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
 import { formatTime } from '@/domain/time';
 import { useTheme } from '@/hooks/use-theme';
-import { demo, DIRECTIONS_APP, dismissTip, openDirections, toggleFollow } from '@/state/actions';
+import { demo, DIRECTIONS_APP, dismissTip, openDirections, shareStatus, toggleFollow } from '@/state/actions';
 import { setUi, useApp } from '@/state/store';
 import { source } from '@/data';
 
@@ -35,6 +35,7 @@ export default function StatusScreen() {
   const isFollowing = following.includes(crossing.id);
   const e = effectiveState(snapshot.readings[crossing.id], snapshot);
   const copy = statusCopy(crossing, e, snapshot.now, isFollowing);
+  const typical = typicalCopy(e, snapshot.events, crossing.id, snapshot.now);
   const events = snapshot.events.filter((ev) => ev.crossingId === crossing.id);
   const last = events[events.length - 1];
   const lastText = last ? `${formatTime(last.start)} · ${last.durationMin} min · ${last.stopped ? 'stopped' : 'moving'}` : 'None recorded yet';
@@ -59,11 +60,18 @@ export default function StatusScreen() {
               </Pressable>
             ) : null}
             {source.kind === 'demo' ? <DemoBadge /> : null}
+            <Pressable
+              onPress={() => shareStatus(shareText(crossing, e, snapshot.now))}
+              accessibilityRole="button"
+              accessibilityLabel={`Share ${crossing.name} status`}
+              style={({ pressed }) => [styles.shareBtn, { backgroundColor: theme.tonal }, pressed && styles.pressed]}>
+              <ShareIcon color={theme.text} />
+            </Pressable>
           </View>
         }
       />
       <ScrollView contentContainerStyle={styles.content}>
-        <StatusCard e={e} copy={copy} onRetry={demo.retry} />
+        <StatusCard e={e} copy={copy} typical={typical} onRetry={demo.retry} />
         <T>{copy.explanation}</T>
 
         {showTip ? (
@@ -132,4 +140,6 @@ const styles = StyleSheet.create({
   underline: { textDecorationLine: 'underline' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   switchBtn: { minHeight: 48, paddingHorizontal: 10, justifyContent: 'center' },
+  shareBtn: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
+  pressed: { opacity: 0.7 },
 });

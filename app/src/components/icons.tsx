@@ -69,6 +69,18 @@ export function ClockIcon({ size = 22, color }: IconProps) {
   );
 }
 
+/** Android-style share: three connected nodes. */
+export function ShareIcon({ size = 22, color }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Circle cx="18" cy="5" r="3" {...stroke(color)} />
+      <Circle cx="6" cy="12" r="3" {...stroke(color)} />
+      <Circle cx="18" cy="19" r="3" {...stroke(color)} />
+      <Path d="M8.6 10.5l6.8-4M8.6 13.5l6.8 4" {...stroke(color)} />
+    </Svg>
+  );
+}
+
 export function InfoIcon({ size = 20, color }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">

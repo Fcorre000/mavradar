@@ -1,8 +1,9 @@
 /// <reference types="jest" />
-import { statusCopy } from '../copy';
+import { shareText, statusCopy, typicalCopy, TYPICAL_MIN_SAMPLES } from '../copy';
 import { CENTER_ST } from '../crossings';
 import type { Effective } from '../freshness';
 import { formatDuration } from '../time';
+import type { BlockageEvent } from '../types';
 
 const NOW = new Date(2026, 8, 28, 14, 48, 0).getTime();
 const MIN = 60_000;
@@ -51,5 +52,68 @@ describe('statusCopy', () => {
 
   it('formats long durations in hours and minutes', () => {
     expect(formatDuration(72)).toBe('1 h 12 min');
+  });
+});
+
+// Finished blockages ending a few hours before NOW.
+const ev = (durationMin: number, stopped = false, ageMs = 3 * 3_600_000, crossingId = CENTER_ST.id): BlockageEvent => ({
+  id: `${crossingId}-${durationMin}-${stopped}-${ageMs}`,
+  crossingId,
+  start: NOW - ageMs,
+  durationMin,
+  stopped,
+});
+const moving = [3, 4, 5, 5, 6, 8].map((d) => ev(d)); // median 5
+const stoppedRuns = [12, 20, 25, 30, 40].map((d) => ev(d, true)); // median 25
+
+describe('typicalCopy', () => {
+  const blocked = (m: number): Effective => ({ ...base, state: 'blocked', since: NOW - m * MIN });
+
+  it('shows the typical time while the blockage is within it', () => {
+    expect(typicalCopy(blocked(3), moving, CENTER_ST.id, NOW)).toMatchObject({ lead: 'Usually about 5 min', rest: 'here' });
+    expect(typicalCopy(blocked(5), moving, CENTER_ST.id, NOW)?.lead).toBe('Usually about 5 min');
+  });
+
+  it('says "longer than usual" once past it, never counting down', () => {
+    expect(typicalCopy(blocked(7), moving, CENTER_ST.id, NOW)).toMatchObject({ lead: 'Longer than usual.', rest: 'Typical: 5 min' });
+  });
+
+  it('compares stopped trains with stopped trains only', () => {
+    const e: Effective = { ...base, state: 'stopped', since: NOW - 12 * MIN };
+    expect(typicalCopy(e, [...moving, ...stoppedRuns], CENTER_ST.id, NOW)).toMatchObject({ lead: 'Stopped trains here:', rest: 'about 25 min' });
+    expect(typicalCopy(blocked(3), stoppedRuns, CENTER_ST.id, NOW)).toBeNull();
+  });
+
+  it('stays hidden with too little history', () => {
+    expect(typicalCopy(blocked(3), moving.slice(0, TYPICAL_MIN_SAMPLES - 1), CENTER_ST.id, NOW)).toBeNull();
+  });
+
+  it('ignores other crossings and blockages older than 30 days', () => {
+    const old = [3, 4, 5, 5, 6].map((d) => ev(d, false, 31 * 86_400_000));
+    const elsewhere = [3, 4, 5, 5, 6].map((d) => ev(d, false, 3_600_000, '000000X'));
+    expect(typicalCopy(blocked(3), [...old, ...elsewhere], CENTER_ST.id, NOW)).toBeNull();
+  });
+
+  it('only appears for Blocked and Stopped', () => {
+    for (const state of ['clear', 'approaching', 'unknown'] as const) {
+      expect(typicalCopy({ ...base, state }, moving, CENTER_ST.id, NOW)).toBeNull();
+    }
+  });
+});
+
+describe('shareText', () => {
+  it('says how long, when, and the detour for a blockage', () => {
+    const text = shareText(CENTER_ST, { ...base, state: 'stopped', since: NOW - 12 * MIN }, NOW);
+    expect(text).toBe('Center St crossing (Arlington) is blocked by a stopped train. 12 min so far, as of 2:47 PM.\nDetour: West St underpass.\nvia MavRadar');
+  });
+
+  it('stamps a clear crossing with the time of the last reading', () => {
+    expect(shareText(CENTER_ST, base, NOW)).toBe('Center St crossing (Arlington) is clear, as of 2:47 PM.\nvia MavRadar');
+  });
+
+  it('never repeats a last state when the status is unknown', () => {
+    const text = shareText(CENTER_ST, { ...base, state: 'unknown', cause: 'sensor' }, NOW);
+    expect(text).toContain("can't confirm");
+    expect(text).not.toMatch(/blocked|clear,/i);
   });
 });
