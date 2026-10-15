@@ -1,5 +1,5 @@
 /// <reference types="jest" />
-import { shareText, statusCopy, typicalCopy } from '../copy';
+import { sensorLine, shareText, statusCopy, typicalCopy } from '../copy';
 import { CENTER_ST } from '../crossings';
 import type { Effective } from '../freshness';
 import { TYPICAL_MIN_SAMPLES } from '../stats';
@@ -121,5 +121,21 @@ describe('shareText', () => {
     const text = shareText(CENTER_ST, { ...base, state: 'unknown', cause: 'sensor' }, NOW);
     expect(text).toContain("can't confirm");
     expect(text).not.toMatch(/blocked|clear,/i);
+  });
+});
+
+describe('sensorLine', () => {
+  const reading = { crossingId: CENTER_ST.id, state: 'clear' as const, since: null, stoppedAt: null, detectedAt: null, clearSince: null, lastReadingAt: NOW, sensorName: 'Crossing node', sensorBatteryOk: true };
+  const copy = statusCopy(CENTER_ST, base, NOW, false);
+
+  it('names the node and its battery from the reading', () => {
+    expect(sensorLine(copy, base, reading)).toBe('Online · Crossing node · battery OK');
+    expect(sensorLine(copy, base, { ...reading, sensorBatteryOk: false })).toBe('Online · Crossing node · battery low');
+  });
+
+  it('falls back to the Unknown wording', () => {
+    const e: Effective = { ...base, state: 'unknown', cause: 'sensor', lastAt: NOW - 30 * MIN };
+    const c = statusCopy(CENTER_ST, e, NOW, false);
+    expect(sensorLine(c, e, reading)).toBe(c.sensor);
   });
 });

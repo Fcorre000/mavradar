@@ -197,7 +197,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function SensorList() {
   const snapshot = useApp((s) => s.snapshot);
   const e = effectiveState(snapshot.readings['794978C'], snapshot);
-  return <InfoRow label="Center St · East node" value={e.state === 'unknown' ? 'Offline' : 'Online · battery OK'} last />;
+  const r = snapshot.readings['794978C'];
+  return (
+    <View>
+      <InfoRow label={`Center St · ${r?.sensorName ?? 'Crossing node'}`} value={e.state === 'unknown' ? 'Offline' : `Online · battery ${r?.sensorBatteryOk === false ? 'low' : 'OK'}`} />
+      <InfoRow label="Crossing ID" value="USDOT 794978C" last />
+    </View>
+  );
 }
 
 const STATES: { value: ReportedState; label: string }[] = [

@@ -108,7 +108,7 @@ export default function MapScreen() {
   const sheetHandle = { backgroundColor: theme.sheetHandle, width: 32 };
   const details = (
     <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset }}>
-      <CrossingSheet crossing={crossingById(selected.id)} e={e} copy={copy} following={following.includes(selected.id)} events={snapshot.events} now={snapshot.now} />
+      <CrossingSheet crossing={crossingById(selected.id)} reading={snapshot.readings[selected.id]} e={e} copy={copy} following={following.includes(selected.id)} events={snapshot.events} now={snapshot.now} />
     </BottomSheetScrollView>
   );
 

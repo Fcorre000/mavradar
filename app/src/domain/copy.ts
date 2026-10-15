@@ -2,7 +2,7 @@ import { DETOUR } from './crossings';
 import type { Effective } from './freshness';
 import { blockageStats } from './stats';
 import { formatAgo, formatDuration, formatTime, minutesBetween } from './time';
-import type { BlockageEvent, Crossing, CrossingState } from './types';
+import type { BlockageEvent, Crossing, CrossingReading, CrossingState } from './types';
 
 export const STATE_WORD: Record<CrossingState, string> = {
   clear: 'Clear',
@@ -143,6 +143,14 @@ export function statusCopy(crossing: Crossing, e: Effective, now: number, follow
       };
     }
   }
+}
+
+// ---------------------------------------------------------------- sensor
+
+/** The Sensor row: "Online · Crossing node · battery OK", or the Unknown wording. One helper for every screen. */
+export function sensorLine(copy: StatusCopy, e: Effective, reading: CrossingReading | undefined): string {
+  if (e.state === 'unknown' || !reading) return copy.sensor;
+  return `${copy.sensor} · ${reading.sensorName} · battery ${reading.sensorBatteryOk ? 'OK' : 'low'}`;
 }
 
 // ---------------------------------------------------------------- typical duration

@@ -12,7 +12,7 @@ import { StatusCard } from '@/components/status-card';
 import { T } from '@/components/text';
 import { TodayTimeline } from '@/components/today-timeline';
 import { Layout, Radius } from '@/constants/theme';
-import { DISCLAIMER, shareText, statusCopy, typicalCopy } from '@/domain/copy';
+import { DISCLAIMER, sensorLine, shareText, statusCopy, typicalCopy } from '@/domain/copy';
 import { crossingById } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
 import { formatTime } from '@/domain/time';
@@ -49,7 +49,7 @@ export default function StatusScreen() {
     <Screen>
       <Header
         title={crossing.name}
-        subtitle={`${crossing.city}, TX · USDOT ${crossing.id}`}
+        subtitle={`${crossing.city}, TX`}
         right={
           <View style={styles.headerRight}>
             {following.length > 1 ? (
@@ -97,7 +97,7 @@ export default function StatusScreen() {
           <SwitchRow label={`Alerts for ${crossing.name}`} value={isFollowing} onChange={() => toggleFollow(crossing.id)} />
           <InfoRow
             label="Sensor"
-            value={e.state === 'unknown' ? copy.sensor : `${copy.sensor} · East node`}
+            value={sensorLine(copy, e, snapshot.readings[crossing.id])}
             valueColor={e.state === 'unknown' ? theme.textSecondary : theme.text}
             leading={<Dot color={e.state === 'unknown' ? theme.textSecondary : theme.sensorOk} hollow={e.state === 'unknown'} />}
           />

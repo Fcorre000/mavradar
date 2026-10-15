@@ -132,7 +132,7 @@ The main status block on the Status screen.
 | Zone | Measure |
 |---|---|
 | Top inset | 36 (system status bar), y 0 to 36 |
-| Header | 64: name 22/28, city line 14/20, y 36 to 100 |
+| Header | 64: name 22/28, city line 14/20 ("Arlington, TX" only; the USDOT ID lives in the map sheet and Settings > Sensors), y 36 to 100 |
 | Gap | 16 (8 header bottom + 8 content top) |
 | Status card | min 288, y 116 to 404 |
 | Gap | 16 |

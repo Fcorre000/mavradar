@@ -8,11 +8,11 @@ import { InfoRow } from '@/components/rows';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
 import { HistoryColors } from '@/constants/theme';
-import { DISCLAIMER, type StatusCopy } from '@/domain/copy';
+import { DISCLAIMER, sensorLine, type StatusCopy } from '@/domain/copy';
 import type { Effective } from '@/domain/freshness';
 import { blockageStats } from '@/domain/stats';
 import { formatTime, startOfDay } from '@/domain/time';
-import type { BlockageEvent, Crossing } from '@/domain/types';
+import type { BlockageEvent, Crossing, CrossingReading } from '@/domain/types';
 import { useScheme, useTheme } from '@/hooks/use-theme';
 import { DIRECTIONS_APP, openDirections, toggleFollow } from '@/state/actions';
 import { setUi } from '@/state/store';
@@ -24,7 +24,7 @@ const DAY = 86_400_000;
  * height decides how much shows: peek (name, state, Follow), half (directions, sensor, disclaimer),
  * full (last 7 days).
  */
-export function CrossingSheet({ crossing, e, copy, following, events, now }: { crossing: Crossing; e: Effective; copy: StatusCopy; following: boolean; events: BlockageEvent[]; now: number }) {
+export function CrossingSheet({ crossing, reading, e, copy, following, events, now }: { crossing: Crossing; reading?: CrossingReading; e: Effective; copy: StatusCopy; following: boolean; events: BlockageEvent[]; now: number }) {
   const theme = useTheme();
   const scheme = useScheme();
   const today = startOfDay(now);
@@ -74,7 +74,8 @@ export function CrossingSheet({ crossing, e, copy, following, events, now }: { c
           onPress={openDirections}
         />
         <View>
-          <InfoRow label="Sensor" value={e.state === 'unknown' ? copy.sensor : `${copy.sensor} · East node · battery OK`} />
+          <InfoRow label="Sensor" value={sensorLine(copy, e, reading)} />
+          <InfoRow label="Crossing ID" value={`USDOT ${crossing.id}`} />
           <InfoRow label="Last blockage" value={last ? `${formatTime(last.start)} · ${last.durationMin} min · ${last.stopped ? 'stopped' : 'moving'}` : 'None recorded yet'} />
           <InfoRow label="Typical blockage" value={typical} last />
         </View>

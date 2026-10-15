@@ -256,7 +256,7 @@ export class DemoEngine implements CrossingSource {
       detectedAt: null,
       clearSince: null,
       lastReadingAt: this.now(),
-      sensorName: 'East node',
+      sensorName: 'Crossing node',
       sensorBatteryOk: true,
       ...fields,
     };
