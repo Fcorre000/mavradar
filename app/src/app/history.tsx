@@ -107,7 +107,7 @@ export default function HistoryScreen() {
                   Average blockages per hour. Past data, not a prediction.
                 </T>
                 <View style={styles.chart}>
-                  <T v="axis" weight={700} style={[styles.peakLabel, { left: `${((peak + 0.5) / 24) * 100}%` }]}>
+                  <T v="axis" weight={700} style={[styles.peakLabel, { left: `${Math.min(75, Math.max(25, ((peak + 0.5) / 24) * 100))}%` }]}>
                     Busiest {hourLabel(peak)} to {hourLabel(peak + 1)}
                   </T>
                   <View style={styles.bars}>
@@ -208,7 +208,8 @@ const styles = StyleSheet.create({
   empty: { flex: 1, justifyContent: 'center', gap: 12, paddingHorizontal: 32, paddingBottom: 80 },
   card: { borderRadius: Radius.card, padding: 16, gap: 2 },
   chart: { height: 96, justifyContent: 'flex-end', marginTop: 10 },
-  peakLabel: { position: 'absolute', top: 0, transform: [{ translateX: -60 }], width: 120, textAlign: 'center' },
+  // Wide enough for 'Busiest 10 AM to 11 AM' on one line; kept 25 to 75% across so it never leaves the card.
+  peakLabel: { position: 'absolute', top: 0, transform: [{ translateX: -90 }], width: 180, textAlign: 'center' },
   bars: { flexDirection: 'row', alignItems: 'flex-end', gap: 3, height: 70 },
   hourBar: { flex: 1, borderTopLeftRadius: 2, borderTopRightRadius: 2 },
   axis: { height: 18, marginTop: 8 },
