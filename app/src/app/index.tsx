@@ -135,7 +135,7 @@ const styles = StyleSheet.create({
   pinned: { paddingHorizontal: Layout.screenPadding, paddingTop: 12, paddingBottom: 12, gap: 12 },
   tip: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: Radius.button, borderWidth: StyleSheet.hairlineWidth, paddingTop: 14, paddingBottom: 10, paddingLeft: 16, paddingRight: 4 },
   tipText: { flex: 1, gap: 2 },
-  tipLink: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center' },
+  tipLink: { alignSelf: 'flex-start', minHeight: 48, justifyContent: 'center' },
   tipClose: { width: 48, height: 48, marginTop: -10, alignItems: 'center', justifyContent: 'center' },
   underline: { textDecorationLine: 'underline' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },

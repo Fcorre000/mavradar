@@ -33,6 +33,8 @@ export function Segmented<V extends string | number>({
             disabled={o.disabled}
             accessibilityRole="radio"
             accessibilityState={{ checked: on, disabled: o.disabled }}
+            // 40 dp to look like Material segmented buttons, 48 dp to tap.
+            hitSlop={{ top: 4, bottom: 4 }}
             style={[styles.item, i > 0 && { borderLeftWidth: 1, borderLeftColor: theme.outline }, on && { backgroundColor: theme.backgroundSelected }]}>
             {on ? <CheckIcon color={theme.text} /> : null}
             <T v="secondary" weight={on ? 700 : 500} color={o.disabled ? theme.textSecondary : theme.text} style={o.disabled ? styles.struck : null}>

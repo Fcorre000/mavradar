@@ -296,6 +296,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   block: { gap: 10, paddingVertical: 4 },
   offCard: { borderWidth: 1, borderRadius: Radius.button, padding: 16, gap: 8, marginVertical: 8 },
-  offButton: { alignSelf: 'flex-start', minHeight: 40, paddingHorizontal: 18 },
+  offButton: { alignSelf: 'flex-start', minHeight: 48, paddingHorizontal: 18 },
   demoNote: { borderWidth: 1, borderStyle: 'dashed', borderRadius: Radius.button, padding: 14 },
 });

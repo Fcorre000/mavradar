@@ -56,6 +56,7 @@ export function CrossingSheet({ crossing, e, copy, following, events, now }: { c
           accessibilityRole="button"
           accessibilityState={{ selected: following }}
           accessibilityLabel={following ? `Following ${crossing.name}. Tap to unfollow.` : `Follow ${crossing.name}`}
+          hitSlop={4}
           style={[styles.follow, { backgroundColor: theme.tonal }]}>
           {following ? <CheckIcon size={18} color={theme.text} /> : <PlusIcon color={theme.text} />}
           <T v="secondary" weight={700}>

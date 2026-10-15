@@ -83,7 +83,7 @@ export default function MapScreen() {
   const coverage = (
     <View style={[styles.banner, { backgroundColor: theme.sheet, borderColor: theme.divider }]}>
       <T v="secondary">1 crossing live in Arlington. More coming.</T>
-      <Pressable onPress={() => showSnack('Crossing suggestions open once more sensors are funded.')} accessibilityRole="link" style={styles.link}>
+      <Pressable onPress={() => showSnack('Crossing suggestions open once more sensors are funded.')} accessibilityRole="link" hitSlop={{ top: 6, bottom: 6 }} style={styles.link}>
         <T v="secondary" weight={700} style={styles.underline}>
           Suggest a crossing
         </T>
