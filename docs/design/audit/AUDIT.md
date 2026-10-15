@@ -101,3 +101,37 @@ Authored for this product, not category-interchangeable. The state system (one s
 
 - Should Clear be quieter than it is now? Most checks will land on Clear, and the screen could say "you're fine" faster with less card.
 - Is History for students or for the city? The stat line and busiest-hours chart serve planners; a commuter mostly wants "when should I avoid this crossing."
+
+---
+
+## After the fixes (same day)
+
+Fixed on `feature/design-audit-and-styles`, one commit per command. Re-scored from the changed code and the web preview in the same session, so treat it as a check, not an independent second audit.
+
+| Finding | Fix | Commit |
+|---|---|---|
+| P1 Two "typical" times | `blockageStats()` in `domain/stats.ts` feeds Status, the map sheet and History; the demo generates 29 days of history | d363715 |
+| P1 Small touch targets | All five to 48 dp (hitSlop where the look is fixed) | f487d24 |
+| Critique: USDOT ID in the header | Moved to the map sheet and Sensors; sensor rows read the real node name (the stale "East node" is gone) | 93d9410 |
+| P2 Clear state | Calm cards size to content; the tip sits under Today | c9723a3 |
+| P2 Per-second re-renders | History and the map skip the tick; only text that ages re-renders | d363715, 5ba5981 |
+| P2 History list | `SectionList` grouped by day | d363715 |
+| P2 Sheets that don't drag | `ModalSheet`: drag the top down to close, short drags spring back | f7d2c85 |
+| Minor: two icon systems | SF Symbols on iOS, Material Symbols on Android and web | 26d8c26 |
+| Minor: cluster ignores the theme | Fill from the theme; marker keys include it | 26d8c26 |
+| Minor: template leftovers | Deleted | 26d8c26 |
+| Minor: no tablet layout | Centered 600 dp column; iPad in the iOS config | 2f2c4c2 |
+| Minor: no iOS large titles | **Not done here.** It means a native stack per tab and replaces the approved header (city line, Demo badge, Share). It belongs in the Clarity style, where iOS conventions are the point. | |
+
+| # | Dimension | Before | After |
+|---|---|---|---|
+| 1 | Accessibility | 3 | 3 (targets fixed; the system sheet slide still ignores Reduce Motion) |
+| 2 | Performance | 2 | 3 |
+| 3 | Appearance & theming | 3 | 4 |
+| 4 | Platform conformance | 3 | 3 (large titles pending) |
+| 5 | Adaptivity | 2 | 3 (Android tablets still portrait) |
+| | **Total** | **13/20** | **16/20, Good** |
+
+Critique heuristics that moved: 2 Match real world 3 → 4, 3 User control 3 → 4, 4 Consistency 2 → 3. **Total 29 → 32/40.** Efficiency stays at 2 until the widget ships.
+
+Open items for the next native build: the 9 Expo SDK 57 patch updates `expo-doctor` reports (several are native modules), embedding Material Symbols with the expo-font plugin, and the iPad config.
