@@ -30,7 +30,47 @@ const TODAY: [number, number, boolean][] = [
   [550, 7, true], [633, 4, false], [708, 5, false], [760, 8, false], [832, 9, false], [960, 6, false],
   [1080, 5, false], [1190, 11, true], [1290, 4, false], [1380, 3, false],
 ];
-const YESTERDAY: [number, number, boolean][] = [[1247, 6, false], [1322, 21, true], [1406, 4, false]];
+/** Days of history the demo generates before today, so the 7 and 30 day views have real data. */
+const HISTORY_DAYS = 29;
+// Relative likelihood of a blockage starting in each hour, midnight first: busiest mid-afternoon.
+const HOUR_WEIGHT = [7, 6, 7, 7, 6, 8, 9, 9, 9, 8, 9, 10, 10, 11, 13, 14, 13, 11, 9, 8, 8, 7, 6, 6];
+
+/** Small seeded generator so every demo run shows the same history. */
+function seeded(seed: number) {
+  let t = seed >>> 0;
+  return () => {
+    t = (t + 0x6d2b79f5) >>> 0;
+    let r = Math.imul(t ^ (t >>> 15), 1 | t);
+    r ^= r + Math.imul(r ^ (r >>> 7), 61 | r);
+    return ((r ^ (r >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * One day of past blockages, about 15 to 21, never overlapping: moving trains mostly 3 to 6
+ * minutes, and about one in eight stopped for 10 to 38 minutes.
+ */
+function pastDay(daysAgo: number): [number, number, boolean][] {
+  const rand = seeded(daysAgo * 7919);
+  const total = HOUR_WEIGHT.reduce((a, b) => a + b, 0);
+  const starts: number[] = [];
+  for (let i = 15 + Math.floor(rand() * 7); i > 0; i--) {
+    let pick = rand() * total;
+    let hour = 0;
+    while (pick > HOUR_WEIGHT[hour]) pick -= HOUR_WEIGHT[hour++];
+    starts.push(hour * 60 + Math.floor(rand() * 60));
+  }
+  const day: [number, number, boolean][] = [];
+  let free = 0;
+  for (const m of starts.sort((a, b) => a - b)) {
+    const stopped = rand() < 0.12;
+    const d = stopped ? 10 + Math.floor(rand() * 29) : 2 + Math.floor(rand() * 5) + (rand() < 0.2 ? Math.floor(rand() * 4) : 0);
+    if (m < free || m + d > 1439) continue;
+    day.push([m, d, stopped]);
+    free = m + d + 5;
+  }
+  return day;
+}
 
 export interface DemoControls {
   centerState: ReportedState;
@@ -68,7 +108,11 @@ export class DemoEngine implements CrossingSource {
         const start = dayStart + m * MIN;
         if (start + d * MIN < now) this.events.push({ id: `seed-${this.eventSeq++}`, crossingId: CENTER_ST.id, start, durationMin: d, stopped });
       });
-    addEvents(YESTERDAY, day - 1440 * MIN);
+    for (let ago = HISTORY_DAYS; ago >= 1; ago--) {
+      const start = new Date(day);
+      start.setDate(start.getDate() - ago);
+      addEvents(pastDay(ago), start.getTime());
+    }
     addEvents(TODAY, day);
     const last = this.events[this.events.length - 1];
     const clearSince = last ? Math.max(last.start + last.durationMin * MIN, now - 90 * MIN) : now - 30 * MIN;
@@ -108,7 +152,8 @@ export class DemoEngine implements CrossingSource {
       connection: this.connection,
       lastSyncAt: this.lastSyncAt,
       readings: { ...this.readings },
-      events: this.events.slice(),
+      // Same array until a blockage is added, so History and the sheets skip the per-second tick.
+      events: this.events,
     };
   }
 
@@ -132,13 +177,17 @@ export class DemoEngine implements CrossingSource {
     const prev = r.state;
     const wasBlocking = prev === 'blocked' || prev === 'stopped';
     if (wasBlocking && state !== 'blocked' && state !== 'stopped' && state !== 'sensorOffline' && r.since) {
-      this.events.push({
-        id: `demo-${this.eventSeq++}`,
-        crossingId: CENTER_ST.id,
-        start: r.since,
-        durationMin: Math.max(1, minutesBetween(r.since, now)),
-        stopped: prev === 'stopped' || r.stoppedAt !== null,
-      });
+      // A new array, never a push: screens compare the list by reference to know it changed.
+      this.events = [
+        ...this.events,
+        {
+          id: `demo-${this.eventSeq++}`,
+          crossingId: CENTER_ST.id,
+          start: r.since,
+          durationMin: Math.max(1, minutesBetween(r.since, now)),
+          stopped: prev === 'stopped' || r.stoppedAt !== null,
+        },
+      ];
     }
     if (state === 'clear') r.clearSince = live || wasBlocking ? now : now - 30 * MIN;
     if (state === 'approaching') r.detectedAt = live ? now : now - MIN;

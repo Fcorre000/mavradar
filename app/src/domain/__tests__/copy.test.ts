@@ -1,7 +1,8 @@
 /// <reference types="jest" />
-import { shareText, statusCopy, typicalCopy, TYPICAL_MIN_SAMPLES } from '../copy';
+import { shareText, statusCopy, typicalCopy } from '../copy';
 import { CENTER_ST } from '../crossings';
 import type { Effective } from '../freshness';
+import { TYPICAL_MIN_SAMPLES } from '../stats';
 import { formatDuration } from '../time';
 import type { BlockageEvent } from '../types';
 
@@ -81,7 +82,12 @@ describe('typicalCopy', () => {
   it('compares stopped trains with stopped trains only', () => {
     const e: Effective = { ...base, state: 'stopped', since: NOW - 12 * MIN };
     expect(typicalCopy(e, [...moving, ...stoppedRuns], CENTER_ST.id, NOW)).toMatchObject({ lead: 'Stopped trains here:', rest: 'about 25 min' });
-    expect(typicalCopy(blocked(3), stoppedRuns, CENTER_ST.id, NOW)).toBeNull();
+    expect(typicalCopy(e, moving, CENTER_ST.id, NOW)).toBeNull();
+  });
+
+  it('uses every blockage for Blocked, the same typical time History shows', () => {
+    // 11 blockages: six moving (median 5) and five stopped (12 to 40) give an overall median of 8.
+    expect(typicalCopy(blocked(3), [...moving, ...stoppedRuns], CENTER_ST.id, NOW)).toMatchObject({ lead: 'Usually about 8 min' });
   });
 
   it('stays hidden with too little history', () => {

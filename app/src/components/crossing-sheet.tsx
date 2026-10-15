@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
@@ -9,14 +10,13 @@ import { T } from '@/components/text';
 import { HistoryColors } from '@/constants/theme';
 import { DISCLAIMER, type StatusCopy } from '@/domain/copy';
 import type { Effective } from '@/domain/freshness';
+import { blockageStats } from '@/domain/stats';
 import { formatTime, startOfDay } from '@/domain/time';
 import type { BlockageEvent, Crossing } from '@/domain/types';
 import { useScheme, useTheme } from '@/hooks/use-theme';
 import { DIRECTIONS_APP, openDirections, toggleFollow } from '@/state/actions';
 import { setUi } from '@/state/store';
 
-// Blockages per day for the six days before today, a stand-in until History is live.
-const WEEK_PATTERN = [18, 14, 21, 19, 22, 20];
 const DAY = 86_400_000;
 
 /**
@@ -27,15 +27,14 @@ const DAY = 86_400_000;
 export function CrossingSheet({ crossing, e, copy, following, events, now }: { crossing: Crossing; e: Effective; copy: StatusCopy; following: boolean; events: BlockageEvent[]; now: number }) {
   const theme = useTheme();
   const scheme = useScheme();
-  const mine = events.filter((ev) => ev.crossingId === crossing.id);
-  const last = mine[mine.length - 1];
-  const durations = mine.map((ev) => ev.durationMin).sort((a, b) => a - b);
-  const typical = durations.length ? `${durations[Math.floor(durations.length / 2)]} min` : 'Not enough data yet';
   const today = startOfDay(now);
-  const todayCount = mine.filter((ev) => ev.start >= today).length;
-  const week = [...WEEK_PATTERN, todayCount];
+  // Same numbers as History and the Status card: one stats function over the blockage log.
+  const month = useMemo(() => blockageStats(events, crossing.id, today + DAY - 1, 30), [events, crossing.id, today]);
+  const week = useMemo(() => blockageStats(events, crossing.id, today + DAY - 1, 7).perDay, [events, crossing.id, today]);
+  const last = month.events[0];
+  const typical = month.typicalMin === null ? 'Not enough data yet' : `${month.typicalMin} min`;
   const max = Math.max(...week, 1);
-  const days = WEEK_PATTERN.map((_, i) => new Date(today - (6 - i) * DAY).toLocaleDateString('en-US', { weekday: 'short' })).concat('Today');
+  const days = week.map((_, i) => (i === 6 ? 'Today' : new Date(today - (6 - i) * DAY).toLocaleDateString('en-US', { weekday: 'short' })));
 
   return (
     <View style={styles.wrap}>

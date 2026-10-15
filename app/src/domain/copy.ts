@@ -1,5 +1,6 @@
 import { DETOUR } from './crossings';
 import type { Effective } from './freshness';
+import { blockageStats } from './stats';
 import { formatAgo, formatDuration, formatTime, minutesBetween } from './time';
 import type { BlockageEvent, Crossing, CrossingState } from './types';
 
@@ -146,10 +147,6 @@ export function statusCopy(crossing: Crossing, e: Effective, now: number, follow
 
 // ---------------------------------------------------------------- typical duration
 
-/** Fewest past blockages of the same kind before a typical time is shown. Below this the line stays hidden. */
-export const TYPICAL_MIN_SAMPLES = 5;
-const TYPICAL_WINDOW_MS = 30 * 86_400_000;
-
 export interface TypicalCopy {
   /** Bold part: "Usually about 5 min", "Longer than usual." */
   lead: string;
@@ -157,25 +154,18 @@ export interface TypicalCopy {
   a11y: string;
 }
 
-function median(sorted: number[]): number {
-  const mid = Math.floor(sorted.length / 2);
-  return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
-}
-
 /**
- * How long blockages at this crossing usually last, from its finished blockages in the last 30 days.
- * Moving trains are compared with moving trains and stopped with stopped. It reports the past and
- * never predicts when this one will clear. Null outside Blocked and Stopped, or with too little history.
+ * How long blockages here usually last, from the last 30 days (`blockageStats`, the same numbers
+ * History and the crossing sheet show). Stopped trains are compared with stopped trains only and
+ * say so. It reports the past and never predicts when this one will clear. Null outside Blocked
+ * and Stopped, or with too little history.
  */
 export function typicalCopy(e: Effective, events: BlockageEvent[], crossingId: string, now: number): TypicalCopy | null {
   if (e.state !== 'blocked' && e.state !== 'stopped') return null;
   const stopped = e.state === 'stopped';
-  const durations = events
-    .filter((ev) => ev.crossingId === crossingId && ev.stopped === stopped && ev.start >= now - TYPICAL_WINDOW_MS)
-    .map((ev) => ev.durationMin)
-    .sort((a, b) => a - b);
-  if (durations.length < TYPICAL_MIN_SAMPLES) return null;
-  const typicalMin = Math.max(1, Math.round(median(durations)));
+  const stats = blockageStats(events, crossingId, now, 30);
+  const typicalMin = stopped ? stats.typicalStoppedMin : stats.typicalMin;
+  if (typicalMin === null) return null;
   const typical = formatDuration(typicalMin);
   const kind = stopped ? 'Stopped trains' : 'Blockages';
   if (minutesBetween(e.since ?? now, now) > typicalMin) {

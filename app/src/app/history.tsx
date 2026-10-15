@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, SectionList, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
@@ -10,8 +10,8 @@ import { ChoiceSheet } from '@/components/sheet-modal';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
 import { HistoryColors, Layout, Radius } from '@/constants/theme';
-import { DEMO_HISTORY } from '@/data/demo-history';
-import { crossingById, CENTER_ST } from '@/domain/crossings';
+import { crossingById } from '@/domain/crossings';
+import { blockageStats } from '@/domain/stats';
 import { formatTime, startOfDay } from '@/domain/time';
 import type { BlockageEvent } from '@/domain/types';
 import { useScheme, useTheme } from '@/hooks/use-theme';
@@ -25,7 +25,9 @@ export default function HistoryScreen() {
   const scheme = useScheme();
   const insets = useSafeAreaInsets();
   const bottomInset = useBottomInset();
-  const snapshot = useApp((s) => s.snapshot);
+  // Only the event list and the date: History doesn't need the per-second freshness tick.
+  const allEvents = useApp((s) => s.snapshot.events);
+  const today = useApp((s) => startOfDay(s.snapshot.now));
   const crossings = useApp(visibleCrossings);
   const following = useApp((s) => s.prefs.following);
   const crossingId = useApp((s) => s.ui.historyCrossingId);
@@ -34,18 +36,11 @@ export default function HistoryScreen() {
   const [picking, setPicking] = useState(false);
 
   const crossing = crossingById(crossingId);
-  const events = snapshot.events.filter((e) => e.crossingId === crossing.id);
-  const empty = forceEmpty || events.length === 0 || crossing.id !== CENTER_ST.id;
-  const stats = DEMO_HISTORY[range];
-  const sessionExtra = events.filter((e) => e.id.startsWith('demo-')).length;
+  const stats = useMemo(() => blockageStats(allEvents, crossing.id, today + DAY - 1, range), [allEvents, crossing.id, today, range]);
+  const empty = forceEmpty || stats.count === 0;
   const max = Math.max(...stats.hours);
   const peak = stats.hours.indexOf(max);
-
-  const today = startOfDay(snapshot.now);
-  const groups: { title: string; items: BlockageEvent[] }[] = [
-    { title: 'Today', items: events.filter((e) => e.start >= today) },
-    { title: 'Yesterday', items: events.filter((e) => e.start >= today - DAY && e.start < today) },
-  ].map((g) => ({ ...g, items: [...g.items].sort((a, b) => b.start - a.start) }));
+  const sections = useMemo(() => byDay(stats.events, today), [stats.events, today]);
 
   const pickerOptions = [...crossings]
     .sort((a, b) => Number(following.includes(b.id)) - Number(following.includes(a.id)) || a.name.localeCompare(b.name))
@@ -87,52 +82,53 @@ export default function HistoryScreen() {
           <T color={theme.textSecondary}>History starts from when this sensor went live on [launch date].</T>
         </View>
       ) : (
-        <ScrollView contentContainerStyle={[styles.content, { paddingBottom: bottomInset + 24 }]}>
-          <T tabular>
-            <T weight={700}>{range} days:</T> {stats.count + sessionExtra} blockages · typical {stats.typicalMin} min · longest {stats.longestMin} min
-            {stats.longestStopped ? ' (stopped)' : ''}
-          </T>
-
-          <View
-            style={[styles.card, { backgroundColor: theme.backgroundElement }]}
-            accessible
-            accessibilityLabel={`Busiest hours. Most blockages between ${hourLabel(peak)} and ${hourLabel(peak + 1)}. Past data, not a prediction.`}>
-            <T weight={600}>Busiest hours</T>
-            <T v="disclaimer" color={theme.textSecondary}>
-              Average blockages per hour. Past data, not a prediction.
+        <SectionList
+          sections={sections}
+          keyExtractor={(ev) => ev.id}
+          renderItem={({ item }) => <EventRow event={item} />}
+          renderSectionHeader={({ section }) => (
+            <T v="secondary" weight={600} color={theme.textSecondary} style={[styles.groupTitle, { backgroundColor: theme.background }]} accessibilityRole="header">
+              {section.title}
             </T>
-            <View style={styles.chart}>
-              <T v="axis" weight={700} style={[styles.peakLabel, { left: `${((peak + 0.5) / 24) * 100}%` }]}>
-                Busiest {hourLabel(peak)} to {hourLabel(peak + 1)}
-              </T>
-              <View style={styles.bars}>
-                {stats.hours.map((v, i) => (
-                  <View key={i} style={[styles.hourBar, { height: Math.round((v / max) * 70), backgroundColor: i === peak ? HistoryColors[scheme].peakBar : HistoryColors[scheme].neutralBar }]} />
-                ))}
-              </View>
-            </View>
-            <View style={styles.axis}>
-              {['12 AM', '6 AM', '12 PM', '6 PM'].map((label, i) => (
-                <T key={label} v="axis" color={theme.textSecondary} style={[styles.axisLabel, { left: `${i * 25}%` }]}>
-                  {label}
-                </T>
-              ))}
-            </View>
-          </View>
-
-          {groups.map((g) =>
-            g.items.length ? (
-              <View key={g.title}>
-                <T v="secondary" weight={600} color={theme.textSecondary} style={styles.groupTitle} accessibilityRole="header">
-                  {g.title}
-                </T>
-                {g.items.map((ev) => (
-                  <EventRow key={ev.id} event={ev} />
-                ))}
-              </View>
-            ) : null,
           )}
-        </ScrollView>
+          ListHeaderComponent={
+            <View style={styles.listHeader}>
+              <T tabular>
+                <T weight={700}>{range} days:</T> {stats.count} blockages · typical {stats.typicalMin === null ? 'not enough data yet' : `${stats.typicalMin} min`}
+                {stats.longest ? ` · longest ${stats.longest.durationMin} min${stats.longest.stopped ? ' (stopped)' : ''}` : ''}
+              </T>
+
+              <View
+                style={[styles.card, { backgroundColor: theme.backgroundElement }]}
+                accessible
+                accessibilityLabel={`Busiest hours. Most blockages between ${hourLabel(peak)} and ${hourLabel(peak + 1)}. Past data, not a prediction.`}>
+                <T weight={600}>Busiest hours</T>
+                <T v="disclaimer" color={theme.textSecondary}>
+                  Average blockages per hour. Past data, not a prediction.
+                </T>
+                <View style={styles.chart}>
+                  <T v="axis" weight={700} style={[styles.peakLabel, { left: `${((peak + 0.5) / 24) * 100}%` }]}>
+                    Busiest {hourLabel(peak)} to {hourLabel(peak + 1)}
+                  </T>
+                  <View style={styles.bars}>
+                    {stats.hours.map((v, i) => (
+                      <View key={i} style={[styles.hourBar, { height: Math.round((v / max) * 70), backgroundColor: i === peak ? HistoryColors[scheme].peakBar : HistoryColors[scheme].neutralBar }]} />
+                    ))}
+                  </View>
+                </View>
+                <View style={styles.axis}>
+                  {['12 AM', '6 AM', '12 PM', '6 PM'].map((label, i) => (
+                    <T key={label} v="axis" color={theme.textSecondary} style={[styles.axisLabel, { left: `${i * 25}%` }]}>
+                      {label}
+                    </T>
+                  ))}
+                </View>
+              </View>
+            </View>
+          }
+          contentContainerStyle={[styles.content, { paddingBottom: bottomInset + 24 }]}
+          initialNumToRender={20}
+        />
       )}
 
       <ChoiceSheet
@@ -145,6 +141,24 @@ export default function HistoryScreen() {
       />
     </Screen>
   );
+}
+
+/** Groups newest-first blockages by calendar day: Today, Yesterday, then "Mon, Oct 12". */
+function byDay(events: BlockageEvent[], today: number) {
+  const sections: { title: string; data: BlockageEvent[] }[] = [];
+  for (const ev of events) {
+    const day = startOfDay(ev.start);
+    const title =
+      day === today
+        ? 'Today'
+        : Math.round((today - day) / DAY) === 1
+          ? 'Yesterday'
+          : new Date(day).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+    const last = sections[sections.length - 1];
+    if (last?.title === title) last.data.push(ev);
+    else sections.push({ title, data: [ev] });
+  }
+  return sections;
 }
 
 function EventRow({ event }: { event: BlockageEvent }) {
@@ -189,7 +203,8 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: 12, paddingBottom: 4 },
   picker: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, paddingHorizontal: 8, alignSelf: 'flex-start' },
   chips: { paddingHorizontal: Layout.screenPadding, paddingBottom: 8 },
-  content: { paddingHorizontal: Layout.screenPadding, paddingTop: 4, gap: Layout.sectionGap },
+  content: { paddingHorizontal: Layout.screenPadding, paddingTop: 4 },
+  listHeader: { gap: Layout.sectionGap, paddingBottom: 8 },
   empty: { flex: 1, justifyContent: 'center', gap: 12, paddingHorizontal: 32, paddingBottom: 80 },
   card: { borderRadius: Radius.card, padding: 16, gap: 2 },
   chart: { height: 96, justifyContent: 'flex-end', marginTop: 10 },
@@ -198,7 +213,7 @@ const styles = StyleSheet.create({
   hourBar: { flex: 1, borderTopLeftRadius: 2, borderTopRightRadius: 2 },
   axis: { height: 18, marginTop: 8 },
   axisLabel: { position: 'absolute' },
-  groupTitle: { paddingTop: 4, paddingBottom: 4 },
+  groupTitle: { paddingTop: 16, paddingBottom: 6 },
   event: { flexDirection: 'row', alignItems: 'center', gap: 12, minHeight: 52, borderBottomWidth: StyleSheet.hairlineWidth },
   eventTime: { width: 76 },
   track: { flex: 1, height: 8, borderRadius: 4, overflow: 'hidden' },
