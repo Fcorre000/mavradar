@@ -46,6 +46,18 @@ People can pick a color theme. Transit Navy is the default; the others are the b
   - No brand surface or primary in a status hue: red, orange or amber (Blocked, Stopped, Approaching), teal-green (Clear) or purple, unless it is a near-neutral tint (chroma under 0.2). Orange and amber backgrounds are out for this reason; they read as Approaching.
 - The choice is saved on the phone with the other preferences. The splash screen stays up until it loads, so the default theme never flashes first. Changing it uses the same cross-fade as changing the mode.
 
+### Styles (Settings > Appearance)
+
+A color theme only swaps colors. A style changes how the whole app is drawn: typeface and type scale, corner shapes, spacing, control sizes, how rows are grouped and the tab bar treatment. Signal, everything in this document, is the default style and the only one so far; three more (Clarity, Transit, Civic) are being designed. Styles live in `app/src/constants/styles.ts`.
+
+- **Locked in every style:** status colors, the five state shapes, the state words, freshness rules, the disclaimer, 48 dp targets. A style may change a card's corners, never its status fill.
+- **Every component reads the style** through `useStyle()` (and colors through `useTheme()`), never a fixed radius, padding or font. Signal's values are the tokens above, so Signal didn't change when styles arrived.
+- **Colors:** Signal uses the color theme the person picks. Another style can bring its own light and dark palette; then the Color theme picker hides.
+- **Rows:** flat (Signal: on the page between hairlines) or inset (in a rounded group on a surface, dividers indented to the text), through `RowGroup`.
+- **Fonts** load before a style switches, under the same cross-fade as a theme change, so text never shows in a fallback face. If they can't load, the app stays on the current style and says so.
+- **Settings:** a Style list (name, one-line description, check on the chosen one) between Mode and Color theme. It only shows once there is more than one style.
+- **Tests:** `styles.test.ts` checks that every style defines every type token, loads every font it names, keeps 48 dp targets and a 16 dp screen margin, and that Signal still equals these tokens. `theme.test.ts` runs the contrast and status-hue checks on any style with its own palette.
+
 ## Components
 
 ### Status card

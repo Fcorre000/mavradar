@@ -2,8 +2,7 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 
 import { CheckIcon } from '@/components/icons';
 import { T } from '@/components/text';
-import { Radius } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 
 type Option<V extends string | number> = { value: V; label: string; disabled?: boolean };
 
@@ -22,8 +21,9 @@ export function Segmented<V extends string | number>({
   style?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
+  const appStyle = useStyle();
   return (
-    <View style={[styles.group, { borderColor: theme.outline, backgroundColor: theme.sheet }, style]} accessibilityRole="radiogroup" accessibilityLabel={label}>
+    <View style={[styles.group, { borderColor: theme.outline, backgroundColor: theme.sheet, borderRadius: appStyle.radius.segmented }, style]} accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map((o, i) => {
         const on = o.value === value;
         return (
@@ -48,7 +48,7 @@ export function Segmented<V extends string | number>({
 }
 
 const styles = StyleSheet.create({
-  group: { flexDirection: 'row', minHeight: 40, borderRadius: Radius.segmented, borderWidth: 1, overflow: 'hidden' },
+  group: { flexDirection: 'row', minHeight: 40, borderWidth: 1, overflow: 'hidden' },
   item: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 12, minHeight: 40 },
   struck: { textDecorationLine: 'line-through' },
 });

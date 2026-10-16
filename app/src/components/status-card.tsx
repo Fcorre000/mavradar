@@ -5,10 +5,10 @@ import { ClockIcon } from '@/components/icons';
 import { LiveDot } from '@/components/live-dot';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
-import { Layout, Radius, Size, StatusCard as CardColors } from '@/constants/theme';
+import { Size, StatusCard as CardColors } from '@/constants/theme';
 import type { StatusCopy, TypicalCopy } from '@/domain/copy';
 import type { Effective } from '@/domain/freshness';
-import { useScheme, useTheme } from '@/hooks/use-theme';
+import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
 
 /**
  * The main status block. Tinted for calm states, solid for Blocked and Stopped. Unknown gets a
@@ -17,6 +17,7 @@ import { useScheme, useTheme } from '@/hooks/use-theme';
 export function StatusCard({ e, copy, typical, onRetry }: { e: Effective; copy: StatusCopy; typical?: TypicalCopy | null; onRetry?: () => void }) {
   const scheme = useScheme();
   const theme = useTheme();
+  const appStyle = useStyle();
   const c = CardColors[scheme][e.state];
   const tinted = e.state === 'clear' || e.state === 'approaching' || e.state === 'unknown';
   const freshColor = e.freshness === 'delayed' && tinted ? theme.textSecondary : c.onContainer;
@@ -25,11 +26,12 @@ export function StatusCard({ e, copy, typical, onRetry }: { e: Effective; copy: 
     <View
       style={[
         styles.card,
+        { borderRadius: appStyle.radius.card, padding: appStyle.space.card },
         // Only Blocked and Stopped hold the tall card; calm states shrink to their content.
         !tinted && { minHeight: Size.statusCardMinHeight },
         { backgroundColor: c.container },
         c.border ? { borderWidth: 2, borderStyle: 'dashed', borderColor: c.border } : null,
-        e.state === 'stopped' && { paddingBottom: Layout.cardPadding + Size.stripeBand },
+        e.state === 'stopped' && { paddingBottom: appStyle.space.card + Size.stripeBand },
       ]}
       accessible
       accessibilityLiveRegion="polite"
@@ -109,8 +111,6 @@ function StripeBand() {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: Radius.card,
-    padding: Layout.cardPadding,
     gap: 6,
     overflow: 'hidden',
   },

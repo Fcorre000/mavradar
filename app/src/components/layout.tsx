@@ -4,7 +4,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { T } from '@/components/text';
 import { BottomTabInset, Layout } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 
 /**
  * Space to keep clear at the bottom of a tab screen. On iOS the native tab bar floats over
@@ -37,8 +37,9 @@ export function Screen({ children, fullBleed }: { children: ReactNode; fullBleed
 export function Header({ title, subtitle, right }: { title: string; subtitle?: string; right?: ReactNode }) {
   const insets = useSafeAreaInsets();
   const theme = useTheme();
+  const appStyle = useStyle();
   return (
-    <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+    <View style={[styles.header, { paddingTop: insets.top + 8, paddingHorizontal: appStyle.space.screen, minHeight: appStyle.size.header }]}>
       <View style={styles.headerText}>
         <T v="crossingName" accessibilityRole="header">
           {title}
@@ -57,9 +58,10 @@ export function Header({ title, subtitle, right }: { title: string; subtitle?: s
 /** Small "Demo" pill so simulated data is never mistaken for a real reading. */
 export function DemoBadge() {
   const theme = useTheme();
+  const appStyle = useStyle();
   return (
     <View
-      style={[styles.badge, { borderColor: theme.outline }]}
+      style={[styles.badge, { borderColor: theme.outline, borderRadius: appStyle.radius.pill }]}
       accessibilityLabel="Demo data. These crossing states are simulated.">
       <T v="kicker" color={theme.textSecondary} weight={600}>
         Demo
@@ -71,7 +73,7 @@ export function DemoBadge() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   column: { flex: 1, width: '100%', maxWidth: Layout.maxContentWidth, alignSelf: 'center' },
-  header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: Layout.screenPadding, paddingBottom: 8, minHeight: 64 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 8 },
   headerText: { flex: 1, gap: 2 },
-  badge: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4 },
+  badge: { borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
 });

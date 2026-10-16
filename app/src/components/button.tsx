@@ -2,8 +2,7 @@ import type { ReactNode } from 'react';
 import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { T } from '@/components/text';
-import { Radius, Size } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 
 type Variant = 'filled' | 'tonal' | 'outline' | 'text';
 
@@ -19,9 +18,10 @@ type Props = {
   center?: boolean;
 };
 
-/** 56 dp buttons (48 for text and outline). Filled uses the brand primary. */
+/** Filled and tonal buttons at the style's button height (56 in Signal); text and outline at 48. Filled uses the primary color. */
 export function Button({ label, sublabel, icon, variant = 'filled', onPress, accessibilityLabel, style, center }: Props) {
   const theme = useTheme();
+  const appStyle = useStyle();
   const bg = variant === 'filled' ? theme.primary : variant === 'tonal' ? theme.tonal : 'transparent';
   const fg = variant === 'filled' ? theme.onPrimary : theme.text;
   return (
@@ -31,7 +31,7 @@ export function Button({ label, sublabel, icon, variant = 'filled', onPress, acc
       accessibilityLabel={accessibilityLabel}
       style={({ pressed }) => [
         styles.base,
-        { backgroundColor: bg, minHeight: variant === 'text' || variant === 'outline' ? Size.touchTarget : Size.button },
+        { backgroundColor: bg, borderRadius: appStyle.radius.button, minHeight: variant === 'text' || variant === 'outline' ? appStyle.size.buttonCompact : appStyle.size.button },
         variant === 'outline' && { borderWidth: 1, borderColor: theme.outline },
         (center || !sublabel) && styles.center,
         pressed && styles.pressed,
@@ -53,7 +53,7 @@ export function Button({ label, sublabel, icon, variant = 'filled', onPress, acc
 }
 
 const styles = StyleSheet.create({
-  base: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 8, paddingHorizontal: 18, borderRadius: Radius.button },
+  base: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingVertical: 8, paddingHorizontal: 18 },
   center: { justifyContent: 'center' },
   labels: { flexShrink: 1 },
   labelsCenter: { alignItems: 'center' },

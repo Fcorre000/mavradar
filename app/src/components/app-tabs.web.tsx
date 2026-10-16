@@ -5,15 +5,17 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { T } from '@/components/text';
 import { Size } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { pillRadius } from '@/constants/styles';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 
 // Web preview only: a bottom bar that matches the Android navigation bar.
 export default function AppTabs() {
   const colors = useTheme();
+  const appStyle = useStyle();
   return (
     <Tabs style={{ flex: 1 }}>
       <TabSlot style={{ flex: 1 }} />
-      <TabList style={[styles.bar, { backgroundColor: colors.backgroundElement }]}>
+      <TabList style={[styles.bar, { backgroundColor: colors[appStyle.tabs.surface] }]}>
         <TabTrigger name="index" href="/" asChild>
           <TabButton icon="status">Status</TabButton>
         </TabTrigger>
@@ -33,10 +35,11 @@ export default function AppTabs() {
 
 function TabButton({ children, isFocused, icon, ...props }: TabTriggerSlotProps & { icon: keyof typeof ICONS; children: ReactNode }) {
   const colors = useTheme();
+  const appStyle = useStyle();
   const color = isFocused ? colors.text : colors.textSecondary;
   return (
     <Pressable {...props} style={styles.item} accessibilityRole="tab" accessibilityState={{ selected: !!isFocused }}>
-      <View style={[styles.indicator, isFocused && { backgroundColor: colors.backgroundSelected }]}>{ICONS[icon](color)}</View>
+      <View style={[styles.indicator, { borderRadius: pillRadius(appStyle, Size.navIndicatorHeight) }, isFocused && appStyle.tabs.indicator && { backgroundColor: colors.backgroundSelected }]}>{ICONS[icon](color)}</View>
       <T v="navLabel" color={color} weight={isFocused ? 700 : 500}>
         {children}
       </T>
@@ -77,5 +80,5 @@ const ICONS = {
 const styles = StyleSheet.create({
   bar: { flexDirection: 'row', height: Size.navBar, paddingTop: 12, paddingBottom: 16, paddingHorizontal: 8 },
   item: { flex: 1, alignItems: 'center', gap: 4 },
-  indicator: { width: Size.navIndicatorWidth, height: Size.navIndicatorHeight, borderRadius: 16, alignItems: 'center', justifyContent: 'center' },
+  indicator: { width: Size.navIndicatorWidth, height: Size.navIndicatorHeight, alignItems: 'center', justifyContent: 'center' },
 });

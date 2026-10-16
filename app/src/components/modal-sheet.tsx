@@ -2,8 +2,7 @@ import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Animated, Modal, PanResponder, Platform, Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Radius } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 
 /** A drag past this distance (dp), or a flick faster than this (dp per ms), closes the sheet. */
 const CLOSE_DISTANCE = 100;
@@ -31,6 +30,7 @@ export function ModalSheet({
   style?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
+  const appStyle = useStyle();
   const insets = useSafeAreaInsets();
   const [offset] = useState(() => new Animated.Value(0));
   useEffect(() => {
@@ -53,7 +53,7 @@ export function ModalSheet({
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel={closeLabel} />
         <Animated.View
-          style={[styles.sheet, { backgroundColor: theme.sheet, paddingBottom: insets.bottom + 20, transform: [{ translateY: offset }] }, style]}
+          style={[styles.sheet, { backgroundColor: theme.sheet, borderTopLeftRadius: appStyle.radius.sheet, borderTopRightRadius: appStyle.radius.sheet, paddingBottom: insets.bottom + 20, transform: [{ translateY: offset }] }, style]}
           accessibilityViewIsModal>
           <View style={styles.top} {...drag.panHandlers}>
             <View style={[styles.handle, { backgroundColor: theme.sheetHandle }]} />
@@ -68,7 +68,7 @@ export function ModalSheet({
 
 const styles = StyleSheet.create({
   backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet: { maxHeight: '88%', borderTopLeftRadius: Radius.sheet, borderTopRightRadius: Radius.sheet, paddingHorizontal: 24, gap: 12 },
+  sheet: { maxHeight: '88%', paddingHorizontal: 24, gap: 12 },
   // The drag area: the handle plus the header, comfortably taller than a 48 dp touch target.
   top: { paddingTop: 10, gap: 12 },
   handle: { alignSelf: 'center', width: 32, height: 4, borderRadius: 2, marginBottom: 4 },

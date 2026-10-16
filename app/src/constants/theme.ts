@@ -194,9 +194,8 @@ export const Fonts = Platform.select({
 });
 
 /**
- * Brand typeface, Atkinson Hyperlegible Next, loaded in app/_layout.tsx with useFonts.
- * Each weight is its own family. Set the family for the weight you want and leave out
- * `fontWeight`, or Android can synthesize bold on top of an already bold file.
+ * Signal's typeface, Atkinson Hyperlegible Next, loaded in app/_layout.tsx. Each weight is its own
+ * family, so text sets the family for the weight and leaves out `fontWeight` (see constants/styles).
  */
 export const BrandFont = {
   regular: 'AtkinsonHyperlegibleNext_400Regular',
@@ -205,23 +204,7 @@ export const BrandFont = {
   bold: 'AtkinsonHyperlegibleNext_700Bold',
 } as const;
 
-type FontWeightToken = 400 | 500 | 600 | 700;
-
-const BrandFontByWeight: Record<FontWeightToken, string> = {
-  400: BrandFont.regular,
-  500: BrandFont.medium,
-  600: BrandFont.semibold,
-  700: BrandFont.bold,
-};
-
-/** `{ fontFamily }` for a brand weight. Use instead of `fontWeight`. */
-export function brandFont(weight: FontWeightToken = 400) {
-  return { fontFamily: BrandFontByWeight[weight] };
-}
-
-type TypeStyle = { fontSize: number; lineHeight: number; fontWeight: FontWeightToken; maxFontSizeMultiplier?: number; letterSpacing?: number };
-
-/** Type scale. Every time and duration also sets `fontVariant: ['tabular-nums']`. */
+/** Signal's type scale (see constants/styles). Every time and duration also sets `fontVariant: ['tabular-nums']`. */
 export const TypeScale = {
   stateWord: { fontSize: 48, lineHeight: 52, fontWeight: 700, maxFontSizeMultiplier: 1.1 },
   duration: { fontSize: 32, lineHeight: 36, fontWeight: 600, maxFontSizeMultiplier: 1.25 },
@@ -236,17 +219,7 @@ export const TypeScale = {
   buttonSub: { fontSize: 13, lineHeight: 17, fontWeight: 400, maxFontSizeMultiplier: 1.5 },
   navLabel: { fontSize: 12, lineHeight: 16, fontWeight: 500, maxFontSizeMultiplier: 1.3 },
   axis: { fontSize: 11, lineHeight: 14, fontWeight: 400, maxFontSizeMultiplier: 1.3 },
-} as const satisfies Record<string, TypeStyle>;
-
-/**
- * Text style for a type scale token, with the brand family in place of `fontWeight`.
- * `maxFontSizeMultiplier` is a Text prop, not a style, so pass it separately:
- * `<Text style={brandText('stateWord')} maxFontSizeMultiplier={TypeScale.stateWord.maxFontSizeMultiplier}>`.
- */
-export function brandText(token: keyof typeof TypeScale) {
-  const { fontWeight, maxFontSizeMultiplier: _max, ...size }: TypeStyle = TypeScale[token];
-  return { ...size, ...brandFont(fontWeight) };
-}
+} as const;
 
 /** Legacy template spacing steps, still used by the starter screens. */
 export const Spacing = {

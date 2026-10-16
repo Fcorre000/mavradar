@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { DefaultStyle, Styles, type StyleId } from '@/constants/styles';
 import { BrandSchemes, DefaultBrand, type BrandScheme } from '@/constants/theme';
 import type { AlertType } from '@/domain/alerts';
 
@@ -17,6 +18,8 @@ export interface Prefs {
   appearance: Appearance;
   /** Color theme, one of the brand schemes. Status colors are the same in every theme. */
   theme: BrandScheme;
+  /** App style: type, shapes and layout. Signal also uses the color theme above. */
+  style: StyleId;
   tipDismissed: boolean;
   /** App opens, for the one-time second-visit tip. */
   launches: number;
@@ -32,6 +35,7 @@ export const defaultPrefs: Prefs = {
   quiet: 0,
   appearance: 'system',
   theme: DefaultBrand,
+  style: DefaultStyle,
   tipDismissed: false,
   launches: 0,
   mutedDay: null,
@@ -44,9 +48,10 @@ export async function loadPrefs(): Promise<Prefs> {
     const raw = await AsyncStorage.getItem(KEY);
     if (!raw) return defaultPrefs;
     const saved = JSON.parse(raw) as Partial<Prefs>;
-    // A theme saved by an older build may no longer exist.
+    // A theme or style saved by another build may not exist in this one.
     const theme = saved.theme && saved.theme in BrandSchemes ? saved.theme : DefaultBrand;
-    return { ...defaultPrefs, ...saved, theme, alertTypes: { ...defaultPrefs.alertTypes, ...saved.alertTypes } };
+    const style = saved.style && saved.style in Styles ? saved.style : DefaultStyle;
+    return { ...defaultPrefs, ...saved, theme, style, alertTypes: { ...defaultPrefs.alertTypes, ...saved.alertTypes } };
   } catch {
     return defaultPrefs;
   }

@@ -9,12 +9,12 @@ import { Screen, useBottomInset } from '@/components/layout';
 import { ChoiceSheet } from '@/components/sheet-modal';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
-import { HistoryColors, Layout, Radius } from '@/constants/theme';
+import { HistoryColors } from '@/constants/theme';
 import { crossingById } from '@/domain/crossings';
 import { blockageStats } from '@/domain/stats';
 import { formatTime, startOfDay } from '@/domain/time';
 import type { BlockageEvent } from '@/domain/types';
-import { useScheme, useTheme } from '@/hooks/use-theme';
+import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
 import { setUi, useApp, visibleCrossings } from '@/state/store';
 
 const DAY = 86_400_000;
@@ -22,6 +22,7 @@ const hourLabel = (h: number) => `${h % 12 === 0 ? 12 : h % 12} ${h < 12 ? 'AM' 
 
 export default function HistoryScreen() {
   const theme = useTheme();
+  const appStyle = useStyle();
   const scheme = useScheme();
   const insets = useSafeAreaInsets();
   const bottomInset = useBottomInset();
@@ -63,7 +64,7 @@ export default function HistoryScreen() {
           <ChevronDownIcon color={theme.text} />
         </Pressable>
       </View>
-      <View style={styles.chips}>
+      <View style={[styles.chips, { paddingHorizontal: appStyle.space.screen }]}>
         <Chips
           label="Range"
           value={range}
@@ -92,14 +93,14 @@ export default function HistoryScreen() {
             </T>
           )}
           ListHeaderComponent={
-            <View style={styles.listHeader}>
+            <View style={[styles.listHeader, { gap: appStyle.space.section }]}>
               <T tabular>
                 <T weight={700}>{range} days:</T> {stats.count} blockages · typical {stats.typicalMin === null ? 'not enough data yet' : `${stats.typicalMin} min`}
                 {stats.longest ? ` · longest ${stats.longest.durationMin} min${stats.longest.stopped ? ' (stopped)' : ''}` : ''}
               </T>
 
               <View
-                style={[styles.card, { backgroundColor: theme.backgroundElement }]}
+                style={[styles.card, { backgroundColor: theme.backgroundElement, borderRadius: appStyle.radius.card }]}
                 accessible
                 accessibilityLabel={`Busiest hours. Most blockages between ${hourLabel(peak)} and ${hourLabel(peak + 1)}. Past data, not a prediction.`}>
                 <T weight={600}>Busiest hours</T>
@@ -126,7 +127,7 @@ export default function HistoryScreen() {
               </View>
             </View>
           }
-          contentContainerStyle={[styles.content, { paddingBottom: bottomInset + 24 }]}
+          contentContainerStyle={[styles.content, { paddingHorizontal: appStyle.space.screen, paddingBottom: bottomInset + 24 }]}
           initialNumToRender={20}
         />
       )}
@@ -202,11 +203,11 @@ function EventRow({ event }: { event: BlockageEvent }) {
 const styles = StyleSheet.create({
   header: { paddingHorizontal: 12, paddingBottom: 4 },
   picker: { flexDirection: 'row', alignItems: 'center', gap: 6, minHeight: 48, paddingHorizontal: 8, alignSelf: 'flex-start' },
-  chips: { paddingHorizontal: Layout.screenPadding, paddingBottom: 8 },
-  content: { paddingHorizontal: Layout.screenPadding, paddingTop: 4 },
-  listHeader: { gap: Layout.sectionGap, paddingBottom: 8 },
+  chips: { paddingBottom: 8 },
+  content: { paddingTop: 4 },
+  listHeader: { paddingBottom: 8 },
   empty: { flex: 1, justifyContent: 'center', gap: 12, paddingHorizontal: 32, paddingBottom: 80 },
-  card: { borderRadius: Radius.card, padding: 16, gap: 2 },
+  card: { padding: 16, gap: 2 },
   chart: { height: 96, justifyContent: 'flex-end', marginTop: 10 },
   // Wide enough for 'Busiest 10 AM to 11 AM' on one line; kept 25 to 75% across so it never leaves the card.
   peakLabel: { position: 'absolute', top: 0, transform: [{ translateX: -90 }], width: 180, textAlign: 'center' },

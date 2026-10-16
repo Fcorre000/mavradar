@@ -4,9 +4,8 @@ import { Button } from '@/components/button';
 import { ModalSheet } from '@/components/modal-sheet';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
-import { Radius } from '@/constants/theme';
 import { crossingById } from '@/domain/crossings';
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 import { confirmPriming, dismissPriming } from '@/state/actions';
 import { useApp } from '@/state/store';
 
@@ -17,6 +16,7 @@ import { useApp } from '@/state/store';
 export function PrimingSheet() {
   const request = useApp((s) => s.ui.priming);
   const theme = useTheme();
+  const appStyle = useStyle();
   const name = request ? crossingById(request.crossingId).name : '';
 
   return (
@@ -32,7 +32,7 @@ export function PrimingSheet() {
       }>
       <T>We&apos;ll notify you when a train blocks the crossing and when it clears. No marketing, and you can change this anytime.</T>
 
-      <View style={[styles.preview, { backgroundColor: theme.backgroundElement }]} accessible accessibilityLabel={`Example notification: ${name} is blocked.`}>
+      <View style={[styles.preview, { backgroundColor: theme.backgroundElement, borderRadius: appStyle.radius.notification }]} accessible accessibilityLabel={`Example notification: ${name} is blocked.`}>
         <View style={styles.previewTop}>
           <StateIcon state="blocked" size={16} variant="plain" />
           <T v="kicker" color={theme.textSecondary}>
@@ -53,7 +53,7 @@ export function PrimingSheet() {
 
 const styles = StyleSheet.create({
   sheet: { gap: 16 },
-  preview: { borderRadius: Radius.notification, padding: 16, gap: 4 },
+  preview: { padding: 16, gap: 4 },
   previewTop: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   actions: { gap: 4, paddingTop: 4 },
 });

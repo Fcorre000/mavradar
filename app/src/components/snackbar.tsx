@@ -2,8 +2,7 @@ import { useEffect } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { T } from '@/components/text';
-import { Radius } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 import { dismissSnack } from '@/state/actions';
 import { useApp } from '@/state/store';
 
@@ -11,6 +10,7 @@ import { useApp } from '@/state/store';
 export function Snackbar({ bottom }: { bottom: number }) {
   const snack = useApp((s) => s.ui.snack);
   const palette = useTheme();
+  const appStyle = useStyle();
 
   useEffect(() => {
     if (!snack) return;
@@ -21,7 +21,7 @@ export function Snackbar({ bottom }: { bottom: number }) {
   if (!snack) return null;
   return (
     <View
-      style={[styles.snack, { bottom, backgroundColor: palette.snackbarBackground }]}
+      style={[styles.snack, { bottom, backgroundColor: palette.snackbarBackground, borderRadius: appStyle.radius.snackbar }]}
       accessibilityLiveRegion="polite"
       accessibilityRole="alert">
       <T v="secondary" color={palette.snackbarText} style={styles.text}>
@@ -51,7 +51,6 @@ const styles = StyleSheet.create({
     left: 12,
     right: 12,
     minHeight: 48,
-    borderRadius: Radius.snackbar,
     paddingVertical: 6,
     paddingLeft: 16,
     paddingRight: 8,

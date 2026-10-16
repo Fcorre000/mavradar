@@ -3,11 +3,11 @@ import { Pressable, StyleSheet, View } from 'react-native';
 import Svg, { Defs, Pattern, Rect } from 'react-native-svg';
 
 import { T } from '@/components/text';
-import { HistoryColors, Radius, Size } from '@/constants/theme';
+import { HistoryColors, Size } from '@/constants/theme';
 import { isBlocking, type Effective } from '@/domain/freshness';
 import { minuteOfDay, minutesBetween, startOfDay } from '@/domain/time';
 import type { BlockageEvent } from '@/domain/types';
-import { useScheme, useTheme } from '@/hooks/use-theme';
+import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
 
 type Segment = { startMin: number; durMin: number; kind: 'moving' | 'stopped' | 'noData' };
 
@@ -18,6 +18,7 @@ type Segment = { startMin: number; durMin: number; kind: 'moving' | 'stopped' | 
 export function TodayTimeline({ events, e, now, onPress }: { events: BlockageEvent[]; e: Effective; now: number; onPress: () => void }) {
   const scheme = useScheme();
   const theme = useTheme();
+  const appStyle = useStyle();
   const colors = HistoryColors[scheme];
   const [width, setWidth] = useState(0);
 
@@ -54,7 +55,7 @@ export function TodayTimeline({ events, e, now, onPress }: { events: BlockageEve
         onLayout={(ev) => setWidth(ev.nativeEvent.layout.width)}
         accessibilityRole="button"
         accessibilityLabel={`Today: ${caption}. Open History.`}
-        style={[styles.bar, { backgroundColor: theme.track }]}>
+        style={[styles.bar, { backgroundColor: theme.track, borderRadius: appStyle.radius.timeline }]}>
         {width > 0 ? (
           <Svg width={width} height={Size.timelineBar}>
             <Defs>
@@ -93,7 +94,7 @@ export function TodayTimeline({ events, e, now, onPress }: { events: BlockageEve
 const styles = StyleSheet.create({
   wrap: { gap: 8, paddingTop: 4 },
   head: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between', alignItems: 'baseline', columnGap: 12 },
-  bar: { height: Size.timelineBar, borderRadius: Radius.timelineBar, overflow: 'hidden' },
+  bar: { height: Size.timelineBar, overflow: 'hidden' },
   axis: { height: 16 },
   axisLabel: { position: 'absolute' },
 });
