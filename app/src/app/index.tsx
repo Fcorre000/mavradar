@@ -4,6 +4,7 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { CrossingModel } from '@/components/crossing-model';
+import { Keycap, useKeyPressed } from '@/components/keycap';
 import { ClockIcon, CloseIcon, Dot, RouteIcon, ShareIcon } from '@/components/icons';
 import { DemoBadge, Header, Screen, useBottomInset, useLargeText } from '@/components/layout';
 import { InfoRow, RowGroup, SwitchRow } from '@/components/rows';
@@ -12,7 +13,7 @@ import { Snackbar } from '@/components/snackbar';
 import { StatusCard } from '@/components/status-card';
 import { T } from '@/components/text';
 import { TodayTimeline } from '@/components/today-timeline';
-import { pillRadius, raised } from '@/constants/styles';
+import { pillRadius } from '@/constants/styles';
 import { DISCLAIMER, sensorLine, shareText, statusCopy, typicalCopy } from '@/domain/copy';
 import { crossingById } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
@@ -26,6 +27,7 @@ export default function StatusScreen() {
   const theme = useTheme();
   const appStyle = useStyle();
   const scheme = useScheme();
+  const keyPressed = useKeyPressed();
   const bottomInset = useBottomInset();
   const largeText = useLargeText();
   const snapshot = useApp((s) => s.snapshot);
@@ -66,13 +68,15 @@ export default function StatusScreen() {
               </Pressable>
             ) : null}
             {source.kind === 'demo' ? <DemoBadge /> : null}
-            <Pressable
-              onPress={() => shareStatus(shareText(crossing, e, snapshot.now))}
-              accessibilityRole="button"
-              accessibilityLabel={`Share ${crossing.name} status`}
-              style={({ pressed }) => [styles.shareBtn, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 48) }, raised(appStyle, scheme, 'tonal'), pressed && styles.pressed]}>
-              <ShareIcon color={theme.text} />
-            </Pressable>
+            <Keycap radius={pillRadius(appStyle, 48)} style={styles.shareKey}>
+                <Pressable
+                onPress={() => shareStatus(shareText(crossing, e, snapshot.now))}
+                accessibilityRole="button"
+                accessibilityLabel={`Share ${crossing.name} status`}
+                style={({ pressed }) => [styles.shareBtn, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 48) }, pressed && keyPressed]}>
+                <ShareIcon color={theme.text} />
+              </Pressable>
+            </Keycap>
           </View>
         }
       />
@@ -161,6 +165,7 @@ const styles = StyleSheet.create({
   underline: { textDecorationLine: 'underline' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   switchBtn: { minHeight: 48, paddingHorizontal: 10, justifyContent: 'center' },
-  shareBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
+  shareKey: { marginLeft: 4 },
+  shareBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.7 },
 });

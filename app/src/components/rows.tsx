@@ -20,9 +20,12 @@ export function RowGroup({ children }: { children: ReactNode }) {
   if (appStyle.rows === 'flat') return <View>{children}</View>;
   const group = (
     <View style={[styles.group, { backgroundColor: theme.backgroundElement, borderRadius: appStyle.radius.group }]}>
-      {/* Pulls the first row's divider out of sight, so only rows between rows show one. */}
-      <View style={styles.groupInner}>
-        <Inset.Provider value>{children}</Inset.Provider>
+      {/* A little room above the first row and below the last, so controls never touch the edge. */}
+      <View style={styles.groupClip}>
+        {/* Pulls the first row's divider out of sight, so only rows between rows show one. */}
+        <View style={styles.groupInner}>
+          <Inset.Provider value>{children}</Inset.Provider>
+        </View>
       </View>
     </View>
   );
@@ -162,7 +165,8 @@ const styles = StyleSheet.create({
   },
   tall: { paddingVertical: 8 },
   inset: { marginLeft: 16, paddingRight: 16 },
-  group: { overflow: 'hidden' },
+  group: { overflow: 'hidden', paddingVertical: 4 },
+  groupClip: { overflow: 'hidden' },
   groupInner: { marginTop: -StyleSheet.hairlineWidth },
   labels: { flex: 1, gap: 2 },
   value: { flexDirection: 'row', alignItems: 'center', gap: 8, flexShrink: 1 },

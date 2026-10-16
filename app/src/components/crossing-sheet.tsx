@@ -4,10 +4,11 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { CheckIcon, PlusIcon, RouteIcon } from '@/components/icons';
+import { Keycap, useKeyPressed } from '@/components/keycap';
 import { InfoRow, RowGroup } from '@/components/rows';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
-import { pillRadius, raised } from '@/constants/styles';
+import { pillRadius } from '@/constants/styles';
 import { HistoryColors } from '@/constants/theme';
 import { DISCLAIMER, sensorLine, type StatusCopy } from '@/domain/copy';
 import type { Effective } from '@/domain/freshness';
@@ -29,6 +30,7 @@ export function CrossingSheet({ crossing, reading, e, copy, following, events, n
   const theme = useTheme();
   const appStyle = useStyle();
   const scheme = useScheme();
+  const keyPressed = useKeyPressed();
   const today = startOfDay(now);
   // Same numbers as History and the Status card: one stats function over the blockage log.
   const month = useMemo(() => blockageStats(events, crossing.id, today + DAY - 1, 30), [events, crossing.id, today]);
@@ -53,18 +55,20 @@ export function CrossingSheet({ crossing, reading, e, copy, following, events, n
             {copy.meta}
           </T>
         </View>
-        <Pressable
-          onPress={() => toggleFollow(crossing.id)}
-          accessibilityRole="button"
-          accessibilityState={{ selected: following }}
-          accessibilityLabel={following ? `Following ${crossing.name}. Tap to unfollow.` : `Follow ${crossing.name}`}
-          hitSlop={4}
-          style={[styles.follow, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 40) }, raised(appStyle, scheme, 'tonal')]}>
-          {following ? <CheckIcon size={18} color={theme.text} /> : <PlusIcon color={theme.text} />}
-          <T v="secondary" weight={700}>
-            {following ? 'Following' : 'Follow'}
-          </T>
-        </Pressable>
+        <Keycap radius={pillRadius(appStyle, 40)} style={styles.followKey}>
+          <Pressable
+            onPress={() => toggleFollow(crossing.id)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: following }}
+            accessibilityLabel={following ? `Following ${crossing.name}. Tap to unfollow.` : `Follow ${crossing.name}`}
+            hitSlop={4}
+            style={({ pressed }) => [styles.follow, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 40) }, pressed && keyPressed]}>
+            {following ? <CheckIcon size={18} color={theme.text} /> : <PlusIcon color={theme.text} />}
+            <T v="secondary" weight={700}>
+              {following ? 'Following' : 'Follow'}
+            </T>
+          </Pressable>
+        </Keycap>
       </View>
 
       <View style={styles.section}>
@@ -125,7 +129,8 @@ const styles = StyleSheet.create({
   peek: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, minHeight: 88 },
   peekText: { flex: 1, gap: 4 },
   stateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  follow: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingLeft: 12, paddingRight: 16, marginTop: 4 },
+  followKey: { marginTop: 4 },
+  follow: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingLeft: 12, paddingRight: 16 },
   section: { gap: 12, paddingTop: 18 },
   weekHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   week: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, height: 132 },
