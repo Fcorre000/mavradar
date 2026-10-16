@@ -1,3 +1,4 @@
+import { Children, type ReactNode } from 'react';
 import { Text, type TextProps } from 'react-native';
 
 import { textStyle, type FontWeightToken, type TextVariant } from '@/constants/styles';
@@ -15,7 +16,7 @@ type Props = TextProps & {
 };
 
 /** App text: the current style's typeface at a type token's size, with its font scale cap. */
-export function T({ v = 'body', color, tabular, weight, style, ...rest }: Props) {
+export function T({ v = 'body', color, tabular, weight, style, children, ...rest }: Props) {
   const theme = useTheme();
   const appStyle = useStyle();
   return (
@@ -28,7 +29,13 @@ export function T({ v = 'body', color, tabular, weight, style, ...rest }: Props)
         tabular ? { fontVariant: ['tabular-nums'] } : null,
         style,
       ]}
-      {...rest}
-    />
+      {...rest}>
+      {appStyle.padMiddleDot ? padMiddleDots(children) : children}
+    </Text>
   );
+}
+
+/** Adds a thin space after each ' · ' separator in plain strings, leaving nested elements alone. */
+function padMiddleDots(children: ReactNode): ReactNode {
+  return Children.map(children, (child) => (typeof child === 'string' ? child.replaceAll(' · ', ' ·\u2009') : child));
 }

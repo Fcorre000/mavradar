@@ -6,7 +6,7 @@ import { useStyle, useTheme } from '@/hooks/use-theme';
 
 type Option<V extends string | number> = { value: V; label: string; disabled?: boolean };
 
-/** Connected segmented buttons, 40 dp tall. The selected segment shows a check. */
+/** Connected segmented buttons, 40 dp tall. The selected segment shows a check, plus a fill or, in Civic, a rule underneath. */
 export function Segmented<V extends string | number>({
   options,
   value,
@@ -22,6 +22,7 @@ export function Segmented<V extends string | number>({
 }) {
   const theme = useTheme();
   const appStyle = useStyle();
+  const underline = appStyle.selection === 'underline';
   return (
     <View style={[styles.group, { borderColor: theme.outline, backgroundColor: theme.sheet, borderRadius: appStyle.radius.segmented }, style]} accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map((o, i) => {
@@ -35,7 +36,11 @@ export function Segmented<V extends string | number>({
             accessibilityState={{ checked: on, disabled: o.disabled }}
             // 40 dp to look like Material segmented buttons, 48 dp to tap.
             hitSlop={{ top: 4, bottom: 4 }}
-            style={[styles.item, i > 0 && { borderLeftWidth: 1, borderLeftColor: theme.outline }, on && { backgroundColor: theme.backgroundSelected }]}>
+            style={[
+              styles.item,
+              i > 0 && { borderLeftWidth: 1, borderLeftColor: theme.outline },
+              on && (underline ? { borderBottomWidth: 2, borderBottomColor: theme.primary } : { backgroundColor: theme.backgroundSelected }),
+            ]}>
             {on ? <CheckIcon color={theme.text} /> : null}
             <T v="secondary" weight={on ? 700 : 500} color={o.disabled ? theme.textSecondary : theme.text} style={o.disabled ? styles.struck : null}>
               {o.label}

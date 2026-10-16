@@ -48,14 +48,24 @@ People can pick a color theme. Transit Navy is the default; the others are the b
 
 ### Styles (Settings > Appearance)
 
-A color theme only swaps colors. A style changes how the whole app is drawn: typeface and type scale, corner shapes, spacing, control sizes, how rows are grouped and the tab bar treatment. Signal, everything in this document, is the default style and the only one so far; three more (Clarity, Transit, Civic) are being designed. Styles live in `app/src/constants/styles.ts`.
+A color theme only swaps colors. A style changes how the whole app is drawn: typeface and type scale, corner shapes, spacing, control sizes, how rows are grouped and the tab bar treatment. Signal, everything in this document, is the default. Three more were approved on the design canvas (page "Styles"), each with one signature move. Styles live in `app/src/constants/styles.ts`.
+
+| Style | Source | Type | Shape and color | Signature move |
+|---|---|---|---|---|
+| Signal | the approved v2 design | Atkinson Hyperlegible Next | soft corners, five color themes | calm by default |
+| Clarity | Apple's design language | the system font (SF Pro, Roboto) | grouped inset rows on gray, pill buttons, one blue tint | large titles: Status puts its actions on a row above the crossing name |
+| Civic | IBM's Carbon | IBM Plex Sans, light headings, semibold state word | square corners, IBM blue | a 2 dp blue rule under the chosen segment or chip; button icons at the trailing end |
+| Model Crossing | model railroad layouts | Overpass | warm table ground, plates on soft shadows, raised buttons on a darker base edge | a model of the crossing above the status card, and the map tilted 38 degrees like a tabletop |
+
+- **The crossing model** (`CrossingModel`): Center St in isometric view, with the West St underpass in the action blue. Blocked and Stopped put boxcars on the crossing with the gates down; Approaching puts them up the track with the gates down; Clear shows an empty track with the gates up; Unknown grays the whole model and shows neither, so it never implies the last state. It never replaces the status card, and it is capped at 168 dp tall so the card's freshness line stays on screen. In this style Blocked and Stopped cards size to content (no 288 dp minimum), since the model carries the alarm.
+- **No brand names** appear in the app; the names and one-line descriptions are MavRadar's own.
 
 - **Locked in every style:** status colors, the five state shapes, the state words, freshness rules, the disclaimer, 48 dp targets. A style may change a card's corners, never its status fill.
 - **Every component reads the style** through `useStyle()` (and colors through `useTheme()`), never a fixed radius, padding or font. Signal's values are the tokens above, so Signal didn't change when styles arrived.
 - **Colors:** Signal uses the color theme the person picks. Another style can bring its own light and dark palette; then the Color theme picker hides.
-- **Rows:** flat (Signal: on the page between hairlines) or inset (in a rounded group on a surface, dividers indented to the text), through `RowGroup`.
+- **Rows:** flat (Signal, Civic: on the page between hairlines) or inset (Clarity, Model Crossing: in a rounded group on the raised surface, dividers indented to the text), through `RowGroup`. Clarity's sheets use the page color so grouped rows look the same in a sheet.
 - **Fonts** load before a style switches, under the same cross-fade as a theme change, so text never shows in a fallback face. If they can't load, the app stays on the current style and says so.
-- **Settings:** a Style list (name, one-line description, check on the chosen one) between Mode and Color theme. It only shows once there is more than one style.
+- **Settings:** a Style list (name, one-line description, check on the chosen one) between Mode and Color theme.
 - **Tests:** `styles.test.ts` checks that every style defines every type token, loads every font it names, keeps 48 dp targets and a 16 dp screen margin, and that Signal still equals these tokens. `theme.test.ts` runs the contrast and status-hue checks on any style with its own palette.
 
 ## Components

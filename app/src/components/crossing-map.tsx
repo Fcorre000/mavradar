@@ -12,7 +12,7 @@ import { clusterCrossings, regionFor, worstState, type MapRegion } from '@/domai
 import { STATE_WORD } from '@/domain/copy';
 import { DETOUR } from '@/domain/crossings';
 import type { Crossing } from '@/domain/types';
-import { useScheme, useTheme } from '@/hooks/use-theme';
+import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
 import { useApp } from '@/state/store';
 
 export const MAP_AVAILABLE = true;
@@ -36,8 +36,10 @@ type Props = {
 /** Memoized: it re-renders when a marker's state, the selection or the padding changes, not on every freshness tick. */
 export const CrossingMap = memo(function CrossingMap({ crossings, states, selectedId, following, onSelect, onDrag, topPadding, bottomPadding }: Props) {
   const scheme = useScheme();
-  // Markers only redraw when remounted, so their keys carry the color theme as well as the scheme.
+  // Markers only redraw when remounted, so their keys carry the color theme and style as well as the scheme.
   const brand = useApp((s) => s.prefs.theme);
+  const styleId = useApp((s) => s.prefs.style);
+  const pitch = useStyle().mapPitch;
   const mapRef = useRef<MapView>(null);
   const initial = useMemo<MapRegion>(
     () => (crossings.length > 1 ? regionFor(crossings) : { latitude: crossings[0].latitude, longitude: crossings[0].longitude, latitudeDelta: 0.008, longitudeDelta: 0.008 }),
@@ -50,6 +52,11 @@ export const CrossingMap = memo(function CrossingMap({ crossings, states, select
   useEffect(() => {
     mapRef.current?.animateToRegion(initial, 400);
   }, [initial]);
+
+  // Model Crossing tilts the map like a tabletop; other styles look straight down.
+  useEffect(() => {
+    mapRef.current?.animateCamera({ pitch }, { duration: 300 });
+  }, [pitch]);
 
   // Keep the selected crossing visible above the sheet as it grows.
   useEffect(() => {
@@ -74,6 +81,7 @@ export const CrossingMap = memo(function CrossingMap({ crossings, states, select
       showsCompass={false}
       toolbarEnabled={false}
       pitchEnabled={false}
+      onMapReady={() => pitch && mapRef.current?.animateCamera({ pitch }, { duration: 0 })}
       rotateEnabled={false}
       mapPadding={{ top: topPadding, bottom: bottomPadding, left: 0, right: 0 }}>
       {zoomedIn ? (
@@ -84,7 +92,7 @@ export const CrossingMap = memo(function CrossingMap({ crossings, states, select
       {items.map((item) =>
         item.kind === 'crossing' ? (
           <CrossingMarker
-            key={`${item.crossing.id}-${states[item.crossing.id]}-${item.crossing.id === selectedId}-${following.includes(item.crossing.id)}-${scheme}-${brand}`}
+            key={`${item.crossing.id}-${states[item.crossing.id]}-${item.crossing.id === selectedId}-${following.includes(item.crossing.id)}-${scheme}-${brand}-${styleId}`}
             crossing={item.crossing}
             state={states[item.crossing.id] ?? 'unknown'}
             selected={item.crossing.id === selectedId}
@@ -93,7 +101,7 @@ export const CrossingMap = memo(function CrossingMap({ crossings, states, select
           />
         ) : (
           <ClusterMarker
-            key={`${item.id}-${item.crossings.map((c) => states[c.id]).join('')}-${scheme}-${brand}`}
+            key={`${item.id}-${item.crossings.map((c) => states[c.id]).join('')}-${scheme}-${brand}-${styleId}`}
             count={item.crossings.length}
             states={item.crossings.map((c) => states[c.id] ?? 'unknown')}
             latitude={item.latitude}

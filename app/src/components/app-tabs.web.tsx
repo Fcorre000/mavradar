@@ -15,7 +15,7 @@ export default function AppTabs() {
   return (
     <Tabs style={{ flex: 1 }}>
       <TabSlot style={{ flex: 1 }} />
-      <TabList style={[styles.bar, { backgroundColor: colors[appStyle.tabs.surface] }]}>
+      <TabList style={[styles.bar, { backgroundColor: colors[appStyle.tabs.surface] }, appStyle.tabs.rule && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.divider }]}>
         <TabTrigger name="index" href="/" asChild>
           <TabButton icon="status">Status</TabButton>
         </TabTrigger>
@@ -36,7 +36,7 @@ export default function AppTabs() {
 function TabButton({ children, isFocused, icon, ...props }: TabTriggerSlotProps & { icon: keyof typeof ICONS; children: ReactNode }) {
   const colors = useTheme();
   const appStyle = useStyle();
-  const color = isFocused ? colors.text : colors.textSecondary;
+  const color = isFocused ? (appStyle.tabs.tint === 'primary' ? colors.primary : colors.text) : colors.textSecondary;
   return (
     <Pressable {...props} style={styles.item} accessibilityRole="tab" accessibilityState={{ selected: !!isFocused }}>
       <View style={[styles.indicator, { borderRadius: pillRadius(appStyle, Size.navIndicatorHeight) }, isFocused && appStyle.tabs.indicator && { backgroundColor: colors.backgroundSelected }]}>{ICONS[icon](color)}</View>

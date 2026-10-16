@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { CrossingModel } from '@/components/crossing-model';
 import { ClockIcon, CloseIcon, Dot, RouteIcon, ShareIcon } from '@/components/icons';
 import { DemoBadge, Header, Screen, useBottomInset, useLargeText } from '@/components/layout';
 import { InfoRow, RowGroup, SwitchRow } from '@/components/rows';
@@ -11,12 +12,12 @@ import { Snackbar } from '@/components/snackbar';
 import { StatusCard } from '@/components/status-card';
 import { T } from '@/components/text';
 import { TodayTimeline } from '@/components/today-timeline';
-import { pillRadius } from '@/constants/styles';
+import { pillRadius, raised } from '@/constants/styles';
 import { DISCLAIMER, sensorLine, shareText, statusCopy, typicalCopy } from '@/domain/copy';
 import { crossingById } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
 import { formatTime } from '@/domain/time';
-import { useStyle, useTheme } from '@/hooks/use-theme';
+import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
 import { demo, DIRECTIONS_APP, dismissTip, openDirections, shareStatus, toggleFollow } from '@/state/actions';
 import { setUi, useApp } from '@/state/store';
 import { source } from '@/data';
@@ -24,6 +25,7 @@ import { source } from '@/data';
 export default function StatusScreen() {
   const theme = useTheme();
   const appStyle = useStyle();
+  const scheme = useScheme();
   const bottomInset = useBottomInset();
   const largeText = useLargeText();
   const snapshot = useApp((s) => s.snapshot);
@@ -65,13 +67,14 @@ export default function StatusScreen() {
               onPress={() => shareStatus(shareText(crossing, e, snapshot.now))}
               accessibilityRole="button"
               accessibilityLabel={`Share ${crossing.name} status`}
-              style={({ pressed }) => [styles.shareBtn, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 48) }, pressed && styles.pressed]}>
+              style={({ pressed }) => [styles.shareBtn, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 48) }, raised(appStyle, scheme, 'tonal'), pressed && styles.pressed]}>
               <ShareIcon color={theme.text} />
             </Pressable>
           </View>
         }
       />
       <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: appStyle.space.screen, gap: appStyle.space.section }]}>
+        {appStyle.crossingModel ? <CrossingModel state={e.state} /> : null}
         <StatusCard e={e} copy={copy} typical={typical} onRetry={demo.retry} />
         <T>{copy.explanation}</T>
 

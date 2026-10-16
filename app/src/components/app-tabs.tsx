@@ -5,12 +5,16 @@ import { useStyle, useTheme } from '@/hooks/use-theme';
 export default function AppTabs() {
   const colors = useTheme();
   const appStyle = useStyle();
+  const selected = appStyle.tabs.tint === 'primary' ? colors.primary : colors.text;
 
   return (
     <NativeTabs
       backgroundColor={colors[appStyle.tabs.surface]}
       indicatorColor={appStyle.tabs.indicator ? colors.backgroundSelected : colors[appStyle.tabs.surface]}
-      labelStyle={{ selected: { color: colors.text } }}
+      disableIndicator={!appStyle.tabs.indicator}
+      tintColor={selected}
+      iconColor={{ selected }}
+      labelStyle={{ selected: { color: selected } }}
       labelVisibilityMode="labeled">
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Status</NativeTabs.Trigger.Label>

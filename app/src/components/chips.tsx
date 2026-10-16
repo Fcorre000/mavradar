@@ -9,6 +9,7 @@ import { useStyle, useTheme } from '@/hooks/use-theme';
 export function Chips<V extends string | number>({ options, value, onChange, label }: { options: { value: V; label: string }[]; value: V; onChange: (v: V) => void; label: string }) {
   const theme = useTheme();
   const appStyle = useStyle();
+  const underline = appStyle.selection === 'underline';
   return (
     <View style={styles.wrap} accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map((o) => {
@@ -19,7 +20,8 @@ export function Chips<V extends string | number>({ options, value, onChange, lab
               style={[
                 styles.chip,
                 { borderRadius: appStyle.radius.chip },
-                { borderColor: on ? theme.backgroundSelected : theme.outline, backgroundColor: on ? theme.backgroundSelected : 'transparent', paddingLeft: on ? 10 : 14 },
+                { borderColor: on && !underline ? theme.backgroundSelected : theme.outline, backgroundColor: on && !underline ? theme.backgroundSelected : 'transparent', paddingLeft: on ? 10 : 14 },
+                on && underline && { borderBottomWidth: 2, borderBottomColor: theme.primary },
               ]}>
               {on ? <CheckIcon color={theme.text} /> : null}
               <T v="secondary" weight={on ? 700 : 500}>

@@ -9,6 +9,7 @@ import { Screen, useBottomInset } from '@/components/layout';
 import { ChoiceSheet } from '@/components/sheet-modal';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
+import { plateShadow } from '@/constants/styles';
 import { HistoryColors } from '@/constants/theme';
 import { crossingById } from '@/domain/crossings';
 import { blockageStats } from '@/domain/stats';
@@ -100,7 +101,7 @@ export default function HistoryScreen() {
               </T>
 
               <View
-                style={[styles.card, { backgroundColor: theme.backgroundElement, borderRadius: appStyle.radius.card }]}
+                style={[styles.card, { backgroundColor: theme.backgroundElement, borderRadius: appStyle.radius.card }, plateShadow(appStyle, scheme)]}
                 accessible
                 accessibilityLabel={`Busiest hours. Most blockages between ${hourLabel(peak)} and ${hourLabel(peak + 1)}. Past data, not a prediction.`}>
                 <T weight={600}>Busiest hours</T>

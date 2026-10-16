@@ -38,18 +38,30 @@ export function Header({ title, subtitle, right }: { title: string; subtitle?: s
   const insets = useSafeAreaInsets();
   const theme = useTheme();
   const appStyle = useStyle();
+  const titleBlock = (
+    <View style={styles.headerText}>
+      <T v="crossingName" accessibilityRole="header">
+        {title}
+      </T>
+      {subtitle ? (
+        <T v="secondary" color={theme.textSecondary}>
+          {subtitle}
+        </T>
+      ) : null}
+    </View>
+  );
+  // Large titles (Clarity): the actions get their own row, and the title sits under them, left aligned.
+  if (appStyle.header === 'large') {
+    return (
+      <View style={[styles.largeHeader, { paddingTop: insets.top, paddingHorizontal: appStyle.space.screen }]}>
+        <View style={styles.largeActions}>{right}</View>
+        {titleBlock}
+      </View>
+    );
+  }
   return (
     <View style={[styles.header, { paddingTop: insets.top + 8, paddingHorizontal: appStyle.space.screen, minHeight: appStyle.size.header }]}>
-      <View style={styles.headerText}>
-        <T v="crossingName" accessibilityRole="header">
-          {title}
-        </T>
-        {subtitle ? (
-          <T v="secondary" color={theme.textSecondary}>
-            {subtitle}
-          </T>
-        ) : null}
-      </View>
+      {titleBlock}
       {right}
     </View>
   );
@@ -75,5 +87,7 @@ const styles = StyleSheet.create({
   column: { flex: 1, width: '100%', maxWidth: Layout.maxContentWidth, alignSelf: 'center' },
   header: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingBottom: 8 },
   headerText: { flex: 1, gap: 2 },
+  largeHeader: { paddingBottom: 8 },
+  largeActions: { minHeight: 48, flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' },
   badge: { borderWidth: 1, paddingHorizontal: 10, paddingVertical: 4 },
 });

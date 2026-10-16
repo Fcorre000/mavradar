@@ -5,6 +5,7 @@ import { ClockIcon } from '@/components/icons';
 import { LiveDot } from '@/components/live-dot';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
+import { plateShadow } from '@/constants/styles';
 import { Size, StatusCard as CardColors } from '@/constants/theme';
 import type { StatusCopy, TypicalCopy } from '@/domain/copy';
 import type { Effective } from '@/domain/freshness';
@@ -28,7 +29,8 @@ export function StatusCard({ e, copy, typical, onRetry }: { e: Effective; copy: 
         styles.card,
         { borderRadius: appStyle.radius.card, padding: appStyle.space.card },
         // Only Blocked and Stopped hold the tall card; calm states shrink to their content.
-        !tinted && { minHeight: Size.statusCardMinHeight },
+        !tinted && { minHeight: appStyle.statusCardMinHeight },
+        plateShadow(appStyle, scheme),
         { backgroundColor: c.container },
         c.border ? { borderWidth: 2, borderStyle: 'dashed', borderColor: c.border } : null,
         e.state === 'stopped' && { paddingBottom: appStyle.space.card + Size.stripeBand },

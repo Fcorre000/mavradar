@@ -7,7 +7,7 @@ import { CheckIcon, PlusIcon, RouteIcon } from '@/components/icons';
 import { InfoRow, RowGroup } from '@/components/rows';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
-import { pillRadius } from '@/constants/styles';
+import { pillRadius, raised } from '@/constants/styles';
 import { HistoryColors } from '@/constants/theme';
 import { DISCLAIMER, sensorLine, type StatusCopy } from '@/domain/copy';
 import type { Effective } from '@/domain/freshness';
@@ -59,7 +59,7 @@ export function CrossingSheet({ crossing, reading, e, copy, following, events, n
           accessibilityState={{ selected: following }}
           accessibilityLabel={following ? `Following ${crossing.name}. Tap to unfollow.` : `Follow ${crossing.name}`}
           hitSlop={4}
-          style={[styles.follow, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 40) }]}>
+          style={[styles.follow, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 40) }, raised(appStyle, scheme, 'tonal')]}>
           {following ? <CheckIcon size={18} color={theme.text} /> : <PlusIcon color={theme.text} />}
           <T v="secondary" weight={700}>
             {following ? 'Following' : 'Follow'}

@@ -3,7 +3,8 @@ import { Pressable, StyleSheet, Switch, View } from 'react-native';
 
 import { CheckIcon, ChevronRightIcon } from '@/components/icons';
 import { T } from '@/components/text';
-import { useStyle, useTheme } from '@/hooks/use-theme';
+import { plateShadow } from '@/constants/styles';
+import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
 
 /** True inside an inset RowGroup. */
 const Inset = createContext(false);
@@ -15,9 +16,10 @@ const Inset = createContext(false);
 export function RowGroup({ children }: { children: ReactNode }) {
   const appStyle = useStyle();
   const theme = useTheme();
+  const scheme = useScheme();
   if (appStyle.rows === 'flat') return <View>{children}</View>;
   return (
-    <View style={[styles.group, { backgroundColor: theme.sheet, borderRadius: appStyle.radius.group }]}>
+    <View style={[styles.group, { backgroundColor: theme.backgroundElement, borderRadius: appStyle.radius.group }, plateShadow(appStyle, scheme)]}>
       {/* Pulls the first row's divider out of sight, so only rows between rows show one. */}
       <View style={styles.groupInner}>
         <Inset.Provider value>{children}</Inset.Provider>
