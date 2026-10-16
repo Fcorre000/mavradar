@@ -1,15 +1,20 @@
 import { NativeTabs } from 'expo-router/unstable-native-tabs';
 
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 
 export default function AppTabs() {
   const colors = useTheme();
+  const appStyle = useStyle();
+  const selected = appStyle.tabs.tint === 'primary' ? colors.primary : colors.text;
 
   return (
     <NativeTabs
-      backgroundColor={colors.backgroundElement}
-      indicatorColor={colors.backgroundSelected}
-      labelStyle={{ selected: { color: colors.text } }}
+      backgroundColor={colors[appStyle.tabs.surface]}
+      indicatorColor={appStyle.tabs.indicator ? colors.backgroundSelected : colors[appStyle.tabs.surface]}
+      disableIndicator={!appStyle.tabs.indicator}
+      tintColor={selected}
+      iconColor={{ selected }}
+      labelStyle={{ selected: { color: selected } }}
       labelVisibilityMode="labeled">
       <NativeTabs.Trigger name="index">
         <NativeTabs.Trigger.Label>Status</NativeTabs.Trigger.Label>

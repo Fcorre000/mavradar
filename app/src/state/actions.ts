@@ -1,5 +1,6 @@
 import { Appearance, Linking, Platform, Share } from 'react-native';
 
+import type { StyleId } from '@/constants/styles';
 import { demoEngine, source } from '@/data';
 import { initialAlertMemory, shouldDeliver, stepAlerts, type AlertType } from '@/domain/alerts';
 import { CENTER_ST, crossingById, DETOUR } from '@/domain/crossings';
@@ -7,6 +8,7 @@ import { effectiveState } from '@/domain/freshness';
 import type { Connection, ReportedState, SourceSnapshot } from '@/domain/types';
 import { deliverAlert, onAlertTapped } from '@/lib/alert-delivery';
 import { getAlertPermission, registerDevice, requestAlertPermission } from '@/lib/push';
+import { loadStyleFonts } from '@/lib/style-fonts';
 import { withThemeTransition } from '@/lib/theme-transition';
 
 import { loadPrefs, localDay, savePrefs, type Prefs } from './prefs';
@@ -59,14 +61,25 @@ function onSnapshot(snapshot: SourceSnapshot) {
 // ---------------------------------------------------------------- preferences
 
 export function setPrefs(patch: Partial<Prefs>) {
-  const { theme, ...rest } = patch;
+  const { theme, style, ...rest } = patch;
   savePrefs({ ...getState().prefs, ...patch });
   setState((s) => ({ prefs: { ...s.prefs, ...rest } }));
-  // A new color theme switches under the cross-fade, so text and backgrounds change together.
-  if (theme) withThemeTransition(() => setState((s) => ({ prefs: { ...s.prefs, theme } })));
+  // A new color theme or style switches under the cross-fade, so everything changes together.
+  if (theme || style) withThemeTransition(() => setState((s) => ({ prefs: { ...s.prefs, ...(theme && { theme }), ...(style && { style }) } })));
   const { appearance } = patch;
   if (appearance) withThemeTransition(() => applyAppearance(appearance));
   if (patch.following && getState().permission === 'granted') syncDevice();
+}
+
+/** Switches style once its fonts are in, so text never shows in a fallback face. */
+export async function setStyle(style: StyleId) {
+  try {
+    await loadStyleFonts(style);
+  } catch {
+    showSnack("Couldn't load that style. Check your connection and try again.");
+    return;
+  }
+  setPrefs({ style });
 }
 
 function applyAppearance(appearance: Prefs['appearance']) {

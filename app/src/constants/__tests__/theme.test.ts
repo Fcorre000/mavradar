@@ -1,6 +1,8 @@
+import { styleFor, Styles, type StyleId } from '../styles';
 import { BrandSchemes, type BrandScheme } from '../theme';
 
-// Every theme in Settings > Theme must stay readable and must never look like a crossing state.
+// Every color theme, and every style that brings its own colors, must stay readable and must never
+// look like a crossing state.
 
 function luminance(hex: string) {
   const [r, g, b] = [1, 3, 5].map((i) => {
@@ -36,9 +38,14 @@ function looksLikeStatus(hex: string) {
 const TEXT = 4.5; // WCAG AA, body text
 const UI = 3; // WCAG AA, UI parts such as switch tracks and filled buttons
 
-const cases = (Object.keys(BrandSchemes) as BrandScheme[]).flatMap((brand) =>
-  (['light', 'dark'] as const).map((mode) => [`${BrandSchemes[brand].name} ${mode}`, BrandSchemes[brand][mode]] as const),
-);
+const modes = ['light', 'dark'] as const;
+const cases = [
+  ...(Object.keys(BrandSchemes) as BrandScheme[]).flatMap((brand) => modes.map((mode) => [`${BrandSchemes[brand].name} ${mode}`, BrandSchemes[brand][mode]] as const)),
+  ...(Object.keys(Styles) as StyleId[]).flatMap((id) => {
+    const { palettes } = styleFor(id);
+    return palettes ? modes.map((mode) => [`${Styles[id].name} style ${mode}`, palettes[mode]] as const) : [];
+  }),
+];
 
 describe.each(cases)('%s', (_name, p) => {
   test.each([

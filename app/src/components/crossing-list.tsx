@@ -3,11 +3,11 @@ import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 import { StarIcon } from '@/components/icons';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
-import { Layout, Size } from '@/constants/theme';
+import { Size } from '@/constants/theme';
 import { statusCopy } from '@/domain/copy';
 import { effectiveState, isBlocking } from '@/domain/freshness';
 import type { Crossing, SourceSnapshot } from '@/domain/types';
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 import { toggleFollow } from '@/state/actions';
 
 /**
@@ -16,6 +16,7 @@ import { toggleFollow } from '@/state/actions';
  */
 export function CrossingList({ crossings, snapshot, following, onOpen, footer }: { crossings: Crossing[]; snapshot: SourceSnapshot; following: string[]; onOpen: (id: string) => void; footer?: React.ReactNode }) {
   const theme = useTheme();
+  const appStyle = useStyle();
   const rows = crossings.map((c) => {
     const e = effectiveState(snapshot.readings[c.id], snapshot);
     return { c, e, copy: statusCopy(c, e, snapshot.now, following.includes(c.id)) };
@@ -27,7 +28,7 @@ export function CrossingList({ crossings, snapshot, following, onOpen, footer }:
     <ScrollView contentContainerStyle={styles.content}>
       {cities.map((city) => (
         <View key={city}>
-          <T v="secondary" weight={600} color={theme.textSecondary} style={styles.section} accessibilityRole="header">
+          <T v="secondary" weight={600} color={theme.textSecondary} style={[styles.section, { paddingHorizontal: appStyle.space.screen }]} accessibilityRole="header">
             {city}
           </T>
           {rows
@@ -36,11 +37,11 @@ export function CrossingList({ crossings, snapshot, following, onOpen, footer }:
             .map(({ c, e, copy }) => {
               const followed = following.includes(c.id);
               return (
-                <View key={c.id} style={[styles.row, { borderBottomColor: theme.divider }]}>
+                <View key={c.id} style={[styles.row, { minHeight: appStyle.size.rowTall, borderBottomColor: theme.divider }]}>
                   {/* The whole row opens the crossing, icon and left padding included; only the star is separate. */}
                   <Pressable
                     onPress={() => onOpen(c.id)}
-                    style={({ pressed }) => [styles.main, pressed && styles.pressed]}
+                    style={({ pressed }) => [styles.main, { paddingLeft: appStyle.space.screen }, pressed && styles.pressed]}
                     accessibilityRole="button"
                     accessibilityLabel={copy.a11y}>
                     <StateIcon state={e.state} size={Size.listIcon} variant="plain" />
@@ -74,9 +75,9 @@ export function CrossingList({ crossings, snapshot, following, onOpen, footer }:
 
 const styles = StyleSheet.create({
   content: { paddingBottom: 24 },
-  section: { paddingHorizontal: Layout.screenPadding, paddingTop: 16, paddingBottom: 8 },
-  row: { flexDirection: 'row', alignItems: 'center', minHeight: Size.listRow, paddingRight: 8, borderBottomWidth: StyleSheet.hairlineWidth },
-  main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14, alignSelf: 'stretch', paddingLeft: Layout.screenPadding, paddingRight: 6, paddingVertical: 12 },
+  section: { paddingTop: 16, paddingBottom: 8 },
+  row: { flexDirection: 'row', alignItems: 'center', paddingRight: 8, borderBottomWidth: StyleSheet.hairlineWidth },
+  main: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 14, alignSelf: 'stretch', paddingRight: 6, paddingVertical: 12 },
   text: { flex: 1, gap: 2 },
   pressed: { opacity: 0.7 },
   star: { width: Size.touchTarget, height: Size.touchTarget, alignItems: 'center', justifyContent: 'center' },

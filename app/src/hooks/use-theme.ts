@@ -3,7 +3,8 @@
  * https://docs.expo.dev/guides/color-schemes/
  */
 
-import { paletteFor } from '@/constants/theme';
+import { styleFor, type AppStyle } from '@/constants/styles';
+import { paletteFor, type Palette } from '@/constants/theme';
 import { useColorScheme } from '@/hooks/use-color-scheme';
 import { useApp } from '@/state/store';
 
@@ -13,8 +14,18 @@ export function useScheme(): 'light' | 'dark' {
   return scheme === 'dark' ? 'dark' : 'light';
 }
 
-/** The palette for the chosen color theme (Settings > Appearance) in the current scheme. */
-export function useTheme() {
+/** The style chosen in Settings > Appearance: type, shapes, spacing and sizes. */
+export function useStyle(): AppStyle {
+  return styleFor(useApp((s) => s.prefs.style));
+}
+
+/**
+ * The palette in the current scheme: the style's own colors, or the chosen color theme for a style
+ * that doesn't bring any (Signal).
+ */
+export function useTheme(): Palette {
+  const style = useStyle();
   const brand = useApp((s) => s.prefs.theme);
-  return paletteFor(brand, useScheme());
+  const scheme = useScheme();
+  return style.palettes ? style.palettes[scheme] : paletteFor(brand, scheme);
 }

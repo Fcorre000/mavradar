@@ -1,32 +1,27 @@
 import type { ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { ModalSheet } from '@/components/modal-sheet';
 import { T } from '@/components/text';
-import { Radius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-/** A modal bottom sheet with a title. Tapping outside or back closes it. */
+/** A modal bottom sheet with a title. Tapping outside, back, or dragging the title down closes it. */
 export function SheetModal({ visible, title, onClose, children, doneLabel }: { visible: boolean; title: string; onClose: () => void; children: ReactNode; doneLabel?: string }) {
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
   return (
-    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose} statusBarTranslucent>
-      <View style={styles.backdrop}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={onClose} accessibilityLabel="Close" />
-        <View style={[styles.sheet, { backgroundColor: theme.sheet, paddingBottom: insets.bottom + 20 }]} accessibilityViewIsModal>
-          <View style={[styles.handle, { backgroundColor: theme.sheetHandle }]} />
-          <T v="crossingName" accessibilityRole="header">
-            {title}
-          </T>
-          <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
-            {children}
-          </ScrollView>
-          {doneLabel ? <Button label={doneLabel} variant="outline" center onPress={onClose} /> : null}
-        </View>
-      </View>
-    </Modal>
+    <ModalSheet
+      visible={visible}
+      onClose={onClose}
+      header={
+        <T v="crossingName" accessibilityRole="header">
+          {title}
+        </T>
+      }>
+      <ScrollView style={styles.body} contentContainerStyle={styles.bodyContent}>
+        {children}
+      </ScrollView>
+      {doneLabel ? <Button label={doneLabel} variant="outline" center onPress={onClose} /> : null}
+    </ModalSheet>
   );
 }
 
@@ -80,9 +75,6 @@ export function ChoiceSheet<V extends string | number>({
 }
 
 const styles = StyleSheet.create({
-  backdrop: { flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.45)' },
-  sheet: { maxHeight: '88%', borderTopLeftRadius: Radius.sheet, borderTopRightRadius: Radius.sheet, paddingHorizontal: 24, paddingTop: 10, gap: 12 },
-  handle: { alignSelf: 'center', width: 32, height: 4, borderRadius: 2, marginBottom: 4 },
   body: { flexGrow: 0 },
   bodyContent: { gap: 12, paddingBottom: 4 },
   choice: { flexDirection: 'row', alignItems: 'center', gap: 14, minHeight: 56, borderBottomWidth: StyleSheet.hairlineWidth },

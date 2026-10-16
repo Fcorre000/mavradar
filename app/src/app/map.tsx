@@ -11,11 +11,11 @@ import { Screen, useBottomInset } from '@/components/layout';
 import { Segmented } from '@/components/segmented';
 import { Snackbar } from '@/components/snackbar';
 import { T } from '@/components/text';
-import { Layout, Radius, Size, type CrossingState } from '@/constants/theme';
+import { Size, type CrossingState } from '@/constants/theme';
 import { DISCLAIMER, statusCopy } from '@/domain/copy';
 import { crossingById } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 import { showSnack } from '@/state/actions';
 import { setUi, useApp, visibleCrossings } from '@/state/store';
 
@@ -24,6 +24,7 @@ const HALF = Size.sheetHalf;
 
 export default function MapScreen() {
   const theme = useTheme();
+  const appStyle = useStyle();
   const insets = useSafeAreaInsets();
   const bottomInset = useBottomInset();
   const snapshot = useApp((s) => s.snapshot);
@@ -43,14 +44,26 @@ export default function MapScreen() {
   const selected = crossings.find((c) => c.id === selectedId) ?? crossings[0];
   const e = effectiveState(snapshot.readings[selected.id], snapshot);
   const copy = statusCopy(selected, e, snapshot.now, following.includes(selected.id));
+  // The snapshot ticks every second for freshness; marker states rarely change. Keying on the joined
+  // states keeps the same object until one does, so the memoized map skips the per-second render.
+  const statesKey = crossings.map((c) => effectiveState(snapshot.readings[c.id], snapshot).state).join(',');
   const states = useMemo(() => {
     const out: Record<string, CrossingState> = {};
-    for (const c of crossings) out[c.id] = effectiveState(snapshot.readings[c.id], snapshot).state;
+    const list = statesKey.split(',') as CrossingState[];
+    crossings.forEach((c, i) => (out[c.id] = list[i]));
     return out;
-  }, [crossings, snapshot]);
+  }, [statesKey, crossings]);
   // The sheet runs to the bottom of the screen, behind the floating iOS tab bar, so it reads as one
   // surface with it instead of a card with a flat bottom edge. Snap heights add that inset back.
   const snapPoints = useMemo(() => [PEEK + bottomInset, HALF + bottomInset, '88%'], [bottomInset]);
+
+  const selectOnMap = useCallback(
+    (id: string) => {
+      setUi({ selectedCrossingId: id });
+      if (sheetIndex < 0) sheetRef.current?.snapToIndex(0);
+    },
+    [sheetIndex],
+  );
 
   const collapse = useCallback(() => {
     if (sheetIndex > 0) sheetRef.current?.snapToIndex(0);
@@ -81,9 +94,9 @@ export default function MapScreen() {
   );
 
   const coverage = (
-    <View style={[styles.banner, { backgroundColor: theme.sheet, borderColor: theme.divider }]}>
+    <View style={[styles.banner, { backgroundColor: theme.sheet, borderColor: theme.divider, borderRadius: appStyle.radius.panel }]}>
       <T v="secondary">1 crossing live in Arlington. More coming.</T>
-      <Pressable onPress={() => showSnack('Crossing suggestions open once more sensors are funded.')} accessibilityRole="link" style={styles.link}>
+      <Pressable onPress={() => showSnack('Crossing suggestions open once more sensors are funded.')} accessibilityRole="link" hitSlop={{ top: 6, bottom: 6 }} style={styles.link}>
         <T v="secondary" weight={700} style={styles.underline}>
           Suggest a crossing
         </T>
@@ -92,7 +105,7 @@ export default function MapScreen() {
   );
 
   const offlineBanner = (
-    <View style={[styles.banner, styles.offline, { backgroundColor: theme.sheet, borderColor: theme.textSecondary }]} accessibilityLiveRegion="polite">
+    <View style={[styles.banner, styles.offline, { backgroundColor: theme.sheet, borderColor: theme.textSecondary, borderRadius: appStyle.radius.panel }]} accessibilityLiveRegion="polite">
       <CloudOffIcon color={theme.text} />
       <View style={styles.offlineText}>
         <T weight={700}>{snapshot.connection === 'phone' ? "You're offline." : "Can't reach MavRadar."}</T>
@@ -104,11 +117,11 @@ export default function MapScreen() {
   );
 
   const sheetHeight = screenHeight && sheetTop ? screenHeight - sheetTop : PEEK + bottomInset;
-  const sheetBackground = { backgroundColor: theme.sheet, borderTopLeftRadius: Radius.sheet, borderTopRightRadius: Radius.sheet };
+  const sheetBackground = { backgroundColor: theme.sheet, borderTopLeftRadius: appStyle.radius.sheet, borderTopRightRadius: appStyle.radius.sheet };
   const sheetHandle = { backgroundColor: theme.sheetHandle, width: 32 };
   const details = (
     <BottomSheetScrollView contentContainerStyle={{ paddingBottom: bottomInset }}>
-      <CrossingSheet crossing={crossingById(selected.id)} e={e} copy={copy} following={following.includes(selected.id)} events={snapshot.events} now={snapshot.now} />
+      <CrossingSheet crossing={crossingById(selected.id)} reading={snapshot.readings[selected.id]} e={e} copy={copy} following={following.includes(selected.id)} events={snapshot.events} now={snapshot.now} />
     </BottomSheetScrollView>
   );
 
@@ -116,14 +129,14 @@ export default function MapScreen() {
     return (
       <Screen>
         <View style={styles.fill} onLayout={(ev) => setScreenHeight(ev.nativeEvent.layout.height)}>
-          <View style={[styles.listTop, { paddingTop: insets.top + 8 }]}>{toggle}</View>
+          <View style={[styles.listTop, { paddingTop: insets.top + 8, paddingHorizontal: appStyle.space.screen }]}>{toggle}</View>
           {!MAP_AVAILABLE ? (
-            <View style={[styles.inlineBanner, { backgroundColor: theme.backgroundElement }]}>
+            <View style={[styles.inlineBanner, { backgroundColor: theme.backgroundElement, marginHorizontal: appStyle.space.screen, borderRadius: appStyle.radius.panel }]}>
               <MapOffIcon color={theme.text} />
               <T weight={600}>Map unavailable. Showing list.</T>
             </View>
           ) : null}
-          {offline ? <View style={styles.inlineWrap}>{offlineBanner}</View> : null}
+          {offline ? <View style={[styles.inlineWrap, { paddingHorizontal: appStyle.space.screen }]}>{offlineBanner}</View> : null}
           <CrossingList
             crossings={crossings}
             snapshot={snapshot}
@@ -131,7 +144,7 @@ export default function MapScreen() {
             onOpen={openFromList}
             footer={
               crossings.length === 1 ? (
-                <View style={styles.footer}>
+                <View style={[styles.footer, { padding: appStyle.space.screen }]}>
                   {coverage}
                   <T v="disclaimer" color={theme.textSecondary}>
                     {DISCLAIMER}
@@ -164,22 +177,19 @@ export default function MapScreen() {
   }
 
   return (
-    <Screen>
+    <Screen fullBleed>
       <View style={styles.fill} onLayout={(ev) => setScreenHeight(ev.nativeEvent.layout.height)}>
         <CrossingMap
           crossings={crossings}
           states={states}
           selectedId={selected.id}
           following={following}
-          onSelect={(id) => {
-            setUi({ selectedCrossingId: id });
-            if (sheetIndex < 0) sheetRef.current?.snapToIndex(0);
-          }}
+          onSelect={selectOnMap}
           onDrag={collapse}
           topPadding={insets.top + 120}
           bottomPadding={sheetIndex === 0 ? PEEK + bottomInset : Math.min(sheetHeight, HALF + bottomInset)}
         />
-        <View style={[styles.mapTop, { paddingTop: insets.top + 8 }]} pointerEvents="box-none">
+        <View style={[styles.mapTop, { paddingTop: insets.top + 8, paddingHorizontal: appStyle.space.screen }]} pointerEvents="box-none">
           {toggle}
           {sheetIndex < 2 ? (offline ? offlineBanner : crossings.length === 1 ? coverage : null) : null}
         </View>
@@ -206,14 +216,14 @@ export default function MapScreen() {
 const styles = StyleSheet.create({
   fill: { flex: 1 },
   toggle: { alignSelf: 'center', width: 216 },
-  listTop: { paddingHorizontal: Layout.screenPadding, paddingBottom: 12 },
-  mapTop: { position: 'absolute', left: 0, right: 0, top: 0, paddingHorizontal: Layout.screenPadding, gap: 16 },
-  banner: { borderRadius: Radius.button, borderWidth: StyleSheet.hairlineWidth, paddingVertical: 10, paddingHorizontal: 14, gap: 2 },
+  listTop: { paddingBottom: 12 },
+  mapTop: { position: 'absolute', left: 0, right: 0, top: 0, gap: 16 },
+  banner: { borderWidth: StyleSheet.hairlineWidth, paddingVertical: 10, paddingHorizontal: 14, gap: 2 },
   offline: { flexDirection: 'row', alignItems: 'flex-start', gap: 10, borderWidth: 2, borderStyle: 'dashed' },
   offlineText: { flex: 1, gap: 2 },
   link: { alignSelf: 'flex-start', minHeight: 36, justifyContent: 'center' },
   underline: { textDecorationLine: 'underline' },
-  inlineBanner: { marginHorizontal: Layout.screenPadding, marginBottom: 8, padding: 14, borderRadius: Radius.button, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  inlineWrap: { paddingHorizontal: Layout.screenPadding, paddingBottom: 8 },
-  footer: { padding: Layout.screenPadding, gap: 16 },
+  inlineBanner: { marginBottom: 8, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10 },
+  inlineWrap: { paddingBottom: 8 },
+  footer: { gap: 16 },
 });

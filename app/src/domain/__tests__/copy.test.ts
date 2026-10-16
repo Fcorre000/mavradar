@@ -1,7 +1,8 @@
 /// <reference types="jest" />
-import { shareText, statusCopy, typicalCopy, TYPICAL_MIN_SAMPLES } from '../copy';
+import { sensorLine, shareText, statusCopy, typicalCopy } from '../copy';
 import { CENTER_ST } from '../crossings';
 import type { Effective } from '../freshness';
+import { TYPICAL_MIN_SAMPLES } from '../stats';
 import { formatDuration } from '../time';
 import type { BlockageEvent } from '../types';
 
@@ -81,7 +82,12 @@ describe('typicalCopy', () => {
   it('compares stopped trains with stopped trains only', () => {
     const e: Effective = { ...base, state: 'stopped', since: NOW - 12 * MIN };
     expect(typicalCopy(e, [...moving, ...stoppedRuns], CENTER_ST.id, NOW)).toMatchObject({ lead: 'Stopped trains here:', rest: 'about 25 min' });
-    expect(typicalCopy(blocked(3), stoppedRuns, CENTER_ST.id, NOW)).toBeNull();
+    expect(typicalCopy(e, moving, CENTER_ST.id, NOW)).toBeNull();
+  });
+
+  it('uses every blockage for Blocked, the same typical time History shows', () => {
+    // 11 blockages: six moving (median 5) and five stopped (12 to 40) give an overall median of 8.
+    expect(typicalCopy(blocked(3), [...moving, ...stoppedRuns], CENTER_ST.id, NOW)).toMatchObject({ lead: 'Usually about 8 min' });
   });
 
   it('stays hidden with too little history', () => {
@@ -115,5 +121,21 @@ describe('shareText', () => {
     const text = shareText(CENTER_ST, { ...base, state: 'unknown', cause: 'sensor' }, NOW);
     expect(text).toContain("can't confirm");
     expect(text).not.toMatch(/blocked|clear,/i);
+  });
+});
+
+describe('sensorLine', () => {
+  const reading = { crossingId: CENTER_ST.id, state: 'clear' as const, since: null, stoppedAt: null, detectedAt: null, clearSince: null, lastReadingAt: NOW, sensorName: 'Crossing node', sensorBatteryOk: true };
+  const copy = statusCopy(CENTER_ST, base, NOW, false);
+
+  it('names the node and its battery from the reading', () => {
+    expect(sensorLine(copy, base, reading)).toBe('Online · Crossing node · battery OK');
+    expect(sensorLine(copy, base, { ...reading, sensorBatteryOk: false })).toBe('Online · Crossing node · battery low');
+  });
+
+  it('falls back to the Unknown wording', () => {
+    const e: Effective = { ...base, state: 'unknown', cause: 'sensor', lastAt: NOW - 30 * MIN };
+    const c = statusCopy(CENTER_ST, e, NOW, false);
+    expect(sensorLine(c, e, reading)).toBe(c.sensor);
   });
 });

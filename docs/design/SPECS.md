@@ -16,6 +16,8 @@ All sizes are dp, type is sp, frame is 412 x 915. Token names in `code` refer to
 - "Travel information only. Always obey crossing signals and gates." appears on Status, in the map sheet, in Settings and in the store listing. Status is the first screen anyone sees, so the line is on screen from the first launch.
 - Touch targets are at least 48 dp. Text passes WCAG AA (4.5:1, 3:1 at 24 sp and up). Icons and marker rings pass 3:1.
 - Every time and duration uses tabular numerals.
+- Icons come from each platform's own set: SF Symbols on iOS, Material Symbols on Android and web. Only the state shapes, the map art and the star are drawn by hand.
+- On tablets, content sits in a centered column at most 600 dp wide (`spacing.maxContentWidth`); the map stays full width. iPad runs in every orientation, phones stay portrait.
 
 ## Brand: Transit Navy
 
@@ -44,6 +46,37 @@ People can pick a color theme. Transit Navy is the default; the others are the b
   - No brand surface or primary in a status hue: red, orange or amber (Blocked, Stopped, Approaching), teal-green (Clear) or purple, unless it is a near-neutral tint (chroma under 0.2). Orange and amber backgrounds are out for this reason; they read as Approaching.
 - The choice is saved on the phone with the other preferences. The splash screen stays up until it loads, so the default theme never flashes first. Changing it uses the same cross-fade as changing the mode.
 
+### Styles (Settings > Appearance)
+
+A color theme only swaps colors. A style changes how the whole app is drawn: typeface and type scale, corner shapes, spacing, control sizes, how rows are grouped and the tab bar treatment. Signal, everything in this document, is the default. Three more were approved on the design canvas (page "Styles"), each with one signature move. Styles live in `app/src/constants/styles.ts`.
+
+| Style | Source | Type | Shape and color | Signature move |
+|---|---|---|---|---|
+| Signal | the approved v2 design | Atkinson Hyperlegible Next | soft corners, five color themes | calm by default |
+| Clarity | Apple's design language | the system font (SF Pro, Roboto) | grouped inset rows on gray, pill buttons, one blue tint | large titles: Status puts its actions on a row above the crossing name |
+| Civic | IBM's Carbon | IBM Plex Sans, light headings, semibold state word | square corners, IBM blue | a 2 dp blue rule under the chosen segment or chip; button icons at the trailing end |
+| Model Crossing | model railroad layouts | Overpass | warm table ground, plates on soft shadows, raised buttons on a darker base edge | a model of the crossing above the status card, and the map tilted 38 degrees like a tabletop |
+
+- **The crossing model** (`CrossingModel`): Center St as a lit tabletop model railroad, with the West St underpass in the action blue, ballast and ties on the track, flocked grass, crossbuck masts with two red lamps, gate arms, and a lamp lighting the board from the upper left so everything casts a shadow. Freight cars (boxcars on trucks, with doors, ribs and roof walks, in oxide, brown and gray) and a locomotive (cab windows, stripe, lit headlight) carry the state:
+  - Blocked: the gates are down, the lamps take turns about once a second, and the cars roll slowly through the crossing (one loop every 9.6 s).
+  - Stopped: the same, but the cars stand still.
+  - Approaching: the gates are down, the lamps flash, and the locomotive comes down the far stretch of track toward the crossing.
+  - Clear: an empty track, gates up, lamps dark.
+  - Unknown: the whole model in gray, with no train, no gate arms and no lit lamps, so it never implies the last state.
+  - Reduced motion: nothing moves and both lamps stay lit. Motion runs only while Status is on screen and the app is in the foreground.
+  - Cost: the model is stacked layers. The scenery is drawn once; only a small train layer updates (about 15 times a second, only the cars on the board) while a blocked train rolls; the lamps alternate on the native animation driver with no re-render. Measured on the web build at 4x CPU slowdown: about 200 ms of main-thread time per second while rolling, against about 80 with nothing moving (down from about 390 before layering).
+  - The lamps are two small dots alternating at about 1 Hz, well under the three-flashes-a-second limit; this model is the one place the app animates a flash, on purpose, because it is what a real crossing does.
+  - It never replaces the status card, and it is capped at 168 dp tall so the card's freshness line stays on screen. In this style Blocked and Stopped cards size to content (no 288 dp minimum), since the model carries the alarm. In dark mode the table is a warm brown-black.
+- **No brand names** appear in the app; the names and one-line descriptions are MavRadar's own.
+
+- **Locked in every style:** status colors, the five state shapes, the state words, freshness rules, the disclaimer, 48 dp targets. A style may change a card's corners, never its status fill.
+- **Every component reads the style** through `useStyle()` (and colors through `useTheme()`), never a fixed radius, padding or font. Signal's values are the tokens above, so Signal didn't change when styles arrived.
+- **Colors:** Signal uses the color theme the person picks. Another style can bring its own light and dark palette; then the Color theme picker hides.
+- **Rows:** flat (Signal, Civic: on the page between hairlines) or inset (Clarity, Model Crossing: in a rounded group on the raised surface, dividers indented to the text), through `RowGroup`. Clarity's sheets use the page color so grouped rows look the same in a sheet.
+- **Fonts** load before a style switches, under the same cross-fade as a theme change, so text never shows in a fallback face. If they can't load, the app stays on the current style and says so.
+- **Settings:** a Style list (name, one-line description, check on the chosen one) between Mode and Color theme.
+- **Tests:** `styles.test.ts` checks that every style defines every type token, loads every font it names, keeps 48 dp targets and a 16 dp screen margin, and that Signal still equals these tokens. `theme.test.ts` runs the contrast and status-hue checks on any style with its own palette.
+
 ## Components
 
 ### Status card
@@ -52,14 +85,14 @@ The main status block on the Status screen.
 
 | Part | Spec |
 |---|---|
-| Container | Full width minus 20 dp side padding. Radius `radius.card` (20). Padding 20. Min height `size.statusCardMinHeight` (288), grows with content. |
+| Container | Full width minus 20 dp side padding. Radius `radius.card` (20). Padding 20. Blocked and Stopped: min height `size.statusCardMinHeight` (288), grows with content. Clear, Approaching and Unknown size to their content, so a calm screen doesn't spend its space on an empty card. |
 | Fill | `color.statusCard.<theme>.<state>.container`. Tinted for Clear, Approaching, Unknown. Solid for Blocked, Stopped. |
 | Unknown border | 2 dp dashed, `border` token. No other state has a border. |
 | Icon | 40 dp, top left, 8 dp below it. Shape per state (circle + check, warning diamond + train, rounded square + X, octagon + pause bars, dashed circle + ?). |
 | Kicker | `typography.scale.kicker`, 6 dp above the state word. "No train detected", "Train detected nearby", "Train on crossing", "Train not moving", or the Unknown cause. |
 | State word | `stateWord` (48/52 bold), sentence case. Wraps to 2 lines if needed, never clips. `maxFontSizeMultiplier` 1.1. |
 | Duration line | Blocked and Stopped: `duration` (32/36) plus `body` "since 2:41 PM" on the same baseline, wrapping below if needed. Other states: `stateLine` (20/26). |
-| Typical line | Blocked and Stopped only, under the duration: a hairline rule at 35% on-container, then an 18 dp clock and one `body` line with a bold lead. "**Usually about 5 min** here", "**Stopped trains here:** about 25 min", or once past it "**Longer than usual.** Typical: 5 min". The median of the crossing's finished blockages of the same kind (moving or stopped) in the last 30 days; hidden with fewer than 5. It reports the past and never counts down. `typicalCopy()` in `domain/copy.ts`. |
+| Typical line | Blocked and Stopped only, under the duration: a hairline rule at 35% on-container, then an 18 dp clock and one `body` line with a bold lead. "**Usually about 5 min** here", "**Stopped trains here:** about 25 min", or once past it "**Longer than usual.** Typical: 5 min". From `blockageStats()` in `domain/stats.ts`, the one function behind every blockage number in the app (this line, the crossing sheet and History), so they always agree. Blocked uses the median of all finished blockages in the last 30 days; Stopped uses stopped trains only and says so. Hidden with fewer than 5. It reports the past and never counts down. |
 | Freshness line | Pinned to the bottom of the card with `margin-top: auto`, 10 dp above. Filled dot + "Live · updated 8 s ago". Delayed: hollow ring + "Updated 1 min ago · checking" in secondary text (on-container on solid cards). |
 | Stopped stripe | 8 dp band on the bottom edge, 45 degree stripes at 12% white, 6 dp on and 6 dp off. Never behind text (card bottom padding becomes 28). |
 | Accessibility | The card is a polite live region. Reading order: state word, duration, typical line, freshness, then the explanation below the card. |
@@ -105,6 +138,7 @@ The main status block on the Status screen.
 | Peek | Name 20/26 semibold. 24 dp state icon + state word 16 bold. Meta line in secondary: "Blocked for 7 min · updated 8 s ago". Follow button at the right: tonal, 40 dp tall inside a 48 dp target, plus icon or check. |
 | Half | Directions button (56 dp, filled unless Clear), then 48 dp rows: Sensor, Last blockage, 30-day typical blockage, then the disclaimer. |
 | Full | "Last 7 days" bar chart (neutral bars, today hatched) and an outlined "Open in Status" button. |
+| Map gestures | Drag to pan, pinch to zoom, two fingers to tilt and to turn the map, as in the platform's maps app. The compass appears once the map is turned; tapping it faces north. Model Crossing opens tilted 38 degrees; the other styles open flat. |
 | Behavior | Dragging the map collapses to peek. Predictive back collapses one step. With a street-level map at half or full, the map moves up 170 dp so the selected marker stays visible. |
 
 ### Row
@@ -132,9 +166,9 @@ The main status block on the Status screen.
 | Zone | Measure |
 |---|---|
 | Top inset | 36 (system status bar), y 0 to 36 |
-| Header | 64: name 22/28, city line 14/20, y 36 to 100 |
+| Header | 64: name 22/28, city line 14/20 ("Arlington, TX" only; the USDOT ID lives in the map sheet and Settings > Sensors), y 36 to 100 |
 | Gap | 16 (8 header bottom + 8 content top) |
-| Status card | min 288, y 116 to 404 |
+| Status card | Blocked and Stopped min 288, y 116 to 404; calm states size to content |
 | Gap | 16 |
 | Explanation | 16/24, 1 to 2 lines, y 420 to 444 for one line |
 | Gap | 16 |
@@ -142,10 +176,10 @@ The main status block on the Status screen.
 | Gap | 16 |
 | Rows | 3 x 48 plus 1 dp dividers (Alerts switch, Sensor, Last blockage), y 551 to 699 |
 | Flexible space | at least 16 (about 20 at 100%) |
-| Directions button | 56, radius 16, 20 side padding |
-| Gap | 12 |
+| Directions button | 56, radius 16, 20 side padding, 8 below the scroll area |
+| Gap | 8 |
 | Disclaimer | 13/18, 2 lines |
-| Gap | 12 |
+| Gap | 6 |
 | Nav bar | 80: 64 x 32 indicator, 24 dp icons, 12 sp labels |
 
 At 200% font scale the header, card and everything down to the rows scroll. Only the directions button and the nav bar stay pinned, and the disclaimer moves into the scroll area.
@@ -166,7 +200,7 @@ There is no welcome or onboarding screen. Checking a crossing is often time crit
 
 - No account, no location question and no permission prompt at launch.
 - The notification priming sheet appears only when the person asks for alerts: Follow in the map sheet, the star in the List, the alerts switch on Status, or an alert switch in Settings. After that comes the Android dialog.
-- On the second visit, Status can show one dismissible tip ("Set your commute hours so alerts only come when you drive") in place of the Today timeline.
+- On the second visit, Status can show one dismissible tip ("Set your commute hours so alerts only come when you drive") under the Today timeline, never in its place.
 - Tapping any notification opens Status for that crossing.
 
 ## Notifications

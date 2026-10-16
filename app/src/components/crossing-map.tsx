@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Marker } from 'react-native-maps';
 import Svg, { Circle } from 'react-native-svg';
@@ -12,7 +12,8 @@ import { clusterCrossings, regionFor, worstState, type MapRegion } from '@/domai
 import { STATE_WORD } from '@/domain/copy';
 import { DETOUR } from '@/domain/crossings';
 import type { Crossing } from '@/domain/types';
-import { useScheme, useTheme } from '@/hooks/use-theme';
+import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
+import { useApp } from '@/state/store';
 
 export const MAP_AVAILABLE = true;
 
@@ -32,8 +33,13 @@ type Props = {
  * Apple Maps on iOS, Google Maps on Android (with the JSON style from tokens.json).
  * Markers use the state shapes; below zoom 12 nearby crossings merge into clusters.
  */
-export function CrossingMap({ crossings, states, selectedId, following, onSelect, onDrag, topPadding, bottomPadding }: Props) {
+/** Memoized: it re-renders when a marker's state, the selection or the padding changes, not on every freshness tick. */
+export const CrossingMap = memo(function CrossingMap({ crossings, states, selectedId, following, onSelect, onDrag, topPadding, bottomPadding }: Props) {
   const scheme = useScheme();
+  // Markers only redraw when remounted, so their keys carry the color theme and style as well as the scheme.
+  const brand = useApp((s) => s.prefs.theme);
+  const styleId = useApp((s) => s.prefs.style);
+  const pitch = useStyle().mapPitch;
   const mapRef = useRef<MapView>(null);
   const initial = useMemo<MapRegion>(
     () => (crossings.length > 1 ? regionFor(crossings) : { latitude: crossings[0].latitude, longitude: crossings[0].longitude, latitudeDelta: 0.008, longitudeDelta: 0.008 }),
@@ -46,6 +52,12 @@ export function CrossingMap({ crossings, states, selectedId, following, onSelect
   useEffect(() => {
     mapRef.current?.animateToRegion(initial, 400);
   }, [initial]);
+
+  // Model Crossing opens the map tilted like a tabletop; other styles open looking straight down.
+  // Either way people can then tilt and turn it themselves.
+  useEffect(() => {
+    mapRef.current?.animateCamera({ pitch }, { duration: 300 });
+  }, [pitch]);
 
   // Keep the selected crossing visible above the sheet as it grows.
   useEffect(() => {
@@ -67,10 +79,13 @@ export function CrossingMap({ crossings, states, selectedId, following, onSelect
       customMapStyle={MapStyles[scheme]}
       userInterfaceStyle={scheme}
       showsPointsOfInterests={false}
-      showsCompass={false}
+      // Two-finger tilt and rotate, as in the platform's own maps app. The compass shows once the map
+      // is turned; tapping it faces north again.
+      showsCompass
       toolbarEnabled={false}
-      pitchEnabled={false}
-      rotateEnabled={false}
+      pitchEnabled
+      rotateEnabled
+      onMapReady={() => pitch && mapRef.current?.animateCamera({ pitch }, { duration: 0 })}
       mapPadding={{ top: topPadding, bottom: bottomPadding, left: 0, right: 0 }}>
       {zoomedIn ? (
         <Marker coordinate={DETOUR} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false} tappable={false}>
@@ -80,7 +95,7 @@ export function CrossingMap({ crossings, states, selectedId, following, onSelect
       {items.map((item) =>
         item.kind === 'crossing' ? (
           <CrossingMarker
-            key={`${item.crossing.id}-${states[item.crossing.id]}-${item.crossing.id === selectedId}-${following.includes(item.crossing.id)}-${scheme}`}
+            key={`${item.crossing.id}-${states[item.crossing.id]}-${item.crossing.id === selectedId}-${following.includes(item.crossing.id)}-${scheme}-${brand}-${styleId}`}
             crossing={item.crossing}
             state={states[item.crossing.id] ?? 'unknown'}
             selected={item.crossing.id === selectedId}
@@ -89,7 +104,7 @@ export function CrossingMap({ crossings, states, selectedId, following, onSelect
           />
         ) : (
           <ClusterMarker
-            key={`${item.id}-${item.crossings.map((c) => states[c.id]).join('')}-${scheme}`}
+            key={`${item.id}-${item.crossings.map((c) => states[c.id]).join('')}-${scheme}-${brand}-${styleId}`}
             count={item.crossings.length}
             states={item.crossings.map((c) => states[c.id] ?? 'unknown')}
             latitude={item.latitude}
@@ -100,7 +115,7 @@ export function CrossingMap({ crossings, states, selectedId, following, onSelect
       )}
     </MapView>
   );
-}
+});
 
 /**
  * Custom marker views only redraw while tracksViewChanges is on. Markers are keyed by their look,
@@ -149,13 +164,13 @@ function CrossingMarker({ crossing, state, selected, followed, onPress }: { cros
 }
 
 function ClusterMarker({ count, states, latitude, longitude, onPress }: { count: number; states: CrossingState[]; latitude: number; longitude: number; onPress: () => void }) {
-  const scheme = useScheme();
   const theme = useTheme();
   const worst = worstState(states);
   const hot = states.filter((s) => s === 'blocked' || s === 'stopped').length;
   const track = useTrackChanges();
   const circ = 2 * Math.PI * 21;
-  const fill = scheme === 'dark' ? '#22304A' : '#FFFFFF';
+  // From the color theme, like the rest of the UI; only the state ring and badge carry status color.
+  const fill = theme.sheet;
   return (
     <Marker coordinate={{ latitude, longitude }} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={track} onPress={onPress}>
       <View style={styles.cluster} accessible accessibilityRole="button" accessibilityLabel={`${count} crossings${hot ? `, ${hot} blocked or stopped` : ''}. Zoom in.`}>

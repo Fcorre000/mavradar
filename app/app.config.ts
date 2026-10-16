@@ -25,6 +25,17 @@ const config: ExpoConfig = {
   userInterfaceStyle: 'automatic',
   ios: {
     bundleIdentifier: APP_ID,
+    // iPad gets the app at full size, content in a centered column (Screen in components/layout.tsx).
+    // iPad multitasking needs every orientation; iPhone stays portrait via `orientation` above.
+    supportsTablet: true,
+    infoPlist: {
+      'UISupportedInterfaceOrientations~ipad': [
+        'UIInterfaceOrientationPortrait',
+        'UIInterfaceOrientationPortraitUpsideDown',
+        'UIInterfaceOrientationLandscapeLeft',
+        'UIInterfaceOrientationLandscapeRight',
+      ],
+    },
     entitlements: {
       // Only ever spent on real train events. iOS asks the user once.
       'com.apple.developer.usernotifications.time-sensitive': true,

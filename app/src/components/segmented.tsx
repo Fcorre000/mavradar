@@ -2,12 +2,11 @@ import { Pressable, StyleSheet, View, type StyleProp, type ViewStyle } from 'rea
 
 import { CheckIcon } from '@/components/icons';
 import { T } from '@/components/text';
-import { Radius } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { useStyle, useTheme } from '@/hooks/use-theme';
 
 type Option<V extends string | number> = { value: V; label: string; disabled?: boolean };
 
-/** Connected segmented buttons, 40 dp tall. The selected segment shows a check. */
+/** Connected segmented buttons, 40 dp tall. The selected segment shows a check, plus a fill or, in Civic, a rule underneath. */
 export function Segmented<V extends string | number>({
   options,
   value,
@@ -22,8 +21,10 @@ export function Segmented<V extends string | number>({
   style?: StyleProp<ViewStyle>;
 }) {
   const theme = useTheme();
+  const appStyle = useStyle();
+  const underline = appStyle.selection === 'underline';
   return (
-    <View style={[styles.group, { borderColor: theme.outline, backgroundColor: theme.sheet }, style]} accessibilityRole="radiogroup" accessibilityLabel={label}>
+    <View style={[styles.group, { borderColor: theme.outline, backgroundColor: theme.sheet, borderRadius: appStyle.radius.segmented }, style]} accessibilityRole="radiogroup" accessibilityLabel={label}>
       {options.map((o, i) => {
         const on = o.value === value;
         return (
@@ -33,7 +34,13 @@ export function Segmented<V extends string | number>({
             disabled={o.disabled}
             accessibilityRole="radio"
             accessibilityState={{ checked: on, disabled: o.disabled }}
-            style={[styles.item, i > 0 && { borderLeftWidth: 1, borderLeftColor: theme.outline }, on && { backgroundColor: theme.backgroundSelected }]}>
+            // 40 dp to look like Material segmented buttons, 48 dp to tap.
+            hitSlop={{ top: 4, bottom: 4 }}
+            style={[
+              styles.item,
+              i > 0 && { borderLeftWidth: 1, borderLeftColor: theme.outline },
+              on && (underline ? { borderBottomWidth: 2, borderBottomColor: theme.primary } : { backgroundColor: theme.backgroundSelected }),
+            ]}>
             {on ? <CheckIcon color={theme.text} /> : null}
             <T v="secondary" weight={on ? 700 : 500} color={o.disabled ? theme.textSecondary : theme.text} style={o.disabled ? styles.struck : null}>
               {o.label}
@@ -46,7 +53,7 @@ export function Segmented<V extends string | number>({
 }
 
 const styles = StyleSheet.create({
-  group: { flexDirection: 'row', minHeight: 40, borderRadius: Radius.segmented, borderWidth: 1, overflow: 'hidden' },
+  group: { flexDirection: 'row', minHeight: 40, borderWidth: 1, overflow: 'hidden' },
   item: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, paddingHorizontal: 12, minHeight: 40 },
   struck: { textDecorationLine: 'line-through' },
 });

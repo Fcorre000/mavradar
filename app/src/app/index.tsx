@@ -3,26 +3,31 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
+import { CrossingModel } from '@/components/crossing-model';
+import { Keycap, useKeyPressed } from '@/components/keycap';
 import { ClockIcon, CloseIcon, Dot, RouteIcon, ShareIcon } from '@/components/icons';
 import { DemoBadge, Header, Screen, useBottomInset, useLargeText } from '@/components/layout';
-import { InfoRow, SwitchRow } from '@/components/rows';
+import { InfoRow, RowGroup, SwitchRow } from '@/components/rows';
 import { ChoiceSheet } from '@/components/sheet-modal';
 import { Snackbar } from '@/components/snackbar';
 import { StatusCard } from '@/components/status-card';
 import { T } from '@/components/text';
 import { TodayTimeline } from '@/components/today-timeline';
-import { Layout, Radius } from '@/constants/theme';
-import { DISCLAIMER, shareText, statusCopy, typicalCopy } from '@/domain/copy';
+import { pillRadius } from '@/constants/styles';
+import { DISCLAIMER, sensorLine, shareText, statusCopy, typicalCopy } from '@/domain/copy';
 import { crossingById } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
 import { formatTime } from '@/domain/time';
-import { useTheme } from '@/hooks/use-theme';
+import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
 import { demo, DIRECTIONS_APP, dismissTip, openDirections, shareStatus, toggleFollow } from '@/state/actions';
 import { setUi, useApp } from '@/state/store';
 import { source } from '@/data';
 
 export default function StatusScreen() {
   const theme = useTheme();
+  const appStyle = useStyle();
+  const scheme = useScheme();
+  const keyPressed = useKeyPressed();
   const bottomInset = useBottomInset();
   const largeText = useLargeText();
   const snapshot = useApp((s) => s.snapshot);
@@ -30,6 +35,9 @@ export default function StatusScreen() {
   const following = useApp((s) => s.prefs.following);
   const showTip = useApp((s) => s.demo.showTip || (s.prefs.launches >= 2 && !s.prefs.tipDismissed && s.prefsLoaded));
   const [switching, setSwitching] = useState(false);
+  // Whether content runs under the pinned footer, so the footer can show its edge.
+  const [scrollBox, setScrollBox] = useState({ view: 0, content: 0 });
+  const underFooter = scrollBox.content > scrollBox.view + 1;
 
   const crossing = crossingById(crossingId);
   const isFollowing = following.includes(crossing.id);
@@ -49,7 +57,7 @@ export default function StatusScreen() {
     <Screen>
       <Header
         title={crossing.name}
-        subtitle={`${crossing.city}, TX · USDOT ${crossing.id}`}
+        subtitle={`${crossing.city}, TX`}
         right={
           <View style={styles.headerRight}>
             {following.length > 1 ? (
@@ -60,22 +68,34 @@ export default function StatusScreen() {
               </Pressable>
             ) : null}
             {source.kind === 'demo' ? <DemoBadge /> : null}
-            <Pressable
-              onPress={() => shareStatus(shareText(crossing, e, snapshot.now))}
-              accessibilityRole="button"
-              accessibilityLabel={`Share ${crossing.name} status`}
-              style={({ pressed }) => [styles.shareBtn, { backgroundColor: theme.tonal }, pressed && styles.pressed]}>
-              <ShareIcon color={theme.text} />
-            </Pressable>
+            <Keycap radius={pillRadius(appStyle, 48)} style={styles.shareKey}>
+                <Pressable
+                onPress={() => shareStatus(shareText(crossing, e, snapshot.now))}
+                accessibilityRole="button"
+                accessibilityLabel={`Share ${crossing.name} status`}
+                style={({ pressed }) => [styles.shareBtn, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 48) }, pressed && keyPressed]}>
+                <ShareIcon color={theme.text} />
+              </Pressable>
+            </Keycap>
           </View>
         }
       />
-      <ScrollView contentContainerStyle={styles.content}>
+      <ScrollView
+        onLayout={(ev) => {
+          const view = ev.nativeEvent.layout.height;
+          setScrollBox((b) => ({ ...b, view }));
+        }}
+        onContentSizeChange={(_, content) => setScrollBox((b) => ({ ...b, content }))}
+        contentContainerStyle={[styles.content, { paddingHorizontal: appStyle.space.screen, gap: appStyle.space.section }]}>
+        {appStyle.crossingModel ? <CrossingModel state={e.state} /> : null}
         <StatusCard e={e} copy={copy} typical={typical} onRetry={demo.retry} />
         <T>{copy.explanation}</T>
 
+        <TodayTimeline events={events} e={e} now={snapshot.now} onPress={() => router.navigate('/history')} />
+
+        {/* The second-visit tip sits under the timeline; it never takes the timeline's place. */}
         {showTip ? (
-          <View style={[styles.tip, { backgroundColor: theme.backgroundElement, borderColor: theme.divider }]}>
+          <View style={[styles.tip, { backgroundColor: theme.backgroundElement, borderColor: theme.divider, borderRadius: appStyle.radius.panel }]}>
             <ClockIcon color={theme.text} />
             <View style={styles.tipText}>
               <T weight={600}>Set your commute hours so alerts only come when you drive.</T>
@@ -89,24 +109,28 @@ export default function StatusScreen() {
               <CloseIcon color={theme.textSecondary} />
             </Pressable>
           </View>
-        ) : (
-          <TodayTimeline events={events} e={e} now={snapshot.now} onPress={() => router.navigate('/history')} />
-        )}
+        ) : null}
 
-        <View>
+        <RowGroup>
           <SwitchRow label={`Alerts for ${crossing.name}`} value={isFollowing} onChange={() => toggleFollow(crossing.id)} />
           <InfoRow
             label="Sensor"
-            value={e.state === 'unknown' ? copy.sensor : `${copy.sensor} · East node`}
+            value={sensorLine(copy, e, snapshot.readings[crossing.id])}
             valueColor={e.state === 'unknown' ? theme.textSecondary : theme.text}
             leading={<Dot color={e.state === 'unknown' ? theme.textSecondary : theme.sensorOk} hollow={e.state === 'unknown'} />}
           />
           <InfoRow label="Last blockage" value={lastText} last />
-        </View>
+        </RowGroup>
         {largeText ? disclaimer : null}
       </ScrollView>
 
-      <View style={styles.pinned}>
+      <View
+        style={[
+          styles.pinned,
+          { paddingHorizontal: appStyle.space.screen },
+          underFooter && appStyle.footerEdge === 'hairline' && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.divider },
+          underFooter && appStyle.footerEdge === 'shadow' && appStyle.depth && { backgroundColor: theme.background, boxShadow: appStyle.depth[scheme].lift },
+        ]}>
         <Button
           label="Directions via West St underpass"
           sublabel={`Opens ${DIRECTIONS_APP}`}
@@ -131,15 +155,17 @@ export default function StatusScreen() {
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: Layout.screenPadding, paddingTop: 8, paddingBottom: 16, gap: Layout.sectionGap },
-  pinned: { paddingHorizontal: Layout.screenPadding, paddingTop: 12, paddingBottom: 12, gap: 12 },
-  tip: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderRadius: Radius.button, borderWidth: StyleSheet.hairlineWidth, paddingTop: 14, paddingBottom: 10, paddingLeft: 16, paddingRight: 4 },
+  content: { paddingTop: 8, paddingBottom: 16 },
+  // Kept tight so the Directions button sits low and the status card above it stays in view.
+  pinned: { paddingTop: 8, paddingBottom: 6, gap: 8 },
+  tip: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: StyleSheet.hairlineWidth, paddingTop: 14, paddingBottom: 10, paddingLeft: 16, paddingRight: 4 },
   tipText: { flex: 1, gap: 2 },
-  tipLink: { alignSelf: 'flex-start', minHeight: 40, justifyContent: 'center' },
+  tipLink: { alignSelf: 'flex-start', minHeight: 48, justifyContent: 'center' },
   tipClose: { width: 48, height: 48, marginTop: -10, alignItems: 'center', justifyContent: 'center' },
   underline: { textDecorationLine: 'underline' },
   headerRight: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   switchBtn: { minHeight: 48, paddingHorizontal: 10, justifyContent: 'center' },
-  shareBtn: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center', marginLeft: 4 },
+  shareKey: { marginLeft: 4 },
+  shareBtn: { width: 48, height: 48, alignItems: 'center', justifyContent: 'center' },
   pressed: { opacity: 0.7 },
 });

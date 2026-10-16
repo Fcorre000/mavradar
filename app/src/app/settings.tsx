@@ -7,13 +7,13 @@ import { Button } from '@/components/button';
 import { Chips } from '@/components/chips';
 import { BellIcon } from '@/components/icons';
 import { Screen, useBottomInset } from '@/components/layout';
-import { InfoRow, NavRow, SwitchRow } from '@/components/rows';
+import { InfoRow, NavRow, RadioRow, RowGroup, SwitchRow } from '@/components/rows';
 import { Segmented } from '@/components/segmented';
 import { ChoiceSheet, SheetModal } from '@/components/sheet-modal';
 import { Snackbar } from '@/components/snackbar';
 import { T } from '@/components/text';
 import { ThemePicker } from '@/components/theme-picker';
-import { Layout, Radius } from '@/constants/theme';
+import { StyleOrder, Styles } from '@/constants/styles';
 import { source } from '@/data';
 import type { AlertType } from '@/domain/alerts';
 import { DISCLAIMER } from '@/domain/copy';
@@ -21,8 +21,8 @@ import { crossingById } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
 import { formatAgo } from '@/domain/time';
 import type { Connection, ReportedState } from '@/domain/types';
-import { useTheme } from '@/hooks/use-theme';
-import { demo, setAlertType, setPrefs, showSnack } from '@/state/actions';
+import { useStyle, useTheme } from '@/hooks/use-theme';
+import { demo, setAlertType, setPrefs, setStyle, showSnack } from '@/state/actions';
 import { setUi, useApp } from '@/state/store';
 
 const COMMUTE = [
@@ -36,6 +36,7 @@ const QUIET = [
 
 export default function SettingsScreen() {
   const theme = useTheme();
+  const appStyle = useStyle();
   const insets = useSafeAreaInsets();
   const bottomInset = useBottomInset();
   const prefs = useApp((s) => s.prefs);
@@ -55,7 +56,7 @@ export default function SettingsScreen() {
     <View key={type}>
       <SwitchRow label={label} description={description} value={granted && prefs.alertTypes[type]} onChange={(on) => setAlertType(type, on)} />
       {cardFor === type ? (
-        <View style={[styles.offCard, { borderColor: theme.outline }]} accessibilityLiveRegion="polite">
+        <View style={[styles.offCard, { borderColor: theme.outline, borderRadius: appStyle.radius.panel }]} accessibilityLiveRegion="polite">
           <T weight={600}>Notifications are off for MavRadar in your phone&apos;s settings.</T>
           <T v="secondary" color={theme.textSecondary}>
             Turn them on there to get alerts. Status still works without them.
@@ -77,13 +78,13 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 8, paddingBottom: bottomInset + 32 }]}>
+      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: appStyle.space.screen, paddingTop: insets.top + 8, paddingBottom: bottomInset + 32 }]}>
         <T v="crossingName" accessibilityRole="header">
           Settings
         </T>
 
         <Section title="Alerts">
-          <View style={[styles.statusLine, { backgroundColor: theme.backgroundElement }]}>
+          <View style={[styles.statusLine, { backgroundColor: theme.backgroundElement, borderRadius: appStyle.radius.panel }]}>
             <BellIcon color={theme.text} off={!granted} />
             <T v="secondary" style={styles.flex}>
               {statusLine}
@@ -92,12 +93,12 @@ export default function SettingsScreen() {
           <T v="secondary" color={theme.textSecondary}>
             {followedNames ? `For crossings you follow: ${followedNames}` : "You're not following a crossing yet. Follow one from Status or the map."}
           </T>
-          <View>
+          <RowGroup>
             {alertRow('blocked', 'Blocked', 'When a train blocks the crossing')}
             {alertRow('cleared', 'Cleared', 'When the crossing clears')}
             {alertRow('stopped', 'Stopped', 'When a train stops across the road')}
             <SwitchRow label="Approaching" description="Available when early-warning sensors are installed" value={false} onChange={() => {}} disabled last />
-          </View>
+          </RowGroup>
           <View style={styles.block}>
             <T>Minimum blockage before alerting</T>
             <Segmented
@@ -114,10 +115,10 @@ export default function SettingsScreen() {
               Blockages shorter than this won&apos;t alert you.
             </T>
           </View>
-          <View>
+          <RowGroup>
             <NavRow label="Commute windows" description="Only alert at set times, like weekdays 7 to 9 AM" value={prefs.commute ? 'Set' : 'All day'} onPress={() => setSheet('commute')} />
             <NavRow label="Quiet hours" description="No alerts overnight or while you sleep" value={prefs.quiet ? 'On' : 'Off'} onPress={() => setSheet('quiet')} />
-          </View>
+          </RowGroup>
         </Section>
 
         <Section title="Appearance">
@@ -134,20 +135,42 @@ export default function SettingsScreen() {
               ]}
             />
           </View>
-          <View style={styles.block}>
-            <T>Color theme</T>
-            <ThemePicker value={prefs.theme} onChange={(v) => setPrefs({ theme: v })} />
-            <T v="secondary" color={theme.textSecondary}>
-              Crossing status colors stay the same in every theme.
-            </T>
-          </View>
+          {StyleOrder.length > 1 ? (
+            <View style={styles.block}>
+              <T>Style</T>
+              <View accessibilityRole="radiogroup" accessibilityLabel="Style">
+                <RowGroup>
+                  {StyleOrder.map((id, i) => (
+                    <RadioRow
+                      key={id}
+                      label={Styles[id].name}
+                      description={Styles[id].description}
+                      selected={prefs.style === id}
+                      onPress={() => setStyle(id)}
+                      last={i === StyleOrder.length - 1}
+                    />
+                  ))}
+                </RowGroup>
+              </View>
+            </View>
+          ) : null}
+          {/* Color themes belong to Signal; the other styles bring their own colors. */}
+          {appStyle.palettes ? null : (
+            <View style={styles.block}>
+              <T>Color theme</T>
+              <ThemePicker value={prefs.theme} onChange={(v) => setPrefs({ theme: v })} />
+              <T v="secondary" color={theme.textSecondary}>
+                Crossing status colors stay the same in every theme.
+              </T>
+            </View>
+          )}
         </Section>
 
         <Section title="About">
-          <View>
+          <RowGroup>
             <NavRow label="How detection works" onPress={() => setSheet('how')} />
             <NavRow label="Sensors" value="1 online" onPress={() => setSheet('sensors')} />
-          </View>
+          </RowGroup>
           <View style={styles.block}>
             <T>Privacy</T>
             <T v="secondary" color={theme.textSecondary}>
@@ -197,7 +220,13 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function SensorList() {
   const snapshot = useApp((s) => s.snapshot);
   const e = effectiveState(snapshot.readings['794978C'], snapshot);
-  return <InfoRow label="Center St · East node" value={e.state === 'unknown' ? 'Offline' : 'Online · battery OK'} last />;
+  const r = snapshot.readings['794978C'];
+  return (
+    <RowGroup>
+      <InfoRow label={`Center St · ${r?.sensorName ?? 'Crossing node'}`} value={e.state === 'unknown' ? 'Offline' : `Online · battery ${r?.sensorBatteryOk === false ? 'low' : 'OK'}`} />
+      <InfoRow label="Crossing ID" value="USDOT 794978C" last />
+    </RowGroup>
+  );
 }
 
 const STATES: { value: ReportedState; label: string }[] = [
@@ -219,6 +248,7 @@ const CONNECTIONS: { value: Connection; label: string }[] = [
  */
 function DemoControls() {
   const theme = useTheme();
+  const appStyle = useStyle();
   const controls = useApp((s) => s.controls);
   const snapshot = useApp((s) => s.snapshot);
   const dataset = useApp((s) => s.demo.dataset);
@@ -234,7 +264,7 @@ function DemoControls() {
 
   return (
     <Section title="Demo">
-      <View style={[styles.demoNote, { borderColor: theme.outline }]}>
+      <View style={[styles.demoNote, { borderColor: theme.outline, borderRadius: appStyle.radius.panel }]}>
         <T v="secondary">Crossing states here are simulated. These controls stand in for the sensor and your phone. Demo alerts use the Service status channel, never Train alerts.</T>
       </View>
 
@@ -248,9 +278,9 @@ function DemoControls() {
         variant="filled"
         onPress={() => !controls.scenarioRunning && demo.playTrain()}
       />
-      <View>
+      <RowGroup>
         <SwitchRow label="Freeze heartbeat" description={`${beat}. Live becomes Delayed at 30 s and Unknown at 90 s.`} value={controls.frozen} onChange={demo.setFrozen} />
-      </View>
+      </RowGroup>
       <View style={styles.block}>
         <T weight={600}>Clock speed</T>
         <Chips
@@ -281,21 +311,21 @@ function DemoControls() {
           ]}
         />
       </View>
-      <View>
+      <RowGroup>
         <SwitchRow label="Empty history" description="Show History as a brand new sensor" value={historyEmpty} onChange={demo.setHistoryEmpty} />
         <SwitchRow label="Second-visit tip" description="Show the commute hours tip on Status" value={showTip} onChange={demo.setShowTip} last />
-      </View>
+      </RowGroup>
     </Section>
   );
 }
 
 const styles = StyleSheet.create({
-  content: { paddingHorizontal: Layout.screenPadding, gap: 8 },
+  content: { gap: 8 },
   section: { gap: 12, paddingTop: 20 },
-  statusLine: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14, borderRadius: Radius.button },
+  statusLine: { flexDirection: 'row', alignItems: 'center', gap: 10, padding: 14 },
   flex: { flex: 1 },
   block: { gap: 10, paddingVertical: 4 },
-  offCard: { borderWidth: 1, borderRadius: Radius.button, padding: 16, gap: 8, marginVertical: 8 },
-  offButton: { alignSelf: 'flex-start', minHeight: 40, paddingHorizontal: 18 },
-  demoNote: { borderWidth: 1, borderStyle: 'dashed', borderRadius: Radius.button, padding: 14 },
+  offCard: { borderWidth: 1, padding: 16, gap: 8, marginVertical: 8 },
+  offButton: { alignSelf: 'flex-start', minHeight: 48, paddingHorizontal: 18 },
+  demoNote: { borderWidth: 1, borderStyle: 'dashed', padding: 14 },
 });

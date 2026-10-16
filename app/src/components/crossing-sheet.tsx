@@ -1,22 +1,24 @@
 import { router } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, View } from 'react-native';
 
 import { Button } from '@/components/button';
 import { CheckIcon, PlusIcon, RouteIcon } from '@/components/icons';
-import { InfoRow } from '@/components/rows';
+import { Keycap, useKeyPressed } from '@/components/keycap';
+import { InfoRow, RowGroup } from '@/components/rows';
 import { StateIcon } from '@/components/state-icon';
 import { T } from '@/components/text';
+import { pillRadius } from '@/constants/styles';
 import { HistoryColors } from '@/constants/theme';
-import { DISCLAIMER, type StatusCopy } from '@/domain/copy';
+import { DISCLAIMER, sensorLine, type StatusCopy } from '@/domain/copy';
 import type { Effective } from '@/domain/freshness';
+import { blockageStats } from '@/domain/stats';
 import { formatTime, startOfDay } from '@/domain/time';
-import type { BlockageEvent, Crossing } from '@/domain/types';
-import { useScheme, useTheme } from '@/hooks/use-theme';
+import type { BlockageEvent, Crossing, CrossingReading } from '@/domain/types';
+import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
 import { DIRECTIONS_APP, openDirections, toggleFollow } from '@/state/actions';
 import { setUi } from '@/state/store';
 
-// Blockages per day for the six days before today, a stand-in until History is live.
-const WEEK_PATTERN = [18, 14, 21, 19, 22, 20];
 const DAY = 86_400_000;
 
 /**
@@ -24,21 +26,22 @@ const DAY = 86_400_000;
  * height decides how much shows: peek (name, state, Follow), half (directions, sensor, disclaimer),
  * full (last 7 days).
  */
-export function CrossingSheet({ crossing, e, copy, following, events, now }: { crossing: Crossing; e: Effective; copy: StatusCopy; following: boolean; events: BlockageEvent[]; now: number }) {
+export function CrossingSheet({ crossing, reading, e, copy, following, events, now }: { crossing: Crossing; reading?: CrossingReading; e: Effective; copy: StatusCopy; following: boolean; events: BlockageEvent[]; now: number }) {
   const theme = useTheme();
+  const appStyle = useStyle();
   const scheme = useScheme();
-  const mine = events.filter((ev) => ev.crossingId === crossing.id);
-  const last = mine[mine.length - 1];
-  const durations = mine.map((ev) => ev.durationMin).sort((a, b) => a - b);
-  const typical = durations.length ? `${durations[Math.floor(durations.length / 2)]} min` : 'Not enough data yet';
+  const keyPressed = useKeyPressed();
   const today = startOfDay(now);
-  const todayCount = mine.filter((ev) => ev.start >= today).length;
-  const week = [...WEEK_PATTERN, todayCount];
+  // Same numbers as History and the Status card: one stats function over the blockage log.
+  const month = useMemo(() => blockageStats(events, crossing.id, today + DAY - 1, 30), [events, crossing.id, today]);
+  const week = useMemo(() => blockageStats(events, crossing.id, today + DAY - 1, 7).perDay, [events, crossing.id, today]);
+  const last = month.events[0];
+  const typical = month.typicalMin === null ? 'Not enough data yet' : `${month.typicalMin} min`;
   const max = Math.max(...week, 1);
-  const days = WEEK_PATTERN.map((_, i) => new Date(today - (6 - i) * DAY).toLocaleDateString('en-US', { weekday: 'short' })).concat('Today');
+  const days = week.map((_, i) => (i === 6 ? 'Today' : new Date(today - (6 - i) * DAY).toLocaleDateString('en-US', { weekday: 'short' })));
 
   return (
-    <View style={styles.wrap}>
+    <View style={[styles.wrap, { paddingHorizontal: appStyle.space.screen }]}>
       <View style={styles.peek}>
         <View style={styles.peekText}>
           <T v="sheetName" accessibilityRole="header">
@@ -52,17 +55,20 @@ export function CrossingSheet({ crossing, e, copy, following, events, now }: { c
             {copy.meta}
           </T>
         </View>
-        <Pressable
-          onPress={() => toggleFollow(crossing.id)}
-          accessibilityRole="button"
-          accessibilityState={{ selected: following }}
-          accessibilityLabel={following ? `Following ${crossing.name}. Tap to unfollow.` : `Follow ${crossing.name}`}
-          style={[styles.follow, { backgroundColor: theme.tonal }]}>
-          {following ? <CheckIcon size={18} color={theme.text} /> : <PlusIcon color={theme.text} />}
-          <T v="secondary" weight={700}>
-            {following ? 'Following' : 'Follow'}
-          </T>
-        </Pressable>
+        <Keycap radius={pillRadius(appStyle, 40)} style={styles.followKey}>
+          <Pressable
+            onPress={() => toggleFollow(crossing.id)}
+            accessibilityRole="button"
+            accessibilityState={{ selected: following }}
+            accessibilityLabel={following ? `Following ${crossing.name}. Tap to unfollow.` : `Follow ${crossing.name}`}
+            hitSlop={4}
+            style={({ pressed }) => [styles.follow, { backgroundColor: theme.tonal, borderRadius: pillRadius(appStyle, 40) }, pressed && keyPressed]}>
+            {following ? <CheckIcon size={18} color={theme.text} /> : <PlusIcon color={theme.text} />}
+            <T v="secondary" weight={700}>
+              {following ? 'Following' : 'Follow'}
+            </T>
+          </Pressable>
+        </Keycap>
       </View>
 
       <View style={styles.section}>
@@ -73,11 +79,12 @@ export function CrossingSheet({ crossing, e, copy, following, events, now }: { c
           icon={(c) => <RouteIcon color={c} />}
           onPress={openDirections}
         />
-        <View>
-          <InfoRow label="Sensor" value={e.state === 'unknown' ? copy.sensor : `${copy.sensor} · East node · battery OK`} />
+        <RowGroup>
+          <InfoRow label="Sensor" value={sensorLine(copy, e, reading)} />
+          <InfoRow label="Crossing ID" value={`USDOT ${crossing.id}`} />
           <InfoRow label="Last blockage" value={last ? `${formatTime(last.start)} · ${last.durationMin} min · ${last.stopped ? 'stopped' : 'moving'}` : 'None recorded yet'} />
           <InfoRow label="Typical blockage" value={typical} last />
-        </View>
+        </RowGroup>
         <T v="disclaimer" color={theme.textSecondary}>
           {DISCLAIMER}
         </T>
@@ -118,11 +125,12 @@ export function CrossingSheet({ crossing, e, copy, following, events, now }: { c
 }
 
 const styles = StyleSheet.create({
-  wrap: { paddingHorizontal: 20, paddingBottom: 32 },
+  wrap: { paddingBottom: 32 },
   peek: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, minHeight: 88 },
   peekText: { flex: 1, gap: 4 },
   stateRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  follow: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingLeft: 12, paddingRight: 16, borderRadius: 20, marginTop: 4 },
+  followKey: { marginTop: 4 },
+  follow: { flexDirection: 'row', alignItems: 'center', gap: 6, height: 40, paddingLeft: 12, paddingRight: 16 },
   section: { gap: 12, paddingTop: 18 },
   weekHead: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline' },
   week: { flexDirection: 'row', alignItems: 'flex-end', gap: 10, height: 132 },
