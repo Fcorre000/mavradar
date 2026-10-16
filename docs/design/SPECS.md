@@ -174,10 +174,10 @@ The main status block on the Status screen.
 | Gap | 16 |
 | Rows | 3 x 48 plus 1 dp dividers (Alerts switch, Sensor, Last blockage), y 551 to 699 |
 | Flexible space | at least 16 (about 20 at 100%) |
-| Directions button | 56, radius 16, 20 side padding |
-| Gap | 12 |
+| Directions button | 56, radius 16, 20 side padding, 8 below the scroll area |
+| Gap | 8 |
 | Disclaimer | 13/18, 2 lines |
-| Gap | 12 |
+| Gap | 6 |
 | Nav bar | 80: 64 x 32 indicator, 24 dp icons, 12 sp labels |
 
 At 200% font scale the header, card and everything down to the rows scroll. Only the directions button and the nav bar stay pinned, and the disclaimer moves into the scroll area.

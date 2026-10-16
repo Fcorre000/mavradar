@@ -152,7 +152,8 @@ export default function StatusScreen() {
 
 const styles = StyleSheet.create({
   content: { paddingTop: 8, paddingBottom: 16 },
-  pinned: { paddingTop: 12, paddingBottom: 12, gap: 12 },
+  // Kept tight so the Directions button sits low and the status card above it stays in view.
+  pinned: { paddingTop: 8, paddingBottom: 6, gap: 8 },
   tip: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, borderWidth: StyleSheet.hairlineWidth, paddingTop: 14, paddingBottom: 10, paddingLeft: 16, paddingRight: 4 },
   tipText: { flex: 1, gap: 2 },
   tipLink: { alignSelf: 'flex-start', minHeight: 48, justifyContent: 'center' },
