@@ -35,7 +35,7 @@ export function T({ v = 'body', color, tabular, weight, style, children, ...rest
   );
 }
 
-/** Adds a thin space after each ' · ' separator in plain strings, leaving nested elements alone. */
+/** Widens the space after each ' · ' separator in plain strings (a thin space on top), leaving nested elements alone. */
 function padMiddleDots(children: ReactNode): ReactNode {
-  return Children.map(children, (child) => (typeof child === 'string' ? child.replaceAll(' · ', ' ·\u2009') : child));
+  return Children.map(children, (child) => (typeof child === 'string' ? child.replaceAll(' · ', ' · \u2009') : child));
 }

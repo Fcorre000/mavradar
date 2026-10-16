@@ -58,6 +58,8 @@ export type Depth = {
   primaryBase: string;
   /** The darker edge under tonal buttons and round keys. */
   tonalBase: string;
+  /** `boxShadow` cast upward by the pinned footer when content scrolls under it. */
+  lift: string;
 };
 
 export interface AppStyle {
@@ -121,6 +123,8 @@ export interface AppStyle {
   crossingModel: boolean;
   /** Map camera pitch in degrees. 0 looks straight down. */
   mapPitch: number;
+  /** How the pinned Directions footer separates from content scrolling under it. 'shadow' needs `depth`. */
+  footerEdge: 'none' | 'hairline' | 'shadow';
   /** The face draws its middle dot against the next word, so text pads it with a thin space. */
   padMiddleDot: boolean;
   tabs: {
@@ -191,6 +195,7 @@ export const Styles = {
     depth: null,
     crossingModel: false,
     mapPitch: 0,
+    footerEdge: 'none',
     padMiddleDot: false,
     tabs: { surface: 'backgroundElement', indicator: true, tint: 'text', rule: false },
   },
@@ -242,6 +247,7 @@ export const Styles = {
     depth: null,
     crossingModel: false,
     mapPitch: 0,
+    footerEdge: 'hairline',
     padMiddleDot: false,
     tabs: { surface: 'backgroundElement', indicator: false, tint: 'primary', rule: true },
   },
@@ -298,6 +304,7 @@ export const Styles = {
     depth: null,
     crossingModel: false,
     mapPitch: 0,
+    footerEdge: 'hairline',
     padMiddleDot: false,
     tabs: { surface: 'background', indicator: false, tint: 'text', rule: true },
   },
@@ -352,11 +359,12 @@ export const Styles = {
     selection: 'fill',
     buttonIcon: 'leading',
     depth: {
-      light: { plate: '0px 6px 16px rgba(40, 36, 28, 0.12)', primaryBase: '#1E3F8C', tonalBase: '#CFCABF' },
-      dark: { plate: '0px 6px 16px rgba(0, 0, 0, 0.45)', primaryBase: '#4A68A8', tonalBase: '#0E0F11' },
+      light: { plate: '0px 6px 16px rgba(40, 36, 28, 0.12)', primaryBase: '#1E3F8C', tonalBase: '#CFCABF', lift: '0px -6px 16px rgba(40, 36, 28, 0.10)' },
+      dark: { plate: '0px 6px 16px rgba(0, 0, 0, 0.45)', primaryBase: '#4A68A8', tonalBase: '#0E0F11', lift: '0px -6px 16px rgba(0, 0, 0, 0.40)' },
     },
     crossingModel: true,
     mapPitch: 38,
+    footerEdge: 'shadow',
     padMiddleDot: true,
     tabs: { surface: 'backgroundElement', indicator: true, tint: 'text', rule: false },
   },

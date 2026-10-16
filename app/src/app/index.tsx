@@ -33,6 +33,9 @@ export default function StatusScreen() {
   const following = useApp((s) => s.prefs.following);
   const showTip = useApp((s) => s.demo.showTip || (s.prefs.launches >= 2 && !s.prefs.tipDismissed && s.prefsLoaded));
   const [switching, setSwitching] = useState(false);
+  // Whether content runs under the pinned footer, so the footer can show its edge.
+  const [scrollBox, setScrollBox] = useState({ view: 0, content: 0 });
+  const underFooter = scrollBox.content > scrollBox.view + 1;
 
   const crossing = crossingById(crossingId);
   const isFollowing = following.includes(crossing.id);
@@ -73,7 +76,13 @@ export default function StatusScreen() {
           </View>
         }
       />
-      <ScrollView contentContainerStyle={[styles.content, { paddingHorizontal: appStyle.space.screen, gap: appStyle.space.section }]}>
+      <ScrollView
+        onLayout={(ev) => {
+          const view = ev.nativeEvent.layout.height;
+          setScrollBox((b) => ({ ...b, view }));
+        }}
+        onContentSizeChange={(_, content) => setScrollBox((b) => ({ ...b, content }))}
+        contentContainerStyle={[styles.content, { paddingHorizontal: appStyle.space.screen, gap: appStyle.space.section }]}>
         {appStyle.crossingModel ? <CrossingModel state={e.state} /> : null}
         <StatusCard e={e} copy={copy} typical={typical} onRetry={demo.retry} />
         <T>{copy.explanation}</T>
@@ -111,7 +120,13 @@ export default function StatusScreen() {
         {largeText ? disclaimer : null}
       </ScrollView>
 
-      <View style={[styles.pinned, { paddingHorizontal: appStyle.space.screen }]}>
+      <View
+        style={[
+          styles.pinned,
+          { paddingHorizontal: appStyle.space.screen },
+          underFooter && appStyle.footerEdge === 'hairline' && { borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: theme.divider },
+          underFooter && appStyle.footerEdge === 'shadow' && appStyle.depth && { backgroundColor: theme.background, boxShadow: appStyle.depth[scheme].lift },
+        ]}>
         <Button
           label="Directions via West St underpass"
           sublabel={`Opens ${DIRECTIONS_APP}`}

@@ -23,14 +23,13 @@ export function StatusCard({ e, copy, typical, onRetry }: { e: Effective; copy: 
   const tinted = e.state === 'clear' || e.state === 'approaching' || e.state === 'unknown';
   const freshColor = e.freshness === 'delayed' && tinted ? theme.textSecondary : c.onContainer;
 
-  return (
+  const card = (
     <View
       style={[
         styles.card,
         { borderRadius: appStyle.radius.card, padding: appStyle.space.card },
         // Only Blocked and Stopped hold the tall card; calm states shrink to their content.
         !tinted && { minHeight: appStyle.statusCardMinHeight },
-        plateShadow(appStyle, scheme),
         { backgroundColor: c.container },
         c.border ? { borderWidth: 2, borderStyle: 'dashed', borderColor: c.border } : null,
         e.state === 'stopped' && { paddingBottom: appStyle.space.card + Size.stripeBand },
@@ -95,6 +94,9 @@ export function StatusCard({ e, copy, typical, onRetry }: { e: Effective; copy: 
       {e.state === 'stopped' ? <StripeBand /> : null}
     </View>
   );
+  // The shadow sits on an unclipped wrapper: iOS drops a shadow on a view that clips its content.
+  const shadow = plateShadow(appStyle, scheme);
+  return shadow ? <View style={[{ borderRadius: appStyle.radius.card }, shadow]}>{card}</View> : card;
 }
 
 /** 8 dp band of 45 degree stripes at 12% white, only on Stopped, never behind text. */

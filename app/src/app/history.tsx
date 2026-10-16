@@ -194,8 +194,9 @@ function EventRow({ event }: { event: BlockageEvent }) {
       <T v="secondary" color={theme.textSecondary} tabular style={styles.eventDur}>
         <T v="secondary" weight={700}>
           {event.durationMin} min
-        </T>{' '}
-        · {event.stopped ? 'stopped' : 'moving'}
+        </T>
+        {' · '}
+        {event.stopped ? 'stopped' : 'moving'}
       </T>
     </View>
   );

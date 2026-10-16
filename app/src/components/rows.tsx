@@ -18,14 +18,17 @@ export function RowGroup({ children }: { children: ReactNode }) {
   const theme = useTheme();
   const scheme = useScheme();
   if (appStyle.rows === 'flat') return <View>{children}</View>;
-  return (
-    <View style={[styles.group, { backgroundColor: theme.backgroundElement, borderRadius: appStyle.radius.group }, plateShadow(appStyle, scheme)]}>
+  const group = (
+    <View style={[styles.group, { backgroundColor: theme.backgroundElement, borderRadius: appStyle.radius.group }]}>
       {/* Pulls the first row's divider out of sight, so only rows between rows show one. */}
       <View style={styles.groupInner}>
         <Inset.Provider value>{children}</Inset.Provider>
       </View>
     </View>
   );
+  // The shadow sits on an unclipped wrapper: iOS drops a shadow on a view that clips its content.
+  const shadow = plateShadow(appStyle, scheme);
+  return shadow ? <View style={[{ borderRadius: appStyle.radius.group }, shadow]}>{group}</View> : group;
 }
 
 /** The shared row frame: height from the style, divider above, and the closing divider when flat. */
