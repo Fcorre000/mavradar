@@ -53,7 +53,8 @@ export const CrossingMap = memo(function CrossingMap({ crossings, states, select
     mapRef.current?.animateToRegion(initial, 400);
   }, [initial]);
 
-  // Model Crossing tilts the map like a tabletop; other styles look straight down.
+  // Model Crossing opens the map tilted like a tabletop; other styles open looking straight down.
+  // Either way people can then tilt and turn it themselves.
   useEffect(() => {
     mapRef.current?.animateCamera({ pitch }, { duration: 300 });
   }, [pitch]);
@@ -78,11 +79,13 @@ export const CrossingMap = memo(function CrossingMap({ crossings, states, select
       customMapStyle={MapStyles[scheme]}
       userInterfaceStyle={scheme}
       showsPointsOfInterests={false}
-      showsCompass={false}
+      // Two-finger tilt and rotate, as in the platform's own maps app. The compass shows once the map
+      // is turned; tapping it faces north again.
+      showsCompass
       toolbarEnabled={false}
-      pitchEnabled={false}
+      pitchEnabled
+      rotateEnabled
       onMapReady={() => pitch && mapRef.current?.animateCamera({ pitch }, { duration: 0 })}
-      rotateEnabled={false}
       mapPadding={{ top: topPadding, bottom: bottomPadding, left: 0, right: 0 }}>
       {zoomedIn ? (
         <Marker coordinate={DETOUR} anchor={{ x: 0.5, y: 1 }} tracksViewChanges={false} tappable={false}>

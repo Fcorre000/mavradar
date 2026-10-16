@@ -137,6 +137,7 @@ The main status block on the Status screen.
 | Peek | Name 20/26 semibold. 24 dp state icon + state word 16 bold. Meta line in secondary: "Blocked for 7 min · updated 8 s ago". Follow button at the right: tonal, 40 dp tall inside a 48 dp target, plus icon or check. |
 | Half | Directions button (56 dp, filled unless Clear), then 48 dp rows: Sensor, Last blockage, 30-day typical blockage, then the disclaimer. |
 | Full | "Last 7 days" bar chart (neutral bars, today hatched) and an outlined "Open in Status" button. |
+| Map gestures | Drag to pan, pinch to zoom, two fingers to tilt and to turn the map, as in the platform's maps app. The compass appears once the map is turned; tapping it faces north. Model Crossing opens tilted 38 degrees; the other styles open flat. |
 | Behavior | Dragging the map collapses to peek. Predictive back collapses one step. With a street-level map at half or full, the map moves up 170 dp so the selected marker stays visible. |
 
 ### Row
