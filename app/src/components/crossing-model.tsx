@@ -1,6 +1,6 @@
 import { useIsFocused } from 'expo-router';
-import { useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { memo, useEffect, useState } from 'react';
+import { Animated, AppState, Platform, StyleSheet, View } from 'react-native';
 import { useReducedMotion } from 'react-native-reanimated';
 import Svg, { Circle, ClipPath, Defs, G, Line, Pattern, Polygon, RadialGradient, Rect, Stop, Text as SvgText } from 'react-native-svg';
 
@@ -65,8 +65,8 @@ const LOOP = PITCH * 3;
 const LOOP_MS = 9600;
 /** A crossing signal's lamps alternate about once a second (each lit for about half a second). */
 const FLASH_MS = 1100;
-/** Frame step while the train rolls (about 20 frames a second), and while only the lamps flash. */
-const ROLL_STEP_MS = 50;
+/** Frame step while the train rolls (about 15 frames a second; it moves under 2 dp a step), and how long each lamp stays lit. */
+const ROLL_STEP_MS = 66;
 const FLASH_STEP_MS = FLASH_MS / 2;
 
 /** A point on the board in view units: u runs to the lower right, v to the lower left, h is height. */
@@ -92,32 +92,28 @@ const LABEL: Record<CrossingState, string> = {
  * state in words. Unknown is gray, with no train, lit lamps or gate arms, so it never implies a state.
  *
  * The board fills the plate's width and bleeds off its top and bottom, at most 168 dp tall.
+ *
+ * Performance: the model is stacked layers, so motion never redraws the scenery. The board, track
+ * and far signal are drawn once; only the small train layer updates while cars roll (about 15 times
+ * a second, and only the cars on the board); the near signal and label sit on a static top layer; and the lamps are two layers
+ * whose opacity alternates on the native animation driver, with no re-render at all. Motion runs
+ * only while Status is on screen and the app is in the foreground.
  */
 export function CrossingModel({ state }: { state: CrossingState }) {
   const scheme = useScheme();
   const appStyle = useStyle();
   const reduceMotion = useReducedMotion();
+  const focused = useIsFocused();
+  const appActive = useAppActive();
   const c: Scenery = state === 'unknown' ? NO_DATA[scheme] : SCENERY[scheme];
   const [width, setWidth] = useState(0);
-  const onCrossing = state === 'blocked' || state === 'stopped';
-  const trainNear = onCrossing || state === 'approaching';
+  const trainNear = state === 'blocked' || state === 'stopped' || state === 'approaching';
   const known = state !== 'unknown';
+  const lampsLit = trainNear && known;
+  const motion = focused && appActive && !reduceMotion;
 
-  // Motion runs on a plain clock, only while Status is on screen and something moves. It drives
-  // ordinary props, so it behaves the same on Android, iOS and web.
-  const focused = useIsFocused();
-  const rolling = state === 'blocked' && !reduceMotion;
-  const flashing = trainNear && !reduceMotion;
-  const [clock, setClock] = useState(0);
-  useEffect(() => {
-    if (!focused || !(rolling || flashing)) return;
-    const start = Date.now();
-    const id = setInterval(() => setClock(Date.now() - start), rolling ? ROLL_STEP_MS : FLASH_STEP_MS);
-    return () => clearInterval(id);
-  }, [focused, rolling, flashing]);
-  const offset = rolling ? ((clock % LOOP_MS) / LOOP_MS) * LOOP : 0;
-  // Which lamp of each pair is lit: 0 or 1 while flashing, null for both (reduced motion).
-  const lampTurn = flashing ? Math.floor(clock / FLASH_STEP_MS) % 2 : null;
+  const height = Math.min((width * H) / W, MAX_HEIGHT);
+  const layer = { width, height, viewBox: `0 0 ${W} ${H}`, preserveAspectRatio: 'xMidYMid slice' } as const;
 
   const plate = (
     <View
@@ -127,86 +123,179 @@ export function CrossingModel({ state }: { state: CrossingState }) {
       accessibilityRole="image"
       accessibilityLabel={LABEL[state]}>
       {width > 0 ? (
-        <Svg width={width} height={Math.min((width * H) / W, MAX_HEIGHT)} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice">
-          <Defs>
-            <Pattern id="mc-grass" width={9} height={9} patternUnits="userSpaceOnUse">
-              <Rect width={9} height={9} fill={c.grass} />
-              <Circle cx={2} cy={2.5} r={0.9} fill={c.grassDark} />
-              <Circle cx={6.5} cy={6} r={0.8} fill={c.grassLight} />
-              <Circle cx={6} cy={1.2} r={0.6} fill={c.grassDark} />
-              <Circle cx={2.5} cy={7.4} r={0.6} fill={c.grassLight} />
-            </Pattern>
-            <Pattern id="mc-gravel" width={5} height={5} patternUnits="userSpaceOnUse">
-              <Rect width={5} height={5} fill={c.ballast} />
-              <Circle cx={1} cy={1.2} r={0.7} fill={c.ballastLight} />
-              <Circle cx={3.6} cy={3.2} r={0.8} fill={c.ballastDark} />
-              <Circle cx={4} cy={0.6} r={0.45} fill={c.ballastLight} />
-              <Circle cx={1.6} cy={4.1} r={0.5} fill={c.ballastDark} />
-            </Pattern>
-            {/* The lamp over the table, upper left. */}
-            <RadialGradient id="mc-lamp" cx="30%" cy="10%" r="75%">
-              <Stop offset="0" stopColor={c.lamp} stopOpacity={LAMP_STRENGTH[scheme]} />
-              <Stop offset="1" stopColor={c.lamp} stopOpacity={0} />
-            </RadialGradient>
-            {/* Shadows stay on the board; rolling stock stays on the track, so cars run off its ends. */}
-            <ClipPath id="mc-board">
-              <Polygon points="179,10 349,108 179,206 9,108" />
-            </ClipPath>
-            <ClipPath id="mc-track">
-              <Polygon points={TRACK_BOX} />
-            </ClipPath>
-          </Defs>
-
-          {/* The board's shadow on the table, then the board and its two visible edges. */}
-          <Polygon points="189,22 357,120 357,128 189,226 19,128 19,120" fill={c.shadow} />
-          <Polygon points="179,10 349,108 179,206 9,108" fill="url(#mc-grass)" />
-          <Polygon points="179,206 349,108 349,116 179,214" fill={c.sideRight} />
-          <Polygon points="179,206 9,108 9,116 179,214" fill={c.sideLeft} />
-
-          {/* West St, passing under the track; Center St and its center line. */}
-          <Polygon points={pts(pt(0, 0.06), pt(1, 0.06), pt(1, 0.18), pt(0, 0.18))} fill={c.detour} />
-          <Polygon points={pts(pt(0, 0.42), pt(1, 0.42), pt(1, 0.58), pt(0, 0.58))} fill={c.road} />
-          <Line x1={94} y1={59} x2={264} y2={157} stroke={c.dash} strokeWidth={1.5} strokeDasharray="6 6" />
-
-          {/* Ballast, ties and rails. */}
-          <Polygon points={pts(pt(0.45, 0), pt(0.55, 0), pt(0.55, 1), pt(0.45, 1))} fill="url(#mc-gravel)" />
-          {TIES.map(([a, b]) => (
-            <Line key={a[1]} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={c.tie} strokeWidth={1.6} />
-          ))}
-          <Line x1={260.6} y1={57} x2={90.6} y2={155} stroke={c.rail} strokeWidth={1.8} />
-          <Line x1={267.4} y1={61} x2={97.4} y2={159} stroke={c.rail} strokeWidth={1.8} />
-
-          {/* Lamplight over the board. */}
-          <Polygon points="179,10 349,108 179,206 9,108" fill="url(#mc-lamp)" />
-
-          {/* The far signal and gate stand behind the train; the near ones in front of it. */}
-          <Signal x={176} y={79} c={c} lit={trainNear && known} turn={lampTurn} />
-          {known ? <Gate x={176} y={79} down={trainNear} /> : null}
-
-          <G clipPath="url(#mc-board)">
-            {onCrossing ? CONSIST.map((k) => <Polygon key={k} points={CAR.shadow} fill={CAST} transform={carShift(k, offset)} />) : null}
-            {state === 'approaching' ? <Polygon points={ENGINE.shadow} fill={CAST} /> : null}
-          </G>
-          <G clipPath="url(#mc-track)">
-            {onCrossing ? CONSIST.map((k) => <Car key={k} k={k} offset={offset} />) : null}
-            {state === 'approaching' ? <Locomotive /> : null}
-          </G>
-
-          <Signal x={244} y={118} c={c} lit={trainNear && known} turn={lampTurn === null ? null : 1 - lampTurn} />
-          {known ? <Gate x={244} y={118} down={trainNear} /> : null}
-
-          {/* Label on a table-colored pill, at the corner where West St enters the board. */}
-          <Rect x={30} y={30} width={118} height={17} rx={8.5} fill={c.table} opacity={0.92} />
-          <SvgText x={36} y={42} fontSize={12} fontWeight="700" fontFamily={appStyle.faces[700].fontFamily} fill={c.label}>
-            West St underpass
-          </SvgText>
-        </Svg>
+        <>
+          <Board c={c} scheme={scheme} gatesDown={trainNear} known={known} layer={layer} />
+          <Traffic state={state} rolling={state === 'blocked' && motion} layer={layer} />
+          <Svg {...layer} style={StyleSheet.absoluteFill} pointerEvents="none">
+            {/* The near signal and gate stand in front of the train. */}
+            <Signal x={244} y={118} c={c} />
+            {known ? <Gate x={244} y={118} down={trainNear} /> : null}
+            {/* Label on a table-colored pill, at the corner where West St enters the board. */}
+            <Rect x={30} y={30} width={118} height={17} rx={8.5} fill={c.table} opacity={0.92} />
+            <SvgText x={36} y={42} fontSize={12} fontWeight="700" fontFamily={appStyle.faces[700].fontFamily} fill={c.label}>
+              West St underpass
+            </SvgText>
+          </Svg>
+          {lampsLit ? <Lamps flashing={motion} layer={layer} /> : null}
+        </>
       ) : null}
     </View>
   );
   // The shadow sits on an unclipped wrapper: iOS drops a shadow on a view that clips its content.
   const shadow = plateShadow(appStyle, scheme);
   return shadow ? <View style={[{ borderRadius: appStyle.radius.card }, shadow]}>{plate}</View> : plate;
+}
+
+type Layer = { width: number; height: number; viewBox: string; preserveAspectRatio: 'xMidYMid slice' };
+
+/** Whether the app is in the foreground; motion pauses otherwise. */
+function useAppActive() {
+  const [active, setActive] = useState(AppState.currentState === 'active');
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (next) => setActive(next === 'active'));
+    return () => sub.remove();
+  }, []);
+  return active;
+}
+
+/** The static scenery: board, roads, track and the far signal and gate. Drawn once per state. */
+const Board = memo(function Board({ c, scheme, gatesDown, known, layer }: { c: Scenery; scheme: 'light' | 'dark'; gatesDown: boolean; known: boolean; layer: Layer }) {
+  return (
+    <Svg {...layer}>
+      <Defs>
+        <Pattern id="mc-grass" width={9} height={9} patternUnits="userSpaceOnUse">
+          <Rect width={9} height={9} fill={c.grass} />
+          <Circle cx={2} cy={2.5} r={0.9} fill={c.grassDark} />
+          <Circle cx={6.5} cy={6} r={0.8} fill={c.grassLight} />
+          <Circle cx={6} cy={1.2} r={0.6} fill={c.grassDark} />
+          <Circle cx={2.5} cy={7.4} r={0.6} fill={c.grassLight} />
+        </Pattern>
+        <Pattern id="mc-gravel" width={5} height={5} patternUnits="userSpaceOnUse">
+          <Rect width={5} height={5} fill={c.ballast} />
+          <Circle cx={1} cy={1.2} r={0.7} fill={c.ballastLight} />
+          <Circle cx={3.6} cy={3.2} r={0.8} fill={c.ballastDark} />
+          <Circle cx={4} cy={0.6} r={0.45} fill={c.ballastLight} />
+          <Circle cx={1.6} cy={4.1} r={0.5} fill={c.ballastDark} />
+        </Pattern>
+        {/* The lamp over the table, upper left. */}
+        <RadialGradient id="mc-lamp" cx="30%" cy="10%" r="75%">
+          <Stop offset="0" stopColor={c.lamp} stopOpacity={LAMP_STRENGTH[scheme]} />
+          <Stop offset="1" stopColor={c.lamp} stopOpacity={0} />
+        </RadialGradient>
+      </Defs>
+
+      {/* The board's shadow on the table, then the board and its two visible edges. */}
+      <Polygon points="189,22 357,120 357,128 189,226 19,128 19,120" fill={c.shadow} />
+      <Polygon points="179,10 349,108 179,206 9,108" fill="url(#mc-grass)" />
+      <Polygon points="179,206 349,108 349,116 179,214" fill={c.sideRight} />
+      <Polygon points="179,206 9,108 9,116 179,214" fill={c.sideLeft} />
+
+      {/* West St, passing under the track; Center St and its center line. */}
+      <Polygon points={pts(pt(0, 0.06), pt(1, 0.06), pt(1, 0.18), pt(0, 0.18))} fill={c.detour} />
+      <Polygon points={pts(pt(0, 0.42), pt(1, 0.42), pt(1, 0.58), pt(0, 0.58))} fill={c.road} />
+      <Line x1={94} y1={59} x2={264} y2={157} stroke={c.dash} strokeWidth={1.5} strokeDasharray="6 6" />
+
+      {/* Ballast, ties and rails. */}
+      <Polygon points={pts(pt(0.45, 0), pt(0.55, 0), pt(0.55, 1), pt(0.45, 1))} fill="url(#mc-gravel)" />
+      {TIES.map(([a, b]) => (
+        <Line key={a[1]} x1={a[0]} y1={a[1]} x2={b[0]} y2={b[1]} stroke={c.tie} strokeWidth={1.6} />
+      ))}
+      <Line x1={260.6} y1={57} x2={90.6} y2={155} stroke={c.rail} strokeWidth={1.8} />
+      <Line x1={267.4} y1={61} x2={97.4} y2={159} stroke={c.rail} strokeWidth={1.8} />
+
+      {/* Lamplight over the board. */}
+      <Polygon points="179,10 349,108 179,206 9,108" fill="url(#mc-lamp)" />
+
+      {/* The far signal and gate stand behind the train. */}
+      <Signal x={176} y={79} c={c} />
+      {known ? <Gate x={176} y={79} down={gatesDown} /> : null}
+    </Svg>
+  );
+});
+
+/**
+ * The train layer: cars and their shadows, or the locomotive. Only this layer updates while the
+ * train rolls, on a clock that runs only while `rolling`.
+ */
+function Traffic({ state, rolling, layer }: { state: CrossingState; rolling: boolean; layer: Layer }) {
+  const [clock, setClock] = useState(0);
+  useEffect(() => {
+    if (!rolling) return;
+    const start = Date.now();
+    const id = setInterval(() => setClock(Date.now() - start), ROLL_STEP_MS);
+    return () => clearInterval(id);
+  }, [rolling]);
+  const onCrossing = state === 'blocked' || state === 'stopped';
+  if (!onCrossing && state !== 'approaching') return null;
+  const offset = rolling ? ((clock % LOOP_MS) / LOOP_MS) * LOOP : 0;
+  // Only the cars on the board: a car reaches 0.18 either side of its center.
+  const cars = CONSIST.filter((k) => Math.abs(k * PITCH + offset) < 0.5 + 0.18 + 0.02);
+  return (
+    <Svg {...layer} style={StyleSheet.absoluteFill} pointerEvents="none">
+      <Defs>
+        {/* Shadows stay on the board; rolling stock stays on the track, so cars run off its ends. */}
+        <ClipPath id="mc-board">
+          <Polygon points="179,10 349,108 179,206 9,108" />
+        </ClipPath>
+        <ClipPath id="mc-track">
+          <Polygon points={TRACK_BOX} />
+        </ClipPath>
+      </Defs>
+      <G clipPath="url(#mc-board)">
+        {onCrossing ? cars.map((k) => <Polygon key={k} points={CAR.shadow} fill={CAST} transform={carShift(k, offset)} />) : null}
+        {state === 'approaching' ? <Polygon points={ENGINE.shadow} fill={CAST} /> : null}
+      </G>
+      <G clipPath="url(#mc-track)">
+        {onCrossing ? cars.map((k) => <Car key={k} k={k} offset={offset} />) : null}
+        {state === 'approaching' ? <Locomotive /> : null}
+      </G>
+    </Svg>
+  );
+}
+
+/** Lit lamps: each signal's left and right lamp take turns, the two signals out of step. */
+const LAMP_SETS = [
+  [
+    [170, 51],
+    [250, 90],
+  ],
+  [
+    [182, 51],
+    [238, 90],
+  ],
+] as const;
+const NATIVE_DRIVER = Platform.OS !== 'web';
+
+/**
+ * The lit lamps as two layers whose opacity alternates on the native animation driver, so flashing
+ * costs no re-render. Without motion both layers stay lit.
+ */
+function Lamps({ flashing, layer }: { flashing: boolean; layer: Layer }) {
+  const [turn] = useState(() => new Animated.Value(0));
+  useEffect(() => {
+    if (!flashing) return;
+    const blink = (to: number) => Animated.timing(turn, { toValue: to, duration: 0, useNativeDriver: NATIVE_DRIVER });
+    const loop = Animated.loop(Animated.sequence([blink(1), Animated.delay(FLASH_STEP_MS), blink(0), Animated.delay(FLASH_STEP_MS)]));
+    loop.start();
+    return () => loop.stop();
+  }, [flashing, turn]);
+  const opacities = flashing ? [turn, turn.interpolate({ inputRange: [0, 1], outputRange: [1, 0] })] : [1, 1];
+  return (
+    <>
+      {LAMP_SETS.map((set, i) => (
+        <Animated.View key={i} style={[StyleSheet.absoluteFill, { opacity: opacities[i] }]} pointerEvents="none">
+          <Svg {...layer}>
+            {set.map(([x, y]) => (
+              <G key={x}>
+                <Circle cx={x} cy={y} r={6.5} fill={LAMP_LIT} opacity={0.35} />
+                <Circle cx={x} cy={y} r={3.4} fill={LAMP_LIT} />
+              </G>
+            ))}
+          </Svg>
+        </Animated.View>
+      ))}
+    </>
+  );
 }
 
 /** Ties across the track bed. */
@@ -294,8 +383,8 @@ const CAR = {
   walk: [pt(U0, CAR_V0 + 0.01, CAR_ROOF), pt(U0, CAR_V1 - 0.01, CAR_ROOF)],
 };
 
-/** A boxcar on two trucks: sliding door, ribs, roof walk and couplers. */
-function Boxcar({ colors }: { colors: (typeof CARS)[number] }) {
+/** A boxcar on two trucks: sliding door, ribs, roof walk and couplers. Memoized: only its position moves. */
+const Boxcar = memo(function Boxcar({ colors }: { colors: (typeof CARS)[number] }) {
   return (
     <>
       {CAR.trucks.map((t) => (
@@ -318,7 +407,7 @@ function Boxcar({ colors }: { colors: (typeof CARS)[number] }) {
       <Line x1={CAR.walk[0][0]} y1={CAR.walk[0][1]} x2={CAR.walk[1][0]} y2={CAR.walk[1][1]} stroke="rgba(255,255,255,0.35)" strokeWidth={1.2} />
     </>
   );
-}
+});
 
 // Locomotive, on the far stretch of track with its nose toward the crossing and the viewer.
 const LOCO_V0 = 0.03;
@@ -364,14 +453,10 @@ function Locomotive() {
   );
 }
 
-/**
- * A crossbuck mast with two red lamps. While a train is near they take turns (`turn` says which is
- * lit), or both stay lit when motion is reduced (`turn` is null).
- */
-function Signal({ x, y, c, lit, turn }: { x: number; y: number; c: Scenery; lit: boolean; turn: number | null }) {
+/** A crossbuck mast with its two signal lamps, unlit. The lit lamps are drawn by `Lamps`. */
+function Signal({ x, y, c }: { x: number; y: number; c: Scenery }) {
   const top = y - 42;
   const lampY = y - 28;
-  const lamps = [x - 6, x + 6].map((cx, i) => ({ cx, on: lit && (turn === null || turn === i) }));
   return (
     <>
       {/* Mast and its shadow. */}
@@ -382,14 +467,10 @@ function Signal({ x, y, c, lit, turn }: { x: number; y: number; c: Scenery; lit:
       <Line x1={x - 11} y1={top + 6} x2={x + 11} y2={top - 6} stroke="#1F2124" strokeWidth={4.6} strokeLinecap="round" />
       <Line x1={x - 11} y1={top - 6} x2={x + 11} y2={top + 6} stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" />
       <Line x1={x - 11} y1={top + 6} x2={x + 11} y2={top - 6} stroke="#FFFFFF" strokeWidth={3} strokeLinecap="round" />
-      {/* Lamp backboard and lamps, with a glow when lit. */}
+      {/* Lamp backboard and unlit lamps. */}
       <Rect x={x - 12} y={lampY - 5} width={24} height={10} rx={5} fill="#1F2124" />
-      {lamps.map((l) => (
-        <G key={l.cx}>
-          {l.on ? <Circle cx={l.cx} cy={lampY} r={6.5} fill={LAMP_LIT} opacity={0.35} /> : null}
-          <Circle cx={l.cx} cy={lampY} r={3.4} fill={l.on ? LAMP_LIT : LAMP_DARK} />
-        </G>
-      ))}
+      <Circle cx={x - 6} cy={lampY} r={3.4} fill={LAMP_DARK} />
+      <Circle cx={x + 6} cy={lampY} r={3.4} fill={LAMP_DARK} />
       <Circle cx={x} cy={y} r={4} fill={c.post} />
     </>
   );

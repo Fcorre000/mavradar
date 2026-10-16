@@ -63,7 +63,8 @@ A color theme only swaps colors. A style changes how the whole app is drawn: typ
   - Approaching: the gates are down, the lamps flash, and the locomotive comes down the far stretch of track toward the crossing.
   - Clear: an empty track, gates up, lamps dark.
   - Unknown: the whole model in gray, with no train, no gate arms and no lit lamps, so it never implies the last state.
-  - Reduced motion: nothing moves and both lamps stay lit. Motion runs only while Status is on screen.
+  - Reduced motion: nothing moves and both lamps stay lit. Motion runs only while Status is on screen and the app is in the foreground.
+  - Cost: the model is stacked layers. The scenery is drawn once; only a small train layer updates (about 15 times a second, only the cars on the board) while a blocked train rolls; the lamps alternate on the native animation driver with no re-render. Measured on the web build at 4x CPU slowdown: about 200 ms of main-thread time per second while rolling, against about 80 with nothing moving (down from about 390 before layering).
   - The lamps are two small dots alternating at about 1 Hz, well under the three-flashes-a-second limit; this model is the one place the app animates a flash, on purpose, because it is what a real crossing does.
   - It never replaces the status card, and it is capped at 168 dp tall so the card's freshness line stays on screen. In this style Blocked and Stopped cards size to content (no 288 dp minimum), since the model carries the alarm. In dark mode the table is a warm brown-black.
 - **No brand names** appear in the app; the names and one-line descriptions are MavRadar's own.
