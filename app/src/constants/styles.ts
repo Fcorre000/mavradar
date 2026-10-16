@@ -343,10 +343,11 @@ export const Styles = {
         snackbarBackground: '#1F2124', snackbarText: '#F7F6F2', snackbarAction: '#A9C0F2',
       },
       dark: {
-        text: '#F2F0EA', textSecondary: '#B4B6BA', background: '#15171A', backgroundElement: '#202327', backgroundSelected: '#2A3550',
-        divider: '#2E3236', outline: '#45494F', tonal: '#2A2D32', track: '#2E3236', sheet: '#202327', sheetHandle: '#55595F',
-        primary: '#8FB0F5', onPrimary: '#15171A', link: '#8FB0F5', sensorOk: '#7FD9CC',
-        snackbarBackground: '#F2F0EA', snackbarText: '#1F2124', snackbarAction: '#2F5FCC',
+        // A warm dark table: brown-black, never cool slate.
+        text: '#F3EEE6', textSecondary: '#BCB3A7', background: '#1A1714', backgroundElement: '#26211C', backgroundSelected: '#2D3550',
+        divider: '#352E27', outline: '#4D453C', tonal: '#302A24', track: '#352E27', sheet: '#26211C', sheetHandle: '#5C534A',
+        primary: '#8FB0F5', onPrimary: '#1A1714', link: '#8FB0F5', sensorOk: '#7FD9CC',
+        snackbarBackground: '#F3EEE6', snackbarText: '#1F2124', snackbarAction: '#2F5FCC',
       },
     },
     radius: { card: 18, button: 16, sheet: 24, chip: 12, segmented: 14, snackbar: 12, panel: 14, notification: 18, group: 18, timeline: 6, pill: 999 },
@@ -360,7 +361,7 @@ export const Styles = {
     buttonIcon: 'leading',
     depth: {
       light: { plate: '0px 6px 16px rgba(40, 36, 28, 0.12)', primaryBase: '#1E3F8C', tonalBase: '#CFCABF', lift: '0px -6px 16px rgba(40, 36, 28, 0.10)' },
-      dark: { plate: '0px 6px 16px rgba(0, 0, 0, 0.45)', primaryBase: '#4A68A8', tonalBase: '#0E0F11', lift: '0px -6px 16px rgba(0, 0, 0, 0.40)' },
+      dark: { plate: '0px 6px 16px rgba(0, 0, 0, 0.5)', primaryBase: '#4A68A8', tonalBase: '#0F0C0A', lift: '0px -6px 16px rgba(0, 0, 0, 0.40)' },
     },
     crossingModel: true,
     mapPitch: 38,

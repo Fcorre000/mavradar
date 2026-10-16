@@ -57,7 +57,15 @@ A color theme only swaps colors. A style changes how the whole app is drawn: typ
 | Civic | IBM's Carbon | IBM Plex Sans, light headings, semibold state word | square corners, IBM blue | a 2 dp blue rule under the chosen segment or chip; button icons at the trailing end |
 | Model Crossing | model railroad layouts | Overpass | warm table ground, plates on soft shadows, raised buttons on a darker base edge | a model of the crossing above the status card, and the map tilted 38 degrees like a tabletop |
 
-- **The crossing model** (`CrossingModel`): Center St in isometric view, with the West St underpass in the action blue. Blocked and Stopped put boxcars on the crossing with the gates down; Approaching puts them up the track with the gates down; Clear shows an empty track with the gates up; Unknown grays the whole model and shows neither, so it never implies the last state. It never replaces the status card, and it is capped at 168 dp tall so the card's freshness line stays on screen. In this style Blocked and Stopped cards size to content (no 288 dp minimum), since the model carries the alarm.
+- **The crossing model** (`CrossingModel`): Center St as a lit tabletop model railroad, with the West St underpass in the action blue, ballast and ties on the track, flocked grass, crossbuck masts with two red lamps, gate arms, and a lamp lighting the board from the upper left so everything casts a shadow. Freight cars (boxcars on trucks, with doors, ribs and roof walks, in oxide, brown and gray) and a locomotive (cab windows, stripe, lit headlight) carry the state:
+  - Blocked: the gates are down, the lamps take turns about once a second, and the cars roll slowly through the crossing (one loop every 9.6 s).
+  - Stopped: the same, but the cars stand still.
+  - Approaching: the gates are down, the lamps flash, and the locomotive comes down the far stretch of track toward the crossing.
+  - Clear: an empty track, gates up, lamps dark.
+  - Unknown: the whole model in gray, with no train, no gate arms and no lit lamps, so it never implies the last state.
+  - Reduced motion: nothing moves and both lamps stay lit. Motion runs only while Status is on screen.
+  - The lamps are two small dots alternating at about 1 Hz, well under the three-flashes-a-second limit; this model is the one place the app animates a flash, on purpose, because it is what a real crossing does.
+  - It never replaces the status card, and it is capped at 168 dp tall so the card's freshness line stays on screen. In this style Blocked and Stopped cards size to content (no 288 dp minimum), since the model carries the alarm. In dark mode the table is a warm brown-black.
 - **No brand names** appear in the app; the names and one-line descriptions are MavRadar's own.
 
 - **Locked in every style:** status colors, the five state shapes, the state words, freshness rules, the disclaimer, 48 dp targets. A style may change a card's corners, never its status fill.
