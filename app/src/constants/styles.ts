@@ -127,6 +127,12 @@ export interface AppStyle {
   footerEdge: 'none' | 'hairline' | 'shadow';
   /** The face draws its middle dot against the next word, so text pads it with a thin space. */
   padMiddleDot: boolean;
+  /**
+   * Moves text down by this fraction of its size, without changing layout. For a face whose line box
+   * has much more room above the letters than below, so text would otherwise sit high beside icons
+   * and switches. 0 for balanced faces.
+   */
+  textNudge: number;
   tabs: {
     /** Palette color behind the tab bar. */
     surface: keyof Palette;
@@ -197,6 +203,7 @@ export const Styles = {
     mapPitch: 0,
     footerEdge: 'none',
     padMiddleDot: false,
+    textNudge: 0,
     tabs: { surface: 'backgroundElement', indicator: true, tint: 'text', rule: false },
   },
 
@@ -249,6 +256,7 @@ export const Styles = {
     mapPitch: 0,
     footerEdge: 'hairline',
     padMiddleDot: false,
+    textNudge: 0,
     tabs: { surface: 'backgroundElement', indicator: false, tint: 'primary', rule: true },
   },
 
@@ -306,6 +314,7 @@ export const Styles = {
     mapPitch: 0,
     footerEdge: 'hairline',
     padMiddleDot: false,
+    textNudge: 0,
     tabs: { surface: 'background', indicator: false, tint: 'text', rule: true },
   },
 
@@ -368,6 +377,8 @@ export const Styles = {
     mapPitch: 38,
     footerEdge: 'shadow',
     padMiddleDot: true,
+    // Overpass: ascent 1766, descent 766 (of 2000), so letters sit about 0.1 em above the line's center.
+    textNudge: 0.08,
     tabs: { surface: 'backgroundElement', indicator: true, tint: 'text', rule: false },
   },
 } as const satisfies Record<string, AppStyle>;

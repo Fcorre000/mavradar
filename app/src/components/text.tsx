@@ -27,6 +27,7 @@ export function T({ v = 'body', color, tabular, weight, style, children, ...rest
         { color: color ?? theme.text },
         weight ? appStyle.faces[weight] : null,
         tabular ? { fontVariant: ['tabular-nums'] } : null,
+        appStyle.textNudge ? { transform: [{ translateY: appStyle.type[v].fontSize * appStyle.textNudge }] } : null,
         style,
       ]}
       {...rest}>
