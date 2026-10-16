@@ -346,7 +346,8 @@ export const Styles = {
         // A warm dark table: brown-black, never cool slate.
         text: '#F3EEE6', textSecondary: '#BCB3A7', background: '#1A1714', backgroundElement: '#26211C', backgroundSelected: '#2D3550',
         divider: '#352E27', outline: '#4D453C', tonal: '#302A24', track: '#352E27', sheet: '#26211C', sheetHandle: '#5C534A',
-        primary: '#8FB0F5', onPrimary: '#1A1714', link: '#8FB0F5', sensorOk: '#7FD9CC',
+        // The raised Directions block stays a strong blue at night, with white text; links stay light.
+        primary: '#3A6BE0', onPrimary: '#FFFFFF', link: '#8FB0F5', sensorOk: '#7FD9CC',
         snackbarBackground: '#F3EEE6', snackbarText: '#1F2124', snackbarAction: '#2F5FCC',
       },
     },
@@ -361,7 +362,7 @@ export const Styles = {
     buttonIcon: 'leading',
     depth: {
       light: { plate: '0px 6px 16px rgba(40, 36, 28, 0.12)', primaryBase: '#1E3F8C', tonalBase: '#CFCABF', lift: '0px -6px 16px rgba(40, 36, 28, 0.10)' },
-      dark: { plate: '0px 6px 16px rgba(0, 0, 0, 0.5)', primaryBase: '#4A68A8', tonalBase: '#0F0C0A', lift: '0px -6px 16px rgba(0, 0, 0, 0.40)' },
+      dark: { plate: '0px 6px 16px rgba(0, 0, 0, 0.5)', primaryBase: '#22448F', tonalBase: '#0F0C0A', lift: '0px -6px 16px rgba(0, 0, 0, 0.40)' },
     },
     crossingModel: true,
     mapPitch: 38,
