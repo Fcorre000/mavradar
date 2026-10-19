@@ -4,6 +4,9 @@ Every example file is checked, so a new one is picked up without editing this te
 """
 
 import json
+import math
+from collections.abc import Callable
+from dataclasses import replace
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import TypeAlias, cast
@@ -141,3 +144,46 @@ def test_parse_time_accepts_offsets() -> None:
 def test_timing_matches_contract() -> None:
     timing = load_object(CONTRACT / "timing.json")
     assert HEARTBEAT_INTERVAL_S == timing["heartbeatSec"]
+
+
+def test_huge_ints_agree_with_schema() -> None:
+    # A huge int is a finite JSON number: no OverflowError, and range checks still apply.
+    event = load_object(CONTRACT / "examples" / "crossing-event" / "valid" / "blocked-with-train.json")
+    for train, valid in (
+        ({"speedMps": 10**400}, True),
+        ({"confidence": 10**400}, False),
+        ({"speedMps": -(10**400)}, False),
+    ):
+        event["train"] = dict(train)
+        assert is_valid("crossing-event", event) == valid
+        if valid:
+            CrossingEvent.from_dict(event)
+        else:
+            with pytest.raises(ContractError):
+                CrossingEvent.from_dict(event)
+    heartbeat = load_object(CONTRACT / "examples" / "heartbeat" / "valid" / "detecting.json")
+    heartbeat["batteryVoltage"] = 10**400
+    assert is_valid("heartbeat", heartbeat)
+    assert Heartbeat.from_dict(heartbeat).battery_voltage == 10**400
+
+
+def event() -> CrossingEvent:
+    return CrossingEvent.from_dict(load(CONTRACT / "examples" / "crossing-event" / "valid" / "minimal.json"))
+
+
+def heartbeat() -> Heartbeat:
+    return Heartbeat.from_dict(load(CONTRACT / "examples" / "heartbeat" / "valid" / "detecting.json"))
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        lambda: replace(event(), crossing_id="794980d"),
+        lambda: replace(heartbeat(), uptime_sec=-1),
+        lambda: replace(heartbeat(), enclosure_temp_c=math.nan),
+    ],
+    ids=["bad-crossing-id", "negative-uptime", "nan-temperature"],
+)
+def test_to_dict_refuses_what_the_schema_rejects(message: Callable[[], CrossingEvent | Heartbeat]) -> None:
+    with pytest.raises(ContractError):
+        message().to_dict()

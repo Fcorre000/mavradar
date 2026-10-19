@@ -113,8 +113,13 @@ def _number(
     d: Mapping[str, object], key: str, minimum: float | None = None, maximum: float | None = None
 ) -> float:
     v = d[key]
-    # Non-finite values can't be written as JSON, so they are never valid here.
-    if isinstance(v, bool) or not isinstance(v, int | float) or not math.isfinite(v):
+    # Non-finite floats can't be written as JSON, so they are never valid here. Only floats
+    # can be non-finite (math.isfinite overflows on a huge int).
+    if (
+        isinstance(v, bool)
+        or not isinstance(v, int | float)
+        or (isinstance(v, float) and not math.isfinite(v))
+    ):
         raise ContractError(f"{key}: expected a number")
     if (minimum is not None and v < minimum) or (maximum is not None and v > maximum):
         raise ContractError(f"{key}: {v} is out of range")
@@ -235,6 +240,8 @@ class CrossingEvent:
             out["train"] = self.train.to_dict()
         if self.classifier_version is not None:
             out["classifierVersion"] = self.classifier_version
+        # Never send what the schema rejects: the constructor doesn't check.
+        type(self).from_dict(out)
         return out
 
     @classmethod
@@ -294,6 +301,8 @@ class Heartbeat:
         }
         if self.buffered_events is not None:
             out["bufferedEvents"] = self.buffered_events
+        # Never send what the schema rejects: the constructor doesn't check.
+        type(self).from_dict(out)
         return out
 
     @classmethod
