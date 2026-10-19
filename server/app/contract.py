@@ -9,6 +9,7 @@ so their timestamps arrive as datetimes.
 
 import re
 from collections.abc import Hashable, Mapping
+from datetime import datetime
 from enum import StrEnum
 from typing import Annotated, ClassVar, Literal, Self, cast
 from uuid import UUID
@@ -21,9 +22,13 @@ from pydantic import (
     BeforeValidator,
     ConfigDict,
     Field,
+    SerializationInfo,
+    SerializerFunctionWrapHandler,
+    Strict,
     StrictBool,
     StrictFloat,
     StrictInt,
+    model_serializer,
     model_validator,
 )
 from pydantic.alias_generators import to_camel
@@ -98,6 +103,8 @@ _RFC3339 = re.compile(
 
 def _require_str(v: object) -> object:
     """A message time must be an RFC 3339 string with an offset; Pydantic parses it next."""
+    if isinstance(v, datetime):
+        return v  # built in Python, not decoded JSON; AwareDatetime still checks the offset
     if not isinstance(v, str):
         raise ValueError("time must be a string")
     # The schema's checker upper-cases first, so a lowercase t or z passes there too.
@@ -109,6 +116,8 @@ def _require_str(v: object) -> object:
 def _hyphenated_uuid(v: object) -> object:
     # Pydantic's UUID also takes 32 bare hex digits, braces and urn:uuid:, the schema doesn't.
     # Uppercase hex passes, as it does in the schema's checker.
+    if isinstance(v, UUID):
+        return v  # built in Python, not decoded JSON
     if not isinstance(v, str):
         raise ValueError("eventId must be a string")
     try:
@@ -138,6 +147,10 @@ def _unique[T: Hashable](items: list[T]) -> list[T]:
 
 
 IsoTime = Annotated[AwareDatetime, BeforeValidator(_require_str)]
+# A Firestore Timestamp, which the SDK returns as an aware datetime (DatetimeWithNanoseconds).
+# Strict, so a string or a Unix number stored by mistake is rejected, not parsed.
+# Write Firestore with model_dump(by_alias=True) (python mode); a JSON dump turns these into strings.
+FirestoreTime = Annotated[AwareDatetime, Strict()]
 # A JSON number. An int stays an int, since StrictFloat can't hold a huge one the schema allows,
 # and NaN and infinity can't be written as JSON.
 Number = StrictInt | Annotated[StrictFloat, AllowInfNan(False)]
@@ -151,6 +164,8 @@ HhMm = Annotated[str, Field(pattern=r"^([01][0-9]|2[0-3]):[0-5][0-9]$")]
 class ContractModel(BaseModel):
     """Base for every contract model: camelCase on the wire, snake_case in Python."""
 
+    # populate_by_name also lets the API take snake_case keys, which the node never sends. The guide
+    # requires it, and Pyright needs the Python names to construct models.
     model_config = ConfigDict(extra="forbid", frozen=True, alias_generator=to_camel, populate_by_name=True)
 
     # Aliases of optional fields the schema lets you leave out but not set to null. A default
@@ -167,6 +182,18 @@ class ContractModel(BaseModel):
         for name, field in cls.model_fields.items():
             if field.alias in cls.NOT_NULL and any(k in d and d[k] is None for k in (field.alias, name)):
                 raise ValueError(f"{field.alias} may be left out but not null")
+        return d
+
+    @model_serializer(mode="wrap")
+    def _drop_unset_not_null(self, handler: SerializerFunctionWrapHandler, info: SerializationInfo) -> object:
+        # Leave out a NOT_NULL field that is None, so a dump is valid against the schema again.
+        out: object = handler(self)
+        if not isinstance(out, dict):
+            return out
+        d = cast(dict[str, object], out)
+        for name, field in type(self).model_fields.items():
+            if field.alias in self.NOT_NULL and getattr(self, name) is None:
+                d.pop(field.alias if info.by_alias else name, None)
         return d
 
 
@@ -233,28 +260,28 @@ class CrossingDoc(ContractModel):
     """crossings/{usdotId}"""
 
     state: ReportedState
-    since: AwareDatetime | None
-    stopped_at: AwareDatetime | None
-    detected_at: AwareDatetime | None
-    clear_since: AwareDatetime | None
-    last_reading_at: AwareDatetime
+    since: FirestoreTime | None
+    stopped_at: FirestoreTime | None
+    detected_at: FirestoreTime | None
+    clear_since: FirestoreTime | None
+    last_reading_at: FirestoreTime
     sensor: SensorDoc
     node_ids: list[Annotated[str, Field(min_length=1)]] = Field(max_length=2)
     alert_mode: AlertMode
-    updated_at: AwareDatetime
+    updated_at: FirestoreTime
 
 
 class BlockageEventDoc(ContractModel):
     """crossings/{usdotId}/events/{blockageId}"""
 
-    start: AwareDatetime
-    end: AwareDatetime
+    start: FirestoreTime
+    end: FirestoreTime
     duration_min: Number = Field(ge=0)
     stopped: StrictBool
 
 
 class LongestDoc(ContractModel):
-    start: AwareDatetime
+    start: FirestoreTime
     duration_min: Number = Field(ge=0)
     stopped: StrictBool
 
@@ -269,7 +296,7 @@ class HistorySummaryDoc(ContractModel):
     longest: LongestDoc | None
     hours: list[Annotated[Number, Field(ge=0)]] = Field(min_length=24, max_length=24)
     per_day: list[Annotated[Integer, Field(ge=0)]]
-    updated_at: AwareDatetime
+    updated_at: FirestoreTime
 
     @model_validator(mode="after")
     def _one_value_per_day(self) -> Self:
@@ -305,7 +332,7 @@ class DeviceDoc(ContractModel):
 
     uid: str = Field(min_length=1)
     platform: Platform
-    updated_at: AwareDatetime
+    updated_at: FirestoreTime
     subscriptions: Annotated[list[CrossingId], Field(max_length=20), AfterValidator(_unique)] | None = None
     quiet_hours: QuietHoursDoc | None = None
     alert_types: AlertTypesDoc | None = None
@@ -329,7 +356,7 @@ class NodeDoc(ContractModel):
 
     crossing_id: CrossingId
     side: NodeSide
-    last_seen_at: AwareDatetime
+    last_seen_at: FirestoreTime
     status: NodeOnline
     health: NodeHealthDoc
     flags: list[str]

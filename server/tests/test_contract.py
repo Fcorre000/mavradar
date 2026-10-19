@@ -5,9 +5,10 @@ Every example file is checked, so a new one is picked up without editing this te
 
 import json
 from collections.abc import Iterator
-from datetime import datetime
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 from typing import cast, get_args
+from uuid import uuid4
 
 import pytest
 from jsonschema import Draft202012Validator
@@ -25,6 +26,12 @@ from app.contract import (
     NODE_OFFLINE_AFTER_S,
     TYPICAL_MIN_SAMPLES,
     ContractModel,
+    CrossingEventIn,
+    Direction,
+    HeartbeatIn,
+    NodeStatus,
+    ReportedState,
+    TrainIn,
 )
 
 CONTRACT = Path(__file__).resolve().parents[2] / "contract"
@@ -35,6 +42,10 @@ type Schema = dict[str, Json]
 
 def load(path: Path) -> Json:
     return cast(Json, json.loads(path.read_text()))
+
+
+def load_json(text: str) -> Json:
+    return cast(Json, json.loads(text))
 
 
 def load_object(path: Path) -> dict[str, Json]:
@@ -113,9 +124,12 @@ def firestore_values(value: Json, node: Schema, root: Schema) -> object:
     so the model is what rejects them."""
     node = resolve(node, root)
     if node.get("x-firestore") == "timestamp" and isinstance(value, str):
+        # Only what the schema's date-time format accepts; fromisoformat alone is looser.
+        if not Draft202012Validator.FORMAT_CHECKER.conforms(value, "date-time"):
+            return value
         try:
-            return datetime.fromisoformat(value.replace("Z", "+00:00"))
-        except ValueError:
+            return datetime.fromisoformat(value.upper())
+        except ValueError:  # a leap second, or the checker's lenient final newline
             return value
     branches = node.get("oneOf")
     if isinstance(branches, list):
@@ -372,6 +386,8 @@ EDGES: list[tuple[str, str, str, tuple[str | int, ...], object, bool]] = [
     ("subscriptions-twenty", "device", "today", ("subscriptions",), TWENTY, True),
     ("subscription-lowercase", "device", "today", ("subscriptions",), ["794980d"], False),
     ("updated-at-null", "device", "today", ("updatedAt",), None, False),
+    ("updated-at-number", "device", "today", ("updatedAt",), 1760000000, False),
+    ("last-seen-no-seconds", "node", "at-crossing", ("lastSeenAt",), "2026-10-08T21:10Z", False),
     ("health-signal-absent", "node", "at-crossing", ("health", "signalDbm"), MISSING, True),
     ("health-signal-null", "node", "at-crossing", ("health", "signalDbm"), None, True),
     ("health-buffered-absent", "node", "at-crossing", ("health", "bufferedEvents"), MISSING, True),
@@ -490,7 +506,8 @@ def test_timing_matches_contract() -> None:
     blockage_checks = timing["blockageCheckMin"]
     assert isinstance(blockage_checks, list)
     assert BLOCKAGE_CHECKS_MIN == tuple(blockage_checks)
-    # Freshness thresholds are the app's alone. A new key has to be placed on one side or the other.
+    # The app's freshness keys are listed here by hand; the app's own contract test checks their
+    # values. A new key has to be placed on one side or the other.
     app_only = {"appDelayedSec", "appUnknownSec"}
     keys = {k for k in timing if not k.startswith("$")}
     assert keys == set(checked) | {"blockageCheckMin"} | app_only
@@ -498,3 +515,77 @@ def test_timing_matches_contract() -> None:
 
 def test_typical_min_samples_matches_contract() -> None:
     assert TYPICAL_MIN_SAMPLES == schema("history-summary")["x-typicalMinSamples"]
+
+
+VALID = [(name, path) for name, path in EXAMPLES if path.parent.name == "valid"]
+
+
+@pytest.mark.parametrize(("name", "path"), VALID, ids=[example_id(c) for c in VALID])
+def test_dumps_pass_the_schema(name: str, path: Path) -> None:
+    # What the server writes or forwards must be valid again: no null for a field left out.
+    model = MODELS[name].model_validate(model_input(name, load(path)))
+    # Python mode is how the server writes Firestore, timestamps still datetimes.
+    assert MODELS[name].model_validate(model.model_dump(by_alias=True)) == model
+    # A JSON dump writes timestamps as ISO strings, so it can be checked against the schema.
+    assert is_valid(name, load_json(model.model_dump_json(by_alias=True)))
+
+
+def test_dumps_leave_out_unset_fields_in_nested_models() -> None:
+    node = edited("node", "at-crossing", ("health", "bufferedEvents"), MISSING)
+    dumped = MODELS["node"].model_validate(model_input("node", node)).model_dump(by_alias=True)
+    assert "bufferedEvents" not in dumped["health"]
+    assert "signalDbm" in dumped["health"]  # nullable, so None is written as null
+    event = MODELS["crossing-event"].model_validate(edited("crossing-event", "minimal", ("train",), {}))
+    assert event.model_dump(by_alias=True)["train"] == {}
+    assert "classifierVersion" not in event.model_dump(by_alias=True)
+    assert "classifier_version" not in event.model_dump()
+
+
+def test_models_can_be_built_from_python_values() -> None:
+    # Server code builds models from datetimes and UUIDs, not strings; the wire stays strict.
+    event = CrossingEventIn(
+        schema_version=1,
+        event_id=uuid4(),
+        node_id="node-a",
+        crossing_id="794980D",
+        from_state=ReportedState.APPROACHING,
+        to_state=ReportedState.BLOCKED,
+        occurred_at=datetime.now(UTC),
+        log_only=True,
+        train=TrainIn(speed_mps=11.2, direction=Direction.TOWARD),
+    )
+    assert CrossingEventIn.model_validate(event.model_dump()) == event
+    assert is_valid("crossing-event", load_json(event.model_dump_json(by_alias=True)))
+    heartbeat = HeartbeatIn(
+        schema_version=1,
+        node_id="node-a",
+        sent_at=datetime(2026, 10, 8, 16, 14, 30, tzinfo=timezone(timedelta(hours=-5))),
+        status=NodeStatus.DETECTING,
+        state=ReportedState.CLEAR,
+        log_only=False,
+        battery_voltage=12.6,
+        enclosure_temp_c=31.4,
+        uptime_sec=86400,
+        signal_dbm=None,
+        software_version="0.1.0",
+        map_version="794980D-1",
+    )
+    assert is_valid("heartbeat", load_json(heartbeat.model_dump_json(by_alias=True)))
+    with pytest.raises(ValidationError):
+        CrossingEventIn.model_validate({**event.model_dump(), "occurred_at": datetime(2026, 10, 8)})
+
+
+class SdkTimestamp(datetime):
+    """Stands in for the Firestore SDK's DatetimeWithNanoseconds, a datetime subclass."""
+
+
+def test_firestore_times_must_be_aware_datetimes() -> None:
+    blockage = load_object(CONTRACT / "examples/blockage-event/valid/stopped.json")
+    start = SdkTimestamp(2026, 10, 8, 21, 14, 3, 250000, tzinfo=UTC)
+    end = datetime(2026, 10, 8, 21, 26, 33, 250000, tzinfo=UTC)
+    doc = MODELS["blockage-event"].model_validate({**blockage, "start": start, "end": end})
+    assert type(doc.model_dump()["start"]) is SdkTimestamp
+    # Strict: naive datetimes and well-formed ISO strings are rejected too, not parsed.
+    for bad in (datetime(2026, 10, 8, 21, 14, 3), "2026-10-08T21:14:03.250Z"):
+        with pytest.raises(ValidationError):
+            MODELS["blockage-event"].model_validate({**blockage, "start": bad, "end": end})
