@@ -76,15 +76,15 @@ function pt(u: number, v: number, h = 0): [number, number] {
 const pts = (...points: [number, number][]) => points.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(' ');
 
 const LABEL: Record<CrossingState, string> = {
-  clear: 'Model of Center St crossing: no train, gates up.',
-  approaching: 'Model of Center St crossing: a train is coming down the track, the lights are flashing and the gates are down.',
-  blocked: 'Model of Center St crossing: a moving train is on the crossing, the lights are flashing and the gates are down. The West St underpass is open.',
-  stopped: 'Model of Center St crossing: a stopped train is on the crossing and the gates are down. The West St underpass is open.',
-  unknown: 'Model of Center St crossing, in gray: no current sensor data.',
+  clear: 'Model of Cooper St crossing: no train, gates up.',
+  approaching: 'Model of Cooper St crossing: a train is coming down the track, the lights are flashing and the gates are down.',
+  blocked: 'Model of Cooper St crossing: a moving train is on the crossing, the lights are flashing and the gates are down. The West St underpass is open.',
+  stopped: 'Model of Cooper St crossing: a stopped train is on the crossing and the gates are down. The West St underpass is open.',
+  unknown: 'Model of Cooper St crossing, in gray: no current sensor data.',
 };
 
 /**
- * Center St as a lit tabletop model (Model Crossing style): road, ballasted track, the West St
+ * Cooper St as a lit tabletop model (Model Crossing style): road, ballasted track, the West St
  * underpass in the action blue, crossbuck signals and gates. A train near the crossing lowers the
  * gates and flashes the lights; a blocked crossing shows freight cars rolling slowly through, a
  * stopped one shows them standing still, and an approaching one shows the locomotive coming. With
@@ -190,7 +190,7 @@ const Board = memo(function Board({ c, scheme, gatesDown, known, layer }: { c: S
       <Polygon points="179,206 349,108 349,116 179,214" fill={c.sideRight} />
       <Polygon points="179,206 9,108 9,116 179,214" fill={c.sideLeft} />
 
-      {/* West St, passing under the track; Center St and its center line. */}
+      {/* West St, passing under the track; Cooper St and its center line. */}
       <Polygon points={pts(pt(0, 0.06), pt(1, 0.06), pt(1, 0.18), pt(0, 0.18))} fill={c.detour} />
       <Polygon points={pts(pt(0, 0.42), pt(1, 0.42), pt(1, 0.58), pt(0, 0.58))} fill={c.road} />
       <Line x1={94} y1={59} x2={264} y2={157} stroke={c.dash} strokeWidth={1.5} strokeDasharray="6 6" />

@@ -1,4 +1,4 @@
-import { CENTER_ST, DEMO_CROSSINGS } from '@/domain/crossings';
+import { LAUNCH_CROSSING, DEMO_CROSSINGS } from '@/domain/crossings';
 import { minutesBetween, startOfDay } from '@/domain/time';
 import type { BlockageEvent, Connection, CrossingReading, ReportedState, SourceSnapshot } from '@/domain/types';
 
@@ -14,7 +14,7 @@ const SEEDS: Record<string, { state: ReportedState; since?: number; stoppedAt?: 
   '794984F': { state: 'clear', clearSince: -55 },
   '794983Y': { state: 'clear', clearSince: -41 },
   '794981K': { state: 'approaching', detectedAt: -1 },
-  '794980D': { state: 'clear', clearSince: -18 },
+  '794978C': { state: 'clear', clearSince: -18 },
   '794977V': { state: 'clear', clearSince: -26 },
   '794976N': { state: 'clear', clearSince: -33 },
   '794975G': { state: 'clear', clearSince: -64 },
@@ -24,7 +24,7 @@ const SEEDS: Record<string, { state: ReportedState; since?: number; stoppedAt?: 
   '794971E': { state: 'clear', clearSince: -90 },
 };
 
-// Center St's blockages earlier today: [minute of day, duration in minutes, stopped].
+// The launch crossing's blockages earlier today: [minute of day, duration in minutes, stopped].
 const TODAY: [number, number, boolean][] = [
   [47, 4, false], [135, 3, false], [238, 6, true], [320, 4, false], [402, 5, false], [475, 3, false],
   [550, 7, true], [633, 4, false], [708, 5, false], [760, 8, false], [832, 9, false], [960, 6, false],
@@ -73,7 +73,7 @@ function pastDay(daysAgo: number): [number, number, boolean][] {
 }
 
 export interface DemoControls {
-  centerState: ReportedState;
+  launchState: ReportedState;
   frozen: boolean;
   speed: number;
   connection: Connection;
@@ -106,7 +106,7 @@ export class DemoEngine implements CrossingSource {
     const addEvents = (list: [number, number, boolean][], dayStart: number) =>
       list.forEach(([m, d, stopped]) => {
         const start = dayStart + m * MIN;
-        if (start + d * MIN < now) this.events.push({ id: `seed-${this.eventSeq++}`, crossingId: CENTER_ST.id, start, durationMin: d, stopped });
+        if (start + d * MIN < now) this.events.push({ id: `seed-${this.eventSeq++}`, crossingId: LAUNCH_CROSSING.id, start, durationMin: d, stopped });
       });
     for (let ago = HISTORY_DAYS; ago >= 1; ago--) {
       const start = new Date(day);
@@ -117,9 +117,9 @@ export class DemoEngine implements CrossingSource {
     const last = this.events[this.events.length - 1];
     const clearSince = last ? Math.max(last.start + last.durationMin * MIN, now - 90 * MIN) : now - 30 * MIN;
 
-    this.readings[CENTER_ST.id] = this.reading(CENTER_ST.id, 'clear', { clearSince });
+    this.readings[LAUNCH_CROSSING.id] = this.reading(LAUNCH_CROSSING.id, 'clear', { clearSince });
     for (const c of DEMO_CROSSINGS) {
-      if (c.id === CENTER_ST.id) continue;
+      if (c.id === LAUNCH_CROSSING.id) continue;
       const s = SEEDS[c.id];
       const at = (m?: number) => (m === undefined ? null : now + m * MIN);
       this.readings[c.id] = this.reading(c.id, s.state, {
@@ -138,7 +138,7 @@ export class DemoEngine implements CrossingSource {
 
   controls(): DemoControls {
     return {
-      centerState: this.readings[CENTER_ST.id].state,
+      launchState: this.readings[LAUNCH_CROSSING.id].state,
       frozen: this.frozen,
       speed: this.speed,
       connection: this.connection,
@@ -170,10 +170,10 @@ export class DemoEngine implements CrossingSource {
     };
   }
 
-  /** Demo control: what the Center St sensor reports. `live` means the change happens right now. */
-  setCenterState(state: ReportedState, live = false) {
+  /** Demo control: what the launch crossing's sensor reports. `live` means the change happens right now. */
+  setLaunchState(state: ReportedState, live = false) {
     const now = this.now();
-    const r = { ...this.readings[CENTER_ST.id] };
+    const r = { ...this.readings[LAUNCH_CROSSING.id] };
     const prev = r.state;
     const wasBlocking = prev === 'blocked' || prev === 'stopped';
     if (wasBlocking && state !== 'blocked' && state !== 'stopped' && state !== 'sensorOffline' && r.since) {
@@ -182,7 +182,7 @@ export class DemoEngine implements CrossingSource {
         ...this.events,
         {
           id: `demo-${this.eventSeq++}`,
-          crossingId: CENTER_ST.id,
+          crossingId: LAUNCH_CROSSING.id,
           start: r.since,
           durationMin: Math.max(1, minutesBetween(r.since, now)),
           stopped: prev === 'stopped' || r.stoppedAt !== null,
@@ -204,7 +204,7 @@ export class DemoEngine implements CrossingSource {
     }
     r.state = state;
     r.lastReadingAt = state === 'sensorOffline' ? now - 34 * MIN : now;
-    this.readings[CENTER_ST.id] = r;
+    this.readings[LAUNCH_CROSSING.id] = r;
     this.emit();
   }
 
@@ -212,7 +212,7 @@ export class DemoEngine implements CrossingSource {
   playTrain() {
     this.connection = 'online';
     this.frozen = false;
-    if (this.readings[CENTER_ST.id].state !== 'clear') this.setCenterState('clear', true);
+    if (this.readings[LAUNCH_CROSSING.id].state !== 'clear') this.setLaunchState('clear', true);
     this.scenario = {
       t0: this.now(),
       i: 0,
@@ -225,7 +225,7 @@ export class DemoEngine implements CrossingSource {
   /** Demo control: stop heartbeats, so freshness goes Live, then Delayed, then Unknown. */
   setFrozen(frozen: boolean) {
     this.frozen = frozen;
-    if (!frozen) this.readings[CENTER_ST.id] = { ...this.readings[CENTER_ST.id], lastReadingAt: this.now() };
+    if (!frozen) this.readings[LAUNCH_CROSSING.id] = { ...this.readings[LAUNCH_CROSSING.id], lastReadingAt: this.now() };
     this.emit();
   }
 
@@ -242,7 +242,7 @@ export class DemoEngine implements CrossingSource {
     this.connection = connection;
     if (connection === 'online') {
       this.lastSyncAt = this.now();
-      if (!this.frozen) this.readings[CENTER_ST.id] = { ...this.readings[CENTER_ST.id], lastReadingAt: this.now() };
+      if (!this.frozen) this.readings[LAUNCH_CROSSING.id] = { ...this.readings[LAUNCH_CROSSING.id], lastReadingAt: this.now() };
     }
     this.emit();
   }
@@ -268,14 +268,14 @@ export class DemoEngine implements CrossingSource {
       this.lastSyncAt = now;
       for (const id of Object.keys(this.readings)) {
         const r = this.readings[id];
-        if (r.state === 'sensorOffline' || (id === CENTER_ST.id && this.frozen)) continue;
+        if (r.state === 'sensorOffline' || (id === LAUNCH_CROSSING.id && this.frozen)) continue;
         if (now - r.lastReadingAt >= HEARTBEAT_MS) this.readings[id] = { ...r, lastReadingAt: now };
       }
     }
     const sc = this.scenario;
     if (sc) {
       while (sc.i < sc.steps.length && now - sc.t0 >= sc.steps[sc.i][0] * 1000) {
-        this.setCenterState(sc.steps[sc.i][1], true);
+        this.setLaunchState(sc.steps[sc.i][1], true);
         sc.i += 1;
       }
       if (sc.i >= sc.steps.length) {

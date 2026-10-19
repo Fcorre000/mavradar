@@ -184,7 +184,7 @@ Once a minute, Cloud Scheduler calls the server, and the IngestController asks t
 
 ## S7: App registers the device (UC4 step 7)
 
-After the user allows notifications, AppActions adds the crossing to the followed list in the Store and asks the PushRegistrar to register the device with the followed crossings and alert preferences. The PushRegistrar confirms permission with the PhoneOS and asks it for the device's push token. If there is no signed-in user yet, it asks Firebase Auth to sign in anonymously, and Firebase Auth returns a uid. The PushRegistrar merge-writes the device document, keyed on the token, with the uid, platform, update time, followed crossings and alert preferences. Firestore checks it against the security rules: the writer's uid, allowed fields only, at most 20 crossings. The PushRegistrar returns the token, and AppActions shows "Following Center St. Alerts on." with Undo.
+After the user allows notifications, AppActions adds the crossing to the followed list in the Store and asks the PushRegistrar to register the device with the followed crossings and alert preferences. The PushRegistrar confirms permission with the PhoneOS and asks it for the device's push token. If there is no signed-in user yet, it asks Firebase Auth to sign in anonymously, and Firebase Auth returns a uid. The PushRegistrar merge-writes the device document, keyed on the token, with the uid, platform, update time, followed crossings and alert preferences. Firestore checks it against the security rules: the writer's uid, allowed fields only, at most 20 crossings. The PushRegistrar returns the token, and AppActions shows "Following Cooper St. Alerts on." with Undo.
 
 | # | Subject | Subject Action | Other Data / Objects | Object Acted Upon |
 | --- | --- | --- | --- | --- |
@@ -197,7 +197,7 @@ After the user allows notifications, AppActions adds the crossing to the followe
 | 7 | PushRegistrar | merge-writes | uid, platform, update time, followed crossings, alert preferences | device document in Firestore |
 | 8 | Firestore | checks | security rules: owner, allowed fields, 20-crossing cap | the write |
 | 9 | PushRegistrar | returns | token | AppActions |
-| 10 | AppActions | asks to show | "Following Center St. Alerts on." with Undo | Store |
+| 10 | AppActions | asks to show | "Following Cooper St. Alerts on." with Undo | Store |
 
 ## S8: Server picks up the follow (UC4 step 8)
 

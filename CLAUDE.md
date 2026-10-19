@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-MavRadar detects freight trains approaching a grade crossing with a 24GHz radar and pushes real-time alerts to a mobile app, so people can divert before they're stuck. The first site is the Center St crossing near UT Arlington, where students can divert to the West St underpass. The design is framed for any blocked crossing and for cities and emergency dispatch, not only UTA students. No public freight train position data exists, so the system detects trains directly.
+MavRadar detects freight trains approaching a grade crossing with a 24GHz radar and pushes real-time alerts to a mobile app, so people can divert before they're stuck. The first site is the Cooper St crossing (USDOT 794980D) at UT Arlington, where drivers can divert to the West St underpass one block east. It moved from Center St on 2026-10-19. The handoff, amendments and HTML mockup still say Center St; read that as Cooper St. The design is framed for any blocked crossing and for cities and emergency dispatch, not only UTA students. No public freight train position data exists, so the system detects trains directly.
 
 Read `docs/MAVRADAR_HANDOFF.md` and then its amendments in order (`docs/MAVRADAR_HANDOFF_AMENDMENT_001.md` through `_003.md`) before doing significant work. The handoff has the original architecture and reasoning; the amendments supersede it where they disagree. The design blueprint in `docs/artifacts/blueprint/` (decisions D1 to D5, start at its `00_README.md`) builds on them and is the plan for `edge/`, `server/` and the app's remaining work; where it changes an amendment, it says so. Do not relitigate decisions documented there without new information.
 

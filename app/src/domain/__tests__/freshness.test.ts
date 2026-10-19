@@ -5,7 +5,7 @@ import type { CrossingReading } from '../types';
 const NOW = new Date(2026, 8, 28, 14, 48, 0).getTime();
 
 const reading = (over: Partial<CrossingReading> = {}): CrossingReading => ({
-  crossingId: '794978C',
+  crossingId: '794980D',
   state: 'clear',
   since: null,
   stoppedAt: null,

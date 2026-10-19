@@ -17,7 +17,7 @@ import { StyleOrder, Styles } from '@/constants/styles';
 import { source } from '@/data';
 import type { AlertType } from '@/domain/alerts';
 import { DISCLAIMER } from '@/domain/copy';
-import { crossingById } from '@/domain/crossings';
+import { crossingById, LAUNCH_CROSSING } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
 import { formatAgo } from '@/domain/time';
 import type { Connection, ReportedState } from '@/domain/types';
@@ -219,12 +219,12 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 function SensorList() {
   const snapshot = useApp((s) => s.snapshot);
-  const e = effectiveState(snapshot.readings['794978C'], snapshot);
-  const r = snapshot.readings['794978C'];
+  const r = snapshot.readings[LAUNCH_CROSSING.id];
+  const e = effectiveState(r, snapshot);
   return (
     <RowGroup>
-      <InfoRow label={`Center St · ${r?.sensorName ?? 'Crossing node'}`} value={e.state === 'unknown' ? 'Offline' : `Online · battery ${r?.sensorBatteryOk === false ? 'low' : 'OK'}`} />
-      <InfoRow label="Crossing ID" value="USDOT 794978C" last />
+      <InfoRow label={`${LAUNCH_CROSSING.name} · ${r?.sensorName ?? 'Crossing node'}`} value={e.state === 'unknown' ? 'Offline' : `Online · battery ${r?.sensorBatteryOk === false ? 'low' : 'OK'}`} />
+      <InfoRow label="Crossing ID" value={`USDOT ${LAUNCH_CROSSING.id}`} last />
     </RowGroup>
   );
 }
@@ -254,11 +254,11 @@ function DemoControls() {
   const dataset = useApp((s) => s.demo.dataset);
   const historyEmpty = useApp((s) => s.demo.historyEmpty);
   const showTip = useApp((s) => s.demo.showTip);
-  const reading = snapshot.readings['794978C'];
+  const reading = snapshot.readings[LAUNCH_CROSSING.id];
   const beat =
     controls.connection !== 'online'
       ? 'No connection'
-      : controls.centerState === 'sensorOffline'
+      : controls.launchState === 'sensorOffline'
         ? 'Sensor offline'
         : `Last heartbeat ${formatAgo((snapshot.now - reading.lastReadingAt) / 1000)}${controls.frozen ? ' (frozen)' : ''}`;
 
@@ -269,8 +269,8 @@ function DemoControls() {
       </View>
 
       <View style={styles.block}>
-        <T weight={600}>Center St sensor reports</T>
-        <Chips label="Reported state" value={controls.centerState} onChange={demo.setCenterState} options={STATES} />
+        <T weight={600}>{LAUNCH_CROSSING.name} sensor reports</T>
+        <Chips label="Reported state" value={controls.launchState} onChange={demo.setLaunchState} options={STATES} />
       </View>
       <Button
         label={controls.scenarioRunning ? 'Train running…' : 'Play a train'}

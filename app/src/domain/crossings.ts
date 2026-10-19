@@ -5,16 +5,16 @@ import type { Crossing } from './types';
  * dataset m2f8-22s6). They are road and rail intersections, never a sensor node's mounting spot.
  */
 
-/** The launch crossing. USDOT 794978C, Union Pacific, 2 main tracks. */
-export const CENTER_ST: Crossing = {
-  id: '794978C',
-  name: 'Center St',
+/** The launch crossing. USDOT 794980D, Union Pacific. */
+export const LAUNCH_CROSSING: Crossing = {
+  id: '794980D',
+  name: 'Cooper St',
   city: 'Arlington',
-  latitude: 32.737244,
-  longitude: -97.107045,
+  latitude: 32.737538,
+  longitude: -97.114419,
 };
 
-/** The detour. West St crosses the same line (USDOT 794979J). */
+/** The detour. West St passes under the same line (USDOT 794979J), one block east of Cooper St. */
 export const DETOUR = {
   name: 'West St underpass',
   latitude: 32.7374069,
@@ -29,8 +29,8 @@ export const DEMO_CROSSINGS: Crossing[] = [
   { id: '794984F', name: 'Bowen Rd', city: 'Arlington', latitude: 32.734104, longitude: -97.149134 },
   { id: '794983Y', name: 'Fielder Rd', city: 'Arlington', latitude: 32.7361891, longitude: -97.1315838 },
   { id: '794981K', name: 'Davis Dr', city: 'Arlington', latitude: 32.737869, longitude: -97.123204 },
-  { id: '794980D', name: 'Cooper St', city: 'Arlington', latitude: 32.737538, longitude: -97.114419 },
-  CENTER_ST,
+  LAUNCH_CROSSING,
+  { id: '794978C', name: 'Center St', city: 'Arlington', latitude: 32.737244, longitude: -97.107045 },
   { id: '794977V', name: 'Mesquite St', city: 'Arlington', latitude: 32.737206, longitude: -97.10577 },
   { id: '794976N', name: 'East St', city: 'Arlington', latitude: 32.7371527, longitude: -97.103424 },
   { id: '794975G', name: 'Collins St', city: 'Arlington', latitude: 32.736938, longitude: -97.097334 },
@@ -41,5 +41,5 @@ export const DEMO_CROSSINGS: Crossing[] = [
 ];
 
 export function crossingById(id: string): Crossing {
-  return DEMO_CROSSINGS.find((c) => c.id === id) ?? CENTER_ST;
+  return DEMO_CROSSINGS.find((c) => c.id === id) ?? LAUNCH_CROSSING;
 }

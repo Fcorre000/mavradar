@@ -3,7 +3,7 @@ import { useSyncExternalStore } from 'react';
 import { demoEngine } from '@/data';
 import type { DemoControls } from '@/data/demo-engine';
 import type { AlertMemory, AlertType, PermissionState } from '@/domain/alerts';
-import { CENTER_ST, DEMO_CROSSINGS } from '@/domain/crossings';
+import { LAUNCH_CROSSING, DEMO_CROSSINGS } from '@/domain/crossings';
 import type { Crossing, SourceSnapshot } from '@/domain/types';
 
 import { defaultPrefs, type Prefs } from './prefs';
@@ -55,10 +55,10 @@ const initialState: AppState = {
   ui: {
     snack: null,
     priming: null,
-    statusCrossingId: CENTER_ST.id,
-    selectedCrossingId: CENTER_ST.id,
+    statusCrossingId: LAUNCH_CROSSING.id,
+    selectedCrossingId: LAUNCH_CROSSING.id,
     mapView: 'map',
-    historyCrossingId: CENTER_ST.id,
+    historyCrossingId: LAUNCH_CROSSING.id,
     historyRange: 7,
     settingsCardFor: null,
   },
@@ -97,9 +97,9 @@ export function useApp<T>(selector: (s: AppState) => T): T {
   return useSyncExternalStore(subscribe, () => selector(state), () => selector(state));
 }
 
-const LAUNCH_CROSSINGS: Crossing[] = [CENTER_ST];
+const LAUNCH_CROSSINGS: Crossing[] = [LAUNCH_CROSSING];
 
-/** Crossings the app shows: just Center St, or all 12 in the demo's multi-crossing mode. Stable references, safe as a selector. */
+/** Crossings the app shows: just the launch crossing, or all 12 in the demo's multi-crossing mode. Stable references, safe as a selector. */
 export function visibleCrossings(s: AppState): Crossing[] {
   return s.demo.dataset === 'many' ? DEMO_CROSSINGS : LAUNCH_CROSSINGS;
 }

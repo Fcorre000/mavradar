@@ -8,7 +8,7 @@ adaptive
 
 ## Users
 
-UTA commuters who drive near the Center St crossing in Arlington, TX. They check MavRadar before leaving, glance at it en route (at a red light, never while moving), and get pushed an alert when a crossing they follow is blocked. Their job is one decision: go through Center St, or take the West St underpass.
+UTA commuters who drive near the Cooper St crossing in Arlington, TX. They check MavRadar before leaving, glance at it en route (at a red light, never while moving), and get pushed an alert when a crossing they follow is blocked. Their job is one decision: go through Cooper St, or take the West St underpass.
 
 City staff and emergency dispatch are a later audience (blueprint D3, deferred). Design for commuters now without closing that door.
 
@@ -34,7 +34,7 @@ No public freight train position data exists, so MavRadar detects trains itself:
 - Alert preferences: alert types, minimum blockage time, commute windows, quiet hours, mute today.
 - Also: share a crossing's status as plain text; color themes; mode (system, light, dark).
 - States, always these words: Clear, Approaching, Blocked, Stopped, Unknown. Freshness: Live, Delayed. A crossing is "followed"; the alternative route is the "detour".
-- One field node at Center St for now; a second, spaced-out pair later. One crossing live; the design must scale to many.
+- One field node at Cooper St for now; a second, spaced-out pair later. One crossing live; the design must scale to many.
 - Android first; iOS waits on Apple Developer enrollment. Expo (React Native) app, built with EAS cloud builds, with a monthly build budget, so native changes are batched.
 - The train-alerts notification channel carries only real train events; everything else uses service-status.
 - Never commit or display the node's exact mounting location.

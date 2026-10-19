@@ -318,7 +318,7 @@ export const Styles = {
     tabs: { surface: 'background', indicator: false, tint: 'text', rule: true },
   },
 
-  /** Center St as a lit tabletop model: the crossing model on Status, raised blocks, a pitched map. */
+  /** The launch crossing as a lit tabletop model: the crossing model on Status, raised blocks, a pitched map. */
   model: {
     name: 'Model Crossing',
     description: 'A small model of the crossing shows the train and the gates.',

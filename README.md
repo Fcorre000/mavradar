@@ -1,12 +1,12 @@
 # MavRadar
 
-Real-time alerts for freight trains blocking grade crossings, starting with the Center St crossing near the University of Texas at Arlington.
+Real-time alerts for freight trains blocking grade crossings, starting with the Cooper St crossing near the University of Texas at Arlington.
 
 ## The problem
 
 A freight train sitting across a grade crossing blocks everyone on that road: commuters, students, and ambulances and fire trucks trying to get through. Detours usually exist, but they only help if you know about the train *before* you commit to the road. By the time you can see the train, you are already stuck behind it.
 
-The first site is Center St at UTA, where trains regularly make students late for class and the West St underpass is the way around. The system is built so any city, emergency dispatch center, or campus with a blocked-crossing problem could run it at their own crossings.
+The first site is Cooper St at UTA, where trains regularly make students late for class and the West St underpass is the way around. The system is built so any city, emergency dispatch center, or campus with a blocked-crossing problem could run it at their own crossings.
 
 No public real-time freight train position data exists. Class I railroads treat movement data as proprietary, and the shipper-facing APIs track individual railcars, not "is there a train at this crossing right now." So the system detects trains directly.
 
