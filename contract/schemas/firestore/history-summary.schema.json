@@ -11,7 +11,7 @@
     "days": { "enum": [7, 30] },
     "count": { "type": "integer", "minimum": 0, "description": "Blockages in the window" },
     "typicalMin": { "type": ["integer", "null"], "minimum": 1, "description": "Median duration of every blockage, whole minutes. Null below 5 blockages." },
-    "typicalStoppedMin": { "type": ["integer", "null"], "minimum": 1, "description": "Median duration of stopped-train blockages, whole minutes. Null below 5 blockages." },
+    "typicalStoppedMin": { "type": ["integer", "null"], "minimum": 1, "description": "Median duration of stopped-train blockages, whole minutes. Null below 5 stopped-train blockages." },
     "longest": {
       "oneOf": [
         {

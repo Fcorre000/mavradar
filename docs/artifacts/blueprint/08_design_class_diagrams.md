@@ -770,7 +770,7 @@ These are exactly the fields `FirestoreSource.toReading()` already reads, plus t
 | `days`              | number                       | 7 or 30                                                                  |
 | `count`             | number                       | Blockages in the window                                                  |
 | `typicalMin`        | number or null               | Median duration of every blockage, whole minutes; null below 5 blockages |
-| `typicalStoppedMin` | number or null               | Median of stopped-train blockages only; null below 5 blockages           |
+| `typicalStoppedMin` | number or null               | Median of stopped-train blockages only; null below 5 stopped-train blockages |
 | `longest`           | map or null                  | `{ start, durationMin, stopped }`                                      |
 | `hours`             | array of 24 numbers          | Average blockages per hour of day, midnight first                        |
 | `perDay`            | array of `days` numbers      | Blockages per calendar day, oldest first, ending today                   |
