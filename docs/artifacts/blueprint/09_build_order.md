@@ -165,7 +165,7 @@ flowchart LR
 - **Use cases:** UC1. **Diagrams:** SD3. **Size:** M. **Needs:** S2.
 - **Creates:** `repositories/firestore.py` (`CrossingRepository`, `AlertLog`, `TokenRegistry`, `CrossingEventStore`).
 - **Done when:**
-  - Integration tests against the Firestore emulator check that a crossing document matches 08 section 4 field for field, with exactly the fields `FirestoreSource.toReading()` reads.
+  - Integration tests against the Firestore emulator check that a crossing document matches 08 section 4 field for field, with exactly the fields `toReading()` in `app/src/data/firestore-mapping.ts` reads.
   - A finished blockage writes a BlockageEvent and updates both summary documents.
   - Invalid tokens are deleted.
   - A forced write failure returns 503 and leaves the event "pushed, not written", and a resend finishes the writes without a second push.

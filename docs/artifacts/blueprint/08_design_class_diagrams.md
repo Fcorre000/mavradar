@@ -628,7 +628,7 @@ export interface HistoryStats {
 
 The source is now `contract/` at the repo root; this section describes it. Change `contract/` first.
 
-The one place the shape of every message and stored document is written down. Edge, server and app each keep their own copy in code (`edge/mavradar_edge/contract.py`, `server/app/contract.py`, `app/src/domain/types.ts`), and those copies must match this section. Changing a field means changing this section first, in a PR everyone sees.
+The one place the shape of every message and stored document is written down. Edge, server and app each keep their own copy in code (`edge/mavradar_edge/contract.py`, `server/app/contract.py`, and in the app `app/src/domain/types.ts`, `app/src/data/firestore-mapping.ts` and `app/src/lib/device-doc.ts`), and a test on each side checks its copy against `contract/`. Changing a field means changing `contract/` first, and this section with it, in a PR everyone sees.
 
 **Conventions**
 
@@ -752,7 +752,7 @@ The app reads the first four; the rest are server-only. "Writer" is who writes t
 | `alertMode`     | string            | `logOnly`, `blockedAndCleared` or `all` (D1, UC13). Stays `blockedAndCleared` while one node sits at the crossing (OQ19). |
 | `updatedAt`     | Timestamp         | Server write time                                                                                                                 |
 
-These are exactly the fields `FirestoreSource.toReading()` already reads, plus three new ones the app can ignore.
+These are exactly the fields `toReading()` in `app/src/data/firestore-mapping.ts` already reads, plus three new ones the app can ignore.
 
 **`crossings/{usdotId}/events/{blockageId}`**: one finished blockage (BlockageEvent). Writer: server, after the blockage clears. Reader: app.
 
@@ -789,7 +789,7 @@ Same fields as the app's `BlockageStats` in `app/src/domain/stats.ts`, without t
 | `alertTypes`              | map of booleans                | `approaching`, `blocked`, `stopped`, `cleared` (new, OQ9)                                                             |
 | `minBlockMin`             | number                         | 1, 3 or 5 (new, OQ9)                                                                                                          |
 | `quietHours`              | map or null                    | `{ start: "22:00", end: "06:00" }` while quiet hours are on (new, OQ9; the field is already allowed)                        |
-| `commuteWindows`          | array or null                  | `[{ days: [1,2,3,4,5], start: "07:00", end: "09:00" }, ...]` while commute windows are on (new, OQ9)                        |
+| `commuteWindows`          | array or null                  | `[{ days: [1,2,3,4,5], start: "07:00", end: "09:00" }, ...]` (ISO weekdays, 1 = Monday) while commute windows are on (new, OQ9)                        |
 | `timeZone`                | string                         | IANA name, like `America/Chicago`, so the server reads quiet hours and commute windows in the phone's local time (new, OQ9) |
 
 None of these identify a person. "Mute today" stays on the phone for now, which breaks it on live data; see [OQ22](00_README.md#open-questions).

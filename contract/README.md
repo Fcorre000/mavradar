@@ -28,10 +28,12 @@ Adding an example is enough to test it: every side's test picks up new files in 
 ## Running the contract tests
 
 ```bash
-cd edge && uv run pytest
-cd server && uv run pytest
-cd app && npx jest contract
+(cd edge && uv run pytest)
+(cd server && uv run pytest)
+(cd app && npx jest contract)
 ```
+
+In `edge/` and `server/`, also run `uv run ruff check`, `uv run ruff format --check` and `uv run pyright`.
 
 To check the examples against the schemas alone, from the repo root:
 

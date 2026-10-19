@@ -82,6 +82,13 @@ it('what registerDevice writes is a valid device document', () => {
   expect(validate('device')(devicePayload('anon-uid', 'ios', '2026-10-08T21:14:03.250Z'))).toBe(true);
 });
 
+it('registerDevice never wipes or overfills subscriptions', () => {
+  // A merge write without the key keeps what is stored; with it, the contract caps the list at 20.
+  expect(devicePayload('anon-uid', 'ios', '2026-10-08T21:14:03.250Z')).not.toHaveProperty('subscriptions');
+  const many = Array.from({ length: 25 }, (_, i) => `${String(i).padStart(6, '0')}A`);
+  expect(devicePayload('anon-uid', 'android', '2026-10-08T21:14:03.250Z', many).subscriptions).toHaveLength(20);
+});
+
 it('freshness thresholds match the contract', () => {
   expect(Freshness.liveMaxSeconds).toBe(timing.appDelayedSec);
   expect(Freshness.delayedMaxSeconds).toBe(timing.appUnknownSec);
