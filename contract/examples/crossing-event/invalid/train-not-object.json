@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "eventId": "6f1c2a9e-3b7d-4f0a-9a51-2d8e4b7c1f03",
+  "nodeId": "node-a",
+  "crossingId": "794980D",
+  "fromState": "approaching",
+  "toState": "blocked",
+  "occurredAt": "2026-10-08T21:14:03.250Z",
+  "logOnly": true,
+  "train": [
+    1,
+    2
+  ],
+  "classifierVersion": "rules-0.1"
+}

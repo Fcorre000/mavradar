@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "nodeId": "node-a",
+  "sentAt": "2026-10-08T20:02:15.500Z",
+  "status": "calibrating",
+  "state": "clear",
+  "logOnly": true,
+  "batteryVoltage": 12.6,
+  "enclosureTempC": 31.4,
+  "uptimeSec": 95,
+  "signalDbm": null,
+  "softwareVersion": "0.1.0",
+  "mapVersion": "794980D-1"
+}

@@ -1,18 +1,14 @@
-import { doc, onSnapshot, type DocumentData, type Timestamp } from 'firebase/firestore';
+import { doc, onSnapshot } from 'firebase/firestore';
 
-import type { Connection, CrossingReading, ReportedState, SourceSnapshot } from '@/domain/types';
+import type { Connection, CrossingReading, SourceSnapshot } from '@/domain/types';
 import { db } from '@/lib/firebase';
 
+import { toReading } from './firestore-mapping';
 import type { CrossingSource } from './source';
 
 /**
  * Live crossing status from Firestore. Not used yet: the server doesn't write crossings/{usdotId}
- * so the app runs on DemoEngine. Expected document shape (to agree with the server):
- *
- *   state: 'clear' | 'approaching' | 'blocked' | 'stopped' | 'sensorOffline'
- *   since, stoppedAt, detectedAt, clearSince: Timestamp | null
- *   lastReadingAt: Timestamp            last heartbeat from the node
- *   sensor: { name: string, batteryOk: boolean }
+ * so the app runs on DemoEngine. Document shape: see toReading() in ./firestore-mapping.ts.
  *
  * History (crossings/{usdotId}/events) is read in a later step.
  */
@@ -52,20 +48,4 @@ export class FirestoreSource implements CrossingSource {
       clearInterval(ticker);
     };
   }
-}
-
-const ms = (t: Timestamp | null | undefined) => (t ? t.toMillis() : null);
-
-function toReading(crossingId: string, d: DocumentData): CrossingReading {
-  return {
-    crossingId,
-    state: (d.state as ReportedState) ?? 'sensorOffline',
-    since: ms(d.since),
-    stoppedAt: ms(d.stoppedAt),
-    detectedAt: ms(d.detectedAt),
-    clearSince: ms(d.clearSince),
-    lastReadingAt: ms(d.lastReadingAt) ?? 0,
-    sensorName: d.sensor?.name ?? 'Sensor',
-    sensorBatteryOk: d.sensor?.batteryOk ?? true,
-  };
 }

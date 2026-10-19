@@ -3,7 +3,8 @@ import type { CrossingState } from '@/constants/theme';
 export type { CrossingState };
 
 /** What a sensor node reports. `sensorOffline` means the node told us it is down or unhealthy. */
-export type ReportedState = 'clear' | 'approaching' | 'blocked' | 'stopped' | 'sensorOffline';
+export const REPORTED_STATES = ['clear', 'approaching', 'blocked', 'stopped', 'sensorOffline'] as const;
+export type ReportedState = (typeof REPORTED_STATES)[number];
 
 /** How this phone is talking to MavRadar. `phone` = no network, `server` = network but no MavRadar. */
 export type Connection = 'online' | 'phone' | 'server';

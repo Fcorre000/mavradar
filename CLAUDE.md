@@ -13,8 +13,9 @@ Read `docs/MAVRADAR_HANDOFF.md` and then its amendments in order (`docs/MAVRADAR
 | Path | Contents |
 |---|---|
 | `app/` | Expo (React Native) mobile app, SDK 57, expo-router, TypeScript |
-| `edge/` | Python detection service for the field node (not started) |
-| `server/` | FastAPI ingest and fan-out on Cloud Run (not started). Python, not Rust (decided 2026-10-13). Follow `docs/PYTHON_BACKEND_GUIDE.md` |
+| `edge/` | Python detection service for the field node (contract types and tests only; detector not started) |
+| `server/` | FastAPI ingest and fan-out on Cloud Run (contract models and tests only; API not started). Python, not Rust (decided 2026-10-13). Follow `docs/PYTHON_BACKEND_GUIDE.md` |
+| `contract/` | Shared contract: JSON Schemas for node messages and Firestore documents, examples, `timing.json`. Change it first; see `contract/README.md` |
 | `docs/` | Architecture handoff and amendments, design blueprint (`docs/artifacts/blueprint/`), architecture diagram, course constraints |
 | `firestore.rules`, `firebase.json` | Firestore rules and project config (project `mavradar-4a74a`) |
 
@@ -32,7 +33,7 @@ npm run android  # expo start --android
 npm run ios      # expo start --ios
 npm run web      # expo start --web
 npm run lint     # expo lint
-npm test         # jest (domain rules: freshness, alerts, copy, clustering)
+npm test         # jest (domain rules: freshness, alerts, copy, clustering; contract test against contract/)
 npx expo start --go   # run in Expo Go on a phone (no push); the app runs on demo data
 npx expo-doctor  # should pass 21/21
 eas build -p android --profile development   # dev client APK
@@ -45,13 +46,19 @@ firebase emulators:exec --only firestore "<test command>"   # test rules locally
 firebase deploy --only firestore:rules
 ```
 
+Edge and server (run from `edge/` or `server/`; uv reads `.python-version`, 3.11 and 3.12):
+
+```bash
+uv run pytest && uv run ruff check && uv run ruff format --check && uv run pyright
+```
+
 Docs (run from the repo root, needs Google Chrome):
 
 ```bash
 node docs/artifacts/architecture/build-diagram.mjs   # re-render MavRadar_Architecture_Diagram.png; edit diagram.html, not the PNG
 ```
 
-The app has Jest tests for its domain rules; `edge/` and `server/` have none yet. Builds go through EAS cloud builds, never local Xcode or Android Studio (the dev machine is an 8GB M1 and deliberately has neither Xcode nor the Android emulator). **Android is the first platform**; test push on a physical Android phone. Code stays cross-platform, and iOS builds wait on Apple Developer enrollment.
+The app has Jest tests for its domain rules and the shared contract; `edge/` and `server/` have contract tests. Builds go through EAS cloud builds, never local Xcode or Android Studio (the dev machine is an 8GB M1 and deliberately has neither Xcode nor the Android emulator). **Android is the first platform**; test push on a physical Android phone. Code stays cross-platform, and iOS builds wait on Apple Developer enrollment.
 
 Expo SDK 57 changed significantly. Check the versioned docs at https://docs.expo.dev/versions/v57.0.0/ before writing app code (see `app/AGENTS.md`). Node version is in `.nvmrc`.
 

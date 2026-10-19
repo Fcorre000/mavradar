@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "nodeId": "node-a",
+  "sentAt": "2026-10-08T21:14:30.000Z",
+  "status": "detecting",
+  "state": "blocked",
+  "logOnly": true,
+  "batteryVoltage": 12.6,
+  "enclosureTempC": 31.4,
+  "uptimeSec": true,
+  "signalDbm": -87,
+  "softwareVersion": "0.1.0",
+  "mapVersion": "794980D-1",
+  "bufferedEvents": 0
+}

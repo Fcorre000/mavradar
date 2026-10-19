@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mavradar.app/contract/crossing-event.schema.json",
+  "title": "CrossingEvent",
+  "type": "object",
+  "required": ["schemaVersion", "eventId", "nodeId", "crossingId", "fromState", "toState", "occurredAt", "logOnly"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "eventId": { "type": "string", "format": "uuid", "description": "Made by the node when it records the event (OQ6). The same on every retry." },
+    "nodeId": { "type": "string", "minLength": 1 },
+    "crossingId": { "type": "string", "pattern": "^[0-9]{6}[A-Z]$", "description": "USDOT crossing ID" },
+    "fromState": { "$ref": "#/$defs/reportedState" },
+    "toState": { "$ref": "#/$defs/reportedState" },
+    "occurredAt": { "type": "string", "format": "date-time", "description": "When the node saw the change, node clock" },
+    "logOnly": { "type": "boolean", "description": "True while the node is in log-only mode. The server records but never alerts." },
+    "train": {
+      "type": "object",
+      "description": "What the detector measured, for tuning. Optional.",
+      "additionalProperties": false,
+      "properties": {
+        "speedMps": { "type": "number", "minimum": 0 },
+        "direction": { "enum": ["toward", "away"] },
+        "rangeM": { "type": "number", "minimum": 0 },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+    "classifierVersion": { "type": "string" }
+  },
+  "$defs": {
+    "reportedState": { "enum": ["clear", "approaching", "blocked", "stopped", "sensorOffline"] }
+  }
+}

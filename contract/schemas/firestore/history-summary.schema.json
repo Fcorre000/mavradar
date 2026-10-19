@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mavradar.app/contract/history-summary.schema.json",
+  "title": "HistorySummary",
+  "description": "crossings/{usdotId}/summary/{range}, range 7d or 30d: history statistics. Same fields as the app's BlockageStats in app/src/domain/stats.ts, without the event list. Writer: server. Reader: app.",
+  "x-typicalMinSamples": 5,
+  "type": "object",
+  "required": ["days", "count", "typicalMin", "typicalStoppedMin", "longest", "hours", "perDay", "updatedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "days": { "enum": [7, 30] },
+    "count": { "type": "integer", "minimum": 0, "description": "Blockages in the window" },
+    "typicalMin": { "type": ["integer", "null"], "minimum": 1, "description": "Median duration of every blockage, whole minutes. Null below 5 blockages." },
+    "typicalStoppedMin": { "type": ["integer", "null"], "minimum": 1, "description": "Median duration of stopped-train blockages, whole minutes. Null below 5 stopped-train blockages." },
+    "longest": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["start", "durationMin", "stopped"],
+          "additionalProperties": false,
+          "properties": {
+            "start": { "$ref": "#/$defs/timestamp" },
+            "durationMin": { "type": "number", "minimum": 0 },
+            "stopped": { "type": "boolean" }
+          }
+        },
+        { "type": "null" }
+      ]
+    },
+    "hours": { "type": "array", "items": { "type": "number", "minimum": 0 }, "minItems": 24, "maxItems": 24, "description": "Average blockages in each hour of the day, midnight first" },
+    "perDay": { "type": "array", "items": { "type": "integer", "minimum": 0 }, "description": "Blockages per calendar day, oldest first, ending today. One value per day." },
+    "updatedAt": { "$ref": "#/$defs/timestamp" }
+  },
+  "allOf": [
+    {
+      "if": { "properties": { "days": { "const": 7 } } },
+      "then": { "properties": { "perDay": { "type": "array", "minItems": 7, "maxItems": 7 } } }
+    },
+    {
+      "if": { "properties": { "days": { "const": 30 } } },
+      "then": { "properties": { "perDay": { "type": "array", "minItems": 30, "maxItems": 30 } } }
+    }
+  ],
+  "$defs": {
+    "timestamp": { "type": "string", "format": "date-time", "x-firestore": "timestamp" }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "$comment": "Timing rules from docs/artifacts/blueprint/08_design_class_diagrams.md section 4. Each side's constants are tested against this file.",
+  "heartbeatSec": 30,
+  "nodeOfflineSec": 90,
+  "nodeCheckSec": 60,
+  "appDelayedSec": 30,
+  "appUnknownSec": 90,
+  "approachingMaxAgeSec": 60,
+  "clearedMaxAgeSec": 600,
+  "blockageCheckMin": [1, 3, 5],
+  "followSyncSec": 60
+}
