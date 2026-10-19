@@ -631,7 +631,7 @@ The one place the shape of every message and stored document is written down. Ed
 **Conventions**
 
 - Times in HTTP bodies are ISO 8601 UTC strings with milliseconds, like `2026-10-08T21:14:03.250Z`. Times in Firestore are Firestore Timestamps.
-- Crossing IDs are USDOT crossing IDs, like `794978C`.
+- Crossing IDs are USDOT crossing IDs, like `794980D`.
 - Every body carries `schemaVersion`, starting at `1`, so an older node can be recognised after a contract change.
 - No coordinates of a node, ever. A node has a side and a rough distance, nothing more.
 
@@ -692,7 +692,7 @@ Example:
   "schemaVersion": 1,
   "eventId": "6f1c2a9e-3b7d-4f0a-9a51-2d8e4b7c1f03",
   "nodeId": "node-a",
-  "crossingId": "794978C",
+  "crossingId": "794980D",
   "fromState": "approaching",
   "toState": "blocked",
   "occurredAt": "2026-10-08T21:14:03.250Z",

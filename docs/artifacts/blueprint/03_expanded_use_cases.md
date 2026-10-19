@@ -154,14 +154,14 @@ This follows the app as it is built today (`toggleFollow`, `confirmPriming` and 
 | 4) The user taps "Turn on alerts". | 5) The system creates the two notification channels, then shows the phone's permission prompt. |
 | 6) The user allows notifications. | 7) **The system registers the device**: it signs in anonymously if needed, gets the push token, and writes the device document keyed on that token, with the followed crossings and the alert preferences the server filters on (OQ9). |
 | | 8) **Within a minute, the server's scheduled sync fetches the changed device document and adds the token to the crossing's entry in its in-memory map** (D5). From now on, UC1 step 5 includes this device. |
-| 10) The user sees the crossing marked as followed, with alerts on. | 9) The system shows the crossing as followed and a "Following Center St. Alerts on." message with Undo. |
+| 10) The user sees the crossing marked as followed, with alerts on. | 9) The system shows the crossing as followed and a "Following Cooper St. Alerts on." message with Undo. |
 
 ### Alternate flows
 
 **Permission already decided**
 
 - **2a) Permission already granted.** No priming sheet and no prompt. The system goes straight to step 7.
-- **2b) Permission denied earlier.** The crossing is followed on the phone only. The system shows "Following Center St. Notifications are off for MavRadar." Nothing is registered, so no pushes arrive. In Settings, the alert switches show a card explaining how to turn notifications back on in the phone's settings.
+- **2b) Permission denied earlier.** The crossing is followed on the phone only. The system shows "Following Cooper St. Notifications are off for MavRadar." Nothing is registered, so no pushes arrive. In Settings, the alert switches show a card explaining how to turn notifications back on in the phone's settings.
 
 **The user changes their mind**
 
@@ -177,7 +177,7 @@ This follows the app as it is built today (`toggleFollow`, `confirmPriming` and 
 
 **Unfollow**
 
-- **11a) Unfollow.** The user taps Follow again on a followed crossing. The system removes it on the phone, shows "Unfollowed Center St." with Undo, and, if notifications are allowed, re-registers so the device document drops the crossing. Within a minute, the server's sync removes the token from that crossing's entry in the map.
+- **11a) Unfollow.** The user taps Follow again on a followed crossing. The system removes it on the phone, shows "Unfollowed Cooper St." with Undo, and, if notifications are allowed, re-registers so the device document drops the crossing. Within a minute, the server's sync removes the token from that crossing's entry in the map.
 
 ### Nontrivial steps
 
@@ -201,7 +201,7 @@ UC4 steps 7 and 8.
 
 ### Alternate flows
 
-- **2a) The crossing in the notification isn't known** (for example, an old notification from a crossing the app no longer lists). The system opens Status on the default crossing, Center St, and shows a short message.
+- **2a) The crossing in the notification isn't known** (for example, an old notification from a crossing the app no longer lists). The system opens Status on the default crossing, Cooper St, and shows a short message.
 - **2b) The notification arrives while the app is open.** The system shows it as a banner. Tapping it continues from step 2.
 - **4a) The phone is offline.** Status shows Unknown with the phone-offline reason and the last sync time, never a guessed state.
 - **4b) The state has already changed.** For example, the crossing cleared between the alert and the tap. Status shows the current state (Clear), not the state the notification announced.

@@ -3,7 +3,7 @@ import { Appearance, Linking, Platform, Share } from 'react-native';
 import type { StyleId } from '@/constants/styles';
 import { demoEngine, source } from '@/data';
 import { initialAlertMemory, shouldDeliver, stepAlerts, type AlertType } from '@/domain/alerts';
-import { CENTER_ST, crossingById, DETOUR } from '@/domain/crossings';
+import { LAUNCH_CROSSING, crossingById, DETOUR } from '@/domain/crossings';
 import { effectiveState } from '@/domain/freshness';
 import type { Connection, ReportedState, SourceSnapshot } from '@/domain/types';
 import { deliverAlert, onAlertTapped } from '@/lib/alert-delivery';
@@ -145,7 +145,7 @@ export function toggleFollow(id: string) {
 export function setAlertType(type: AlertType, on: boolean) {
   const s = getState();
   if (on && s.permission === 'undetermined') {
-    setUi({ priming: { crossingId: CENTER_ST.id, reason: 'alert', alertType: type } });
+    setUi({ priming: { crossingId: LAUNCH_CROSSING.id, reason: 'alert', alertType: type } });
     return;
   }
   if (on && s.permission === 'denied') {
@@ -210,14 +210,14 @@ export function selectCrossing(id: string) {
 // ---------------------------------------------------------------- demo controls
 
 export const demo = {
-  setCenterState: (state: ReportedState) => demoEngine.setCenterState(state),
+  setLaunchState: (state: ReportedState) => demoEngine.setLaunchState(state),
   playTrain: () => demoEngine.playTrain(),
   setFrozen: (frozen: boolean) => demoEngine.setFrozen(frozen),
   setSpeed: (speed: number) => demoEngine.setSpeed(speed),
   setConnection: (connection: Connection) => demoEngine.setConnection(connection),
   setDataset(dataset: 'one' | 'many') {
     setState((s) => ({ demo: { ...s.demo, dataset } }));
-    if (dataset === 'one') setUi({ statusCrossingId: CENTER_ST.id, selectedCrossingId: CENTER_ST.id, historyCrossingId: CENTER_ST.id });
+    if (dataset === 'one') setUi({ statusCrossingId: LAUNCH_CROSSING.id, selectedCrossingId: LAUNCH_CROSSING.id, historyCrossingId: LAUNCH_CROSSING.id });
   },
   setHistoryEmpty: (historyEmpty: boolean) => setState((s) => ({ demo: { ...s.demo, historyEmpty } })),
   retry: () => showSnack(demoEngine.controls().connection === 'server' ? "Still can't reach MavRadar. We'll keep trying." : 'Reconnected.'),

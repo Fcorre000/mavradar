@@ -434,7 +434,7 @@ sequenceDiagram
             PR-->>AA: token
         end
     end
-    AA->>ST: show "Following Center St. Alerts on." with Undo
+    AA->>ST: show "Following Cooper St. Alerts on." with Undo
 ```
 
 Two changes this implies for the app, recorded here and not made: `registerDevice()` sends `subscriptions` but not the alert preferences yet, and the Firestore rules' field allowlist has to grow to accept them (OQ9).
@@ -499,7 +499,7 @@ sequenceDiagram
     OS->>ATH: notification response with crossingId
     Note over OS,ATH: On a cold start the tap that launched the app must not be missed (see the finding below)
     alt crossingId not known
-        ATH->>ST: select Center St and show a short message
+        ATH->>ST: select Cooper St and show a short message
     else known
         ATH->>ST: select crossingId for Status
     end

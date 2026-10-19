@@ -1,6 +1,6 @@
 /// <reference types="jest" />
 import { clusterCrossings, regionFor, worstState } from '../clusters';
-import { CENTER_ST, DEMO_CROSSINGS } from '../crossings';
+import { LAUNCH_CROSSING, DEMO_CROSSINGS } from '../crossings';
 
 describe('clusterCrossings', () => {
   it('shows every crossing on its own when zoomed in', () => {
@@ -17,7 +17,7 @@ describe('clusterCrossings', () => {
   });
 
   it('never clusters a single crossing', () => {
-    expect(clusterCrossings([CENTER_ST], { latitude: 32.7, longitude: -97.1, latitudeDelta: 1, longitudeDelta: 1 })[0].kind).toBe('crossing');
+    expect(clusterCrossings([LAUNCH_CROSSING], { latitude: 32.7, longitude: -97.1, latitudeDelta: 1, longitudeDelta: 1 })[0].kind).toBe('crossing');
   });
 });
 

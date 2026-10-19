@@ -67,7 +67,7 @@ Consequence for the app, noted and not acted on here: its alert rules (`app/src/
 
 ### D2: One node per crossing now, two later (Fernando, 2026-10-08)
 
-Everything this semester is designed, built and tested for **exactly one node** at Center St. The funded future goal is a node on each side of the crossing, working together to give early warning from both directions. The design only has to make that second node additive: node health lives on the node, a crossing can be watched by up to two nodes, and nothing assumes there is only ever one. Nothing in Sprint 3 builds two-node agreement.
+Everything this semester is designed, built and tested for **exactly one node** at Cooper St. The funded future goal is a node on each side of the crossing, working together to give early warning from both directions. The design only has to make that second node additive: node health lives on the node, a crossing can be watched by up to two nodes, and nothing assumes there is only ever one. Nothing in Sprint 3 builds two-node agreement.
 
 This settles OQ12. It also shapes OQ1: with one node, the node's own state machine is the whole story; deciding which side owns the crossing state when two nodes disagree is future work.
 

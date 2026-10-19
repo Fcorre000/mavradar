@@ -10,7 +10,7 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const PROJECT_ID = 'mavradar-4a74a';
 const PACKAGE = 'io.github.fcorre000.mavradar';
-const PROBE_DOC = 'crossings/794978C'; // Center St
+const PROBE_DOC = 'crossings/794980D'; // Cooper St
 
 let failed = false;
 

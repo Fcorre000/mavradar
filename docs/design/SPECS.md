@@ -57,7 +57,7 @@ A color theme only swaps colors. A style changes how the whole app is drawn: typ
 | Civic | IBM's Carbon | IBM Plex Sans, light headings, semibold state word | square corners, IBM blue | a 2 dp blue rule under the chosen segment or chip; button icons at the trailing end |
 | Model Crossing | model railroad layouts | Overpass | warm table ground, plates on soft shadows, raised buttons on a darker base edge | a model of the crossing above the status card, and the map tilted 38 degrees like a tabletop |
 
-- **The crossing model** (`CrossingModel`): Center St as a lit tabletop model railroad, with the West St underpass in the action blue, ballast and ties on the track, flocked grass, crossbuck masts with two red lamps, gate arms, and a lamp lighting the board from the upper left so everything casts a shadow. Freight cars (boxcars on trucks, with doors, ribs and roof walks, in oxide, brown and gray) and a locomotive (cab windows, stripe, lit headlight) carry the state:
+- **The crossing model** (`CrossingModel`): Cooper St as a lit tabletop model railroad, with the West St underpass in the action blue, ballast and ties on the track, flocked grass, crossbuck masts with two red lamps, gate arms, and a lamp lighting the board from the upper left so everything casts a shadow. Freight cars (boxcars on trucks, with doors, ribs and roof walks, in oxide, brown and gray) and a locomotive (cab windows, stripe, lit headlight) carry the state:
   - Blocked: the gates are down, the lamps take turns about once a second, and the cars roll slowly through the crossing (one loop every 9.6 s).
   - Stopped: the same, but the cars stand still.
   - Approaching: the gates are down, the lamps flash, and the locomotive comes down the far stretch of track toward the crossing.
@@ -100,11 +100,11 @@ The main status block on the Status screen.
 
 ### Share (Status header)
 
-- A 48 dp round button with the share icon at the right end of the Status header, on `tonal`. Label "Share Center St status".
+- A 48 dp round button with the share icon at the right end of the Status header, on `tonal`. Label "Share Cooper St status".
 - Opens the phone's own share sheet (`Share.share`). MavRadar only supplies plain text, built by `shareText()` in `domain/copy.ts`:
-  - Blocked or Stopped: "Center St crossing (Arlington) is blocked by a stopped train. 12 min so far, as of 2:48 PM." then "Detour: West St underpass."
+  - Blocked or Stopped: "Cooper St crossing (Arlington) is blocked by a stopped train. 12 min so far, as of 2:48 PM." then "Detour: West St underpass."
   - Clear and Approaching: the state "as of" the last reading.
-  - Unknown: "MavRadar can't confirm Center St crossing (Arlington) right now. Don't assume it's clear." Never the last state.
+  - Unknown: "MavRadar can't confirm Cooper St crossing (Arlington) right now. Don't assume it's clear." Never the last state.
   - Every message ends "via MavRadar". A live-status link is added once the public status page (UC11) exists.
 
 ### Map marker
@@ -115,10 +115,10 @@ The main status block on the Status screen.
 | Fill | `color.strong.<state>`. Same in both themes. |
 | Ring | 2 dp white ring, then 1 dp `rgba(0,0,0,0.4)` outer stroke, so it holds 3:1 on any tile. Unknown uses a dashed ring. |
 | Shapes | Clear circle, Approaching diamond with 1.5 dp black inner border, Blocked rounded square (radius 10 of 48), Stopped octagon, Unknown circle. |
-| Selected label | A pill 32 dp tall centered 8 dp above the marker: "Center St · Blocked", 13 sp semibold, 12 dp side padding, `labelPill` colors, 1 dp border. |
+| Selected label | A pill 32 dp tall centered 8 dp above the marker: "Cooper St · Blocked", 13 sp semibold, 12 dp side padding, `labelPill` colors, 1 dp border. |
 | Followed badge | 12 dp star on a 16 dp white disc, at the marker's top right. |
 | Detour pin | Teardrop 28 x 36 in `detourPin`, with a route arrow glyph and a permanent "West St underpass" label. It has no status, so it never uses a status color or a circle. |
-| Accessibility | Label reads "Center St crossing, Arlington. Blocked for 7 minutes. Updated 8 seconds ago. Following." |
+| Accessibility | Label reads "Cooper St crossing, Arlington. Blocked for 7 minutes. Updated 8 seconds ago. Following." |
 
 ### Cluster
 
@@ -196,7 +196,7 @@ At 200% font scale the header, card and everything down to the rows scroll. Only
 
 ## First launch
 
-There is no welcome or onboarding screen. Checking a crossing is often time critical, so the app opens straight on live Status for Center St.
+There is no welcome or onboarding screen. Checking a crossing is often time critical, so the app opens straight on live Status for Cooper St.
 
 - No account, no location question and no permission prompt at launch.
 - The notification priming sheet appears only when the person asks for alerts: Follow in the map sheet, the star in the List, the alerts switch on Status, or an alert switch in Settings. After that comes the Android dialog.
@@ -207,10 +207,10 @@ There is no welcome or onboarding screen. Checking a crossing is often time crit
 
 | Event | Channel | Title | Body | Actions |
 |---|---|---|---|---|
-| Blocked (confirmed) | Crossing blocked and cleared (high) | Center St is blocked | Train on the crossing since 2:41 PM. Detour: West St underpass. | Directions via West St · Mute today |
-| Became stopped | same, updates the same notification | Train stopped on Center St | Stopped since 2:47 PM. Blocked for 6 min. | Directions via West St |
-| Cleared | same, replaces it | Center St is clear | Blocked for 9 min. Cleared at 2:50 PM. | none |
-| Sensor offline (over 10 min, followers only) | Sensor status (default) | Center St status unknown | No sensor data since 2:14 PM. Don't assume it's clear. | none |
+| Blocked (confirmed) | Crossing blocked and cleared (high) | Cooper St is blocked | Train on the crossing since 2:41 PM. Detour: West St underpass. | Directions via West St · Mute today |
+| Became stopped | same, updates the same notification | Train stopped on Cooper St | Stopped since 2:47 PM. Blocked for 6 min. | Directions via West St |
+| Cleared | same, replaces it | Cooper St is clear | Blocked for 9 min. Cleared at 2:50 PM. | none |
+| Sensor offline (over 10 min, followers only) | Sensor status (default) | Cooper St status unknown | No sensor data since 2:14 PM. Don't assume it's clear. | none |
 
 - Small icon: the state shape as a white silhouette on the accent circle (`color.notification.accent`).
 - The title alone must carry the message in one collapsed line.
@@ -237,7 +237,7 @@ Portrait 1080 x 1920 or larger, 9:16. Put the headline above the device, in Atki
 
 | # | Screen | Headline | Source board |
 |---|---|---|---|
-| 1 | Status, Blocked, light | Know if Center St is blocked before you get there | v2 · Status, light row |
+| 1 | Status, Blocked, light | Know if Cooper St is blocked before you get there | v2 · Status, light row |
 | 2 | Map, one crossing, sheet at half | See the crossing and the detour on one map | Checkpoint 2, one crossing |
 | 3 | Heads-up notification, Blocked | Get an alert only when a train blocks your crossing | Checkpoint 3, surfaces |
 | 4 | Status, Stopped, dark | Stopped trains are called out, with how long | v2 · Status, dark row |
