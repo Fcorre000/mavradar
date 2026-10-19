@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mavradar.app/contract/heartbeat.schema.json",
+  "title": "Heartbeat",
+  "type": "object",
+  "required": ["schemaVersion", "nodeId", "sentAt", "status", "state", "logOnly", "batteryVoltage", "enclosureTempC", "uptimeSec", "softwareVersion", "mapVersion"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "nodeId": { "type": "string", "minLength": 1 },
+    "sentAt": { "type": "string", "format": "date-time", "description": "Node clock. The server uses its own arrival time for freshness (SD5)." },
+    "status": { "enum": ["detecting", "calibrating", "faulted"] },
+    "state": { "enum": ["clear", "approaching", "blocked", "stopped", "sensorOffline"], "description": "The detector's current state, so the server can restore a crossing after an outage" },
+    "logOnly": { "type": "boolean" },
+    "batteryVoltage": { "type": "number" },
+    "enclosureTempC": { "type": "number" },
+    "uptimeSec": { "type": "integer", "minimum": 0 },
+    "signalDbm": { "type": ["number", "null"] },
+    "softwareVersion": { "type": "string" },
+    "mapVersion": { "type": "string" },
+    "bufferedEvents": { "type": "integer", "minimum": 0, "description": "Events waiting in the node's buffer" }
+  }
+}
