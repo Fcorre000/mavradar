@@ -15,7 +15,7 @@ Change the contract here first, in a PR everyone reviews, and update every side 
 | `schemas/crossing-event.schema.json` | `POST /events` body: one state change seen by a node |
 | `schemas/heartbeat.schema.json` | `POST /heartbeats` body: a node's health and current state, every 30 s |
 | `schemas/firestore/` | Firestore document schemas (`crossings`, `events`, `summary`, `devices`, `nodes`) |
-| `examples/<name>/valid/` | Examples that must pass the schema `<name>.schema.json` and each side's code |
+| `examples/<name>/valid/` | Examples that must pass the schema `schemas/**/<name>.schema.json` and each side's code |
 | `examples/<name>/invalid/` | Examples that must fail. Each is a valid example with one thing wrong, and the file name says what |
 | `timing.json` | Timing rules every side shares: heartbeat interval, offline and freshness thresholds, alert age limits, blockage checks, follow sync |
 

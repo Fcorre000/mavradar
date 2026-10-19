@@ -1,0 +1,16 @@
+{
+  "crossingId": "794980D",
+  "side": "atCrossing",
+  "lastSeenAt": "2026-10-08T21:10:00.000Z",
+  "status": "online",
+  "health": {
+    "batteryVoltage": 12.6,
+    "enclosureTempC": 31.4,
+    "uptimeSec": 86400,
+    "signalDbm": -87,
+    "bufferedEvents": -1
+  },
+  "flags": [],
+  "softwareVersion": "0.1.0",
+  "mapVersion": "794980D-1"
+}

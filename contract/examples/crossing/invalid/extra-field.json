@@ -1,0 +1,16 @@
+{
+  "state": "blocked",
+  "since": "2026-10-08T21:14:03.250Z",
+  "stoppedAt": null,
+  "detectedAt": "2026-10-08T21:13:41.080Z",
+  "clearSince": "2026-10-08T18:02:47.500Z",
+  "lastReadingAt": "2026-10-08T21:14:30.000Z",
+  "sensor": {
+    "name": "Crossing node",
+    "batteryOk": true
+  },
+  "nodeIds": ["node-a"],
+  "alertMode": "blockedAndCleared",
+  "updatedAt": "2026-10-08T21:14:30.120Z",
+  "speedMps": 11.2
+}

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mavradar.app/contract/node.schema.json",
+  "title": "Node",
+  "description": "nodes/{nodeId}: one field node. Server-only. No field holds the node's coordinates.",
+  "type": "object",
+  "required": ["crossingId", "side", "lastSeenAt", "status", "health", "flags", "softwareVersion", "mapVersion"],
+  "additionalProperties": false,
+  "properties": {
+    "crossingId": { "$ref": "#/$defs/crossingId", "description": "The crossing it watches" },
+    "side": { "enum": ["atCrossing", "east", "west"] },
+    "lastSeenAt": { "$ref": "#/$defs/timestamp", "description": "Updated in memory every heartbeat, written here every 5 minutes" },
+    "status": { "enum": ["online", "calibrating", "offline"] },
+    "health": {
+      "type": "object",
+      "required": ["batteryVoltage", "enclosureTempC", "uptimeSec"],
+      "additionalProperties": false,
+      "properties": {
+        "batteryVoltage": { "type": "number" },
+        "enclosureTempC": { "type": "number" },
+        "uptimeSec": { "type": "integer", "minimum": 0 },
+        "signalDbm": { "type": ["number", "null"] },
+        "bufferedEvents": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "flags": { "type": "array", "items": { "type": "string" }, "description": "Out-of-range readings for the maintainer" },
+    "softwareVersion": { "type": "string" },
+    "mapVersion": { "type": "string" }
+  },
+  "$defs": {
+    "timestamp": { "type": "string", "format": "date-time", "x-firestore": "timestamp" },
+    "crossingId": { "type": "string", "pattern": "^[0-9]{6}[A-Z]$", "description": "USDOT crossing ID" }
+  }
+}

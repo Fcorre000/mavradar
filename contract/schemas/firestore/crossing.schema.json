@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mavradar.app/contract/crossing.schema.json",
+  "title": "Crossing",
+  "description": "crossings/{usdotId}: a crossing's current state. Writer: server. Reader: app (FirestoreSource).",
+  "type": "object",
+  "required": ["state", "since", "stoppedAt", "detectedAt", "clearSince", "lastReadingAt", "sensor", "nodeIds", "alertMode", "updatedAt"],
+  "additionalProperties": false,
+  "properties": {
+    "state": { "$ref": "#/$defs/reportedState" },
+    "since": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }], "description": "Start of the current blockage" },
+    "stoppedAt": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }], "description": "When the train stopped" },
+    "detectedAt": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }], "description": "When an approaching train was seen" },
+    "clearSince": { "oneOf": [{ "$ref": "#/$defs/timestamp" }, { "type": "null" }], "description": "When the crossing last cleared" },
+    "lastReadingAt": { "$ref": "#/$defs/timestamp", "description": "Last heartbeat's arrival time; refreshed every 30 s" },
+    "sensor": {
+      "type": "object",
+      "description": "Derived from the crossing's nodes; kept so the app works unchanged",
+      "required": ["name", "batteryOk"],
+      "additionalProperties": false,
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "batteryOk": { "type": "boolean" }
+      }
+    },
+    "nodeIds": { "type": "array", "items": { "type": "string", "minLength": 1 }, "maxItems": 2, "description": "The nodes watching this crossing (zero to two)" },
+    "alertMode": { "enum": ["logOnly", "blockedAndCleared", "all"] },
+    "updatedAt": { "$ref": "#/$defs/timestamp", "description": "Server write time" }
+  },
+  "$defs": {
+    "timestamp": { "type": "string", "format": "date-time", "x-firestore": "timestamp" },
+    "reportedState": { "enum": ["clear", "approaching", "blocked", "stopped", "sensorOffline"] }
+  }
+}

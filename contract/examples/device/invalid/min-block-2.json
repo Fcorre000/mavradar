@@ -1,0 +1,25 @@
+{
+  "uid": "anon-uid",
+  "platform": "android",
+  "updatedAt": "2026-10-08T21:00:12.400Z",
+  "subscriptions": ["794980D"],
+  "quietHours": {
+    "start": "22:00",
+    "end": "06:00"
+  },
+  "alertTypes": {
+    "approaching": true,
+    "blocked": true,
+    "stopped": true,
+    "cleared": false
+  },
+  "minBlockMin": 2,
+  "commuteWindows": [
+    {
+      "days": [1, 2, 3, 4, 5],
+      "start": "07:00",
+      "end": "09:00"
+    }
+  ],
+  "timeZone": "America/Chicago"
+}

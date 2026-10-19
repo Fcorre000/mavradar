@@ -1,0 +1,15 @@
+{
+  "state": "sensorOffline",
+  "since": null,
+  "stoppedAt": null,
+  "detectedAt": null,
+  "clearSince": "2026-10-08T21:26:33.250Z",
+  "lastReadingAt": "2026-10-08T21:40:00.000Z",
+  "sensor": {
+    "name": "Crossing node",
+    "batteryOk": true
+  },
+  "nodeIds": [],
+  "alertMode": "logOnly",
+  "updatedAt": "2026-10-08T22:05:00.000Z"
+}

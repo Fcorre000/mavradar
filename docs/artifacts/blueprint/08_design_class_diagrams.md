@@ -626,6 +626,8 @@ export interface HistoryStats {
 
 ## 4. Shared contract
 
+The source is now `contract/` at the repo root; this section describes it. Change `contract/` first.
+
 The one place the shape of every message and stored document is written down. Edge, server and app each keep their own copy in code (`edge/mavradar_edge/contract.py`, `server/app/contract.py`, `app/src/domain/types.ts`), and those copies must match this section. Changing a field means changing this section first, in a PR everyone sees.
 
 **Conventions**
@@ -763,17 +765,18 @@ These are exactly the fields `FirestoreSource.toReading()` already reads, plus t
 
 **`crossings/{usdotId}/summary/{range}`**, with `range` either `7d` or `30d`: history statistics (OQ11). Writer: server, after each blockage and once a day. Reader: app (`getHistory`).
 
-| Field              | Type                | Notes                                             |
-| ------------------ | ------------------- | ------------------------------------------------- |
-| `rangeDays`      | number              | 7 or 30                                           |
-| `count`          | number              | Blockages in the range                            |
-| `typicalMin`     | number              | Median duration                                   |
-| `longestMin`     | number              |                                                   |
-| `longestStopped` | boolean             | Whether the longest one involved a stopped train  |
-| `hours`          | array of 24 numbers | Average blockages per hour of day, midnight first |
-| `updatedAt`      | Timestamp           |                                                   |
+| Field               | Type                         | Notes                                                                    |
+| ------------------- | ---------------------------- | ------------------------------------------------------------------------ |
+| `days`              | number                       | 7 or 30                                                                  |
+| `count`             | number                       | Blockages in the window                                                  |
+| `typicalMin`        | number or null               | Median duration of every blockage, whole minutes; null below 5 blockages |
+| `typicalStoppedMin` | number or null               | Median of stopped-train blockages only; null below 5 blockages           |
+| `longest`           | map or null                  | `{ start, durationMin, stopped }`                                      |
+| `hours`             | array of 24 numbers          | Average blockages per hour of day, midnight first                        |
+| `perDay`            | array of `days` numbers      | Blockages per calendar day, oldest first, ending today                   |
+| `updatedAt`         | Timestamp                    |                                                                          |
 
-Same shape as the app's `RangeStats` in `data/demo-history.ts`, so History switches from demo to live with no layout change.
+Same fields as the app's `BlockageStats` in `app/src/domain/stats.ts`, without the event list.
 
 **`devices/{fcmToken}`**: one phone. Writer: the app, through `registerDevice()`; deletes by the server when FCM reports the token invalid. Reader: server (`TokenRegistry`).
 
