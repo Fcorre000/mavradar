@@ -6,6 +6,7 @@ import { Platform } from 'react-native';
 
 import type { PermissionState } from '@/domain/alerts';
 import { SERVICE_STATUS_CHANNEL, TRAIN_ALERTS_CHANNEL } from '@/lib/channels';
+import { devicePayload } from '@/lib/device-doc';
 import { auth, db } from '@/lib/firebase';
 
 export { SERVICE_STATUS_CHANNEL, TRAIN_ALERTS_CHANNEL };
@@ -72,12 +73,7 @@ export async function registerDevice(subscriptions?: string[]): Promise<string |
   // re-registering on launch never clobbers subscriptions or quiet hours.
   await setDoc(
     doc(db, 'devices', token),
-    {
-      uid: user.uid,
-      platform: Platform.OS,
-      updatedAt: serverTimestamp(),
-      ...(subscriptions ? { subscriptions: subscriptions.slice(0, 20) } : {}),
-    },
+    devicePayload(user.uid, Platform.OS, serverTimestamp(), subscriptions),
     { merge: true },
   );
   return token;
