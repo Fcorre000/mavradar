@@ -68,5 +68,11 @@
     "moduleNameMapper": {
       "\\.css$": "<rootDir>/test/style-stub.js"
     }
+  },
+  "overrides": {
+    "@grpc/grpc-js": "^1.14.6",
+    "@expo/cli": {
+      "zod": "^4.6.7"
+    }
   }
 }
