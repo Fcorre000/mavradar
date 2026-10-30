@@ -148,7 +148,8 @@ flowchart LR
 
 - **Use cases:** all server use cases. **Size:** S. **Needs:** T1.
 - **Creates:** `pyproject.toml`, `Dockerfile`, `app/main.py` (lifespan that builds each object once, 07 Singleton card), `app/config.py`, `api/deps.py`, `api/health.py`, `repositories/base.py`, `repositories/memory.py`.
-- **Done when:** the service runs locally and in Docker; `GET /healthz` answers; tests can swap any dependency through FastAPI's dependency overrides.
+- **Done when:** the service runs locally and in Docker; `GET /health` answers; tests can swap any dependency through FastAPI's dependency overrides.
+- **Changed in S1 (2026-10-30):** the path is `/health`, not `/healthz`. Cloud Run reserves some paths ending in "z" (its known-issues page). The endpoint only says the process is up and never checks Firestore, so a Firestore blip can't get the one instance restarted.
 
 ### S2: The event hot path
 

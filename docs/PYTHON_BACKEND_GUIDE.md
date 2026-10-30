@@ -141,7 +141,7 @@ FastAPI runs on an event loop, so blocking calls need care.
   - `python:3.12-slim`, multi-stage build, `uv sync --frozen --no-dev`
   - run as a non-root user
   - turn on Cloud Run's startup CPU boost, so redeploys come up fast
-- **Health and shutdown.** `GET /healthz` returns quickly with no database call. On SIGTERM, finish in-flight requests. Cloud Run gives about 10 seconds.
+- **Health and shutdown.** `GET /health` (not `/healthz`: Cloud Run reserves some paths ending in "z") returns quickly with no database call. On SIGTERM, finish in-flight requests. Cloud Run gives about 10 seconds.
 
 ## 5. The hot path: timeouts, retries, errors
 
