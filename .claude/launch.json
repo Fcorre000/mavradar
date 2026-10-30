@@ -6,6 +6,12 @@
       "runtimeExecutable": "bash",
       "runtimeArgs": ["-c", "export PATH=\"$HOME/.nvm/versions/node/v22.23.2/bin:$PATH\" && cd /Users/fortnitekorea/Desktop/mavradar/app && BROWSER=none npx expo start --web --port 8082"],
       "port": 8082
+    },
+    {
+      "name": "server",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-c", "cd /Users/fortnitekorea/Desktop/mavradar/server && uv run uvicorn app.main:app --port 8090 --workers 1"],
+      "port": 8090
     }
   ]
 }

@@ -1,0 +1,28 @@
+# Install once per clone: uvx pre-commit install
+# The server hooks run through uv, so they use the same Ruff and Pyright versions as uv.lock and CI.
+repos:
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.30.0
+    hooks:
+      - id: gitleaks
+
+  - repo: local
+    hooks:
+      - id: server-ruff-check
+        name: ruff check (server)
+        entry: uv run --directory server ruff check
+        language: system
+        files: ^server/.*\.py$
+        pass_filenames: false
+      - id: server-ruff-format
+        name: ruff format --check (server)
+        entry: uv run --directory server ruff format --check
+        language: system
+        files: ^server/.*\.py$
+        pass_filenames: false
+      - id: server-pyright
+        name: pyright (server)
+        entry: uv run --directory server pyright
+        language: system
+        files: ^(server/.*\.py|contract/.*)$
+        pass_filenames: false

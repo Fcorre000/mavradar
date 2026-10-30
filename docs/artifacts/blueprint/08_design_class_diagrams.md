@@ -431,7 +431,7 @@ server/
       heartbeats.py            POST /heartbeats -> IngestController.post_heartbeat
       tasks.py                 POST /tasks/blockage-check, /tasks/check-nodes,
                                /tasks/sync-devices (scheduler identity only)
-      health.py                GET /healthz for Cloud Run
+      health.py                GET /health for Cloud Run (not /healthz, see 09 S1)
     controllers/
       ingest.py                IngestController
     services/
