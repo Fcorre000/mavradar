@@ -15,10 +15,8 @@ from app.services.alert_rules import (
     QuietHoursRule,
     ToldAlreadyRule,
 )
+from app.services.notifications import Channel
 from app.services.subscriptions import SubscriptionMap
-
-# Only ever carries a real train event: the user owns its importance after the first one.
-TRAIN_ALERTS_CHANNEL = "train-alerts"
 
 # Rules that are the same for every device come first, so a crossing in logOnly checks nothing else.
 HOT_PATH_RULES: tuple[AlertRule, ...] = (
@@ -35,7 +33,7 @@ HOT_PATH_RULES: tuple[AlertRule, ...] = (
 @dataclass(frozen=True)
 class Recipients:
     tokens: list[str]
-    channel: str
+    channel: Channel
 
 
 class AlertPolicy:
@@ -47,10 +45,10 @@ class AlertPolicy:
         if ctx.kind is AlertKind.BLOCKED:
             # Blocked waits for each device's minimum blockage time, so it goes out from the
             # 1, 3 and 5 minute checks (SD4, S5), never from the event itself.
-            return Recipients([], TRAIN_ALERTS_CHANNEL)
+            return Recipients([], Channel.TRAIN_ALERTS)
         tokens = [
             device.token
             for device in self._subscriptions.followers(ctx.crossing_id)
             if all(rule.allows(device, ctx) for rule in self._rules)
         ]
-        return Recipients(tokens, TRAIN_ALERTS_CHANNEL)
+        return Recipients(tokens, Channel.TRAIN_ALERTS)

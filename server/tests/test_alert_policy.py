@@ -3,7 +3,7 @@
 from app.contract import AlertMode, AlertTypesDoc
 from app.domain.crossing_state import AlertKind
 from app.repositories.memory import MemoryAlertLog
-from app.services.alert_policy import HOT_PATH_RULES, TRAIN_ALERTS_CHANNEL, AlertPolicy
+from app.services.alert_policy import HOT_PATH_RULES, AlertPolicy
 from app.services.alert_rules import (
     AlertModeRule,
     AlertTypeRule,
@@ -13,6 +13,7 @@ from app.services.alert_rules import (
     QuietHoursRule,
     ToldAlreadyRule,
 )
+from app.services.notifications import Channel
 from app.services.subscriptions import Device, SubscriptionMap
 from tests.helpers import CROSSING, context, device
 
@@ -47,7 +48,7 @@ def test_followers_who_pass_every_rule_get_it_on_train_alerts() -> None:
     recipients = policy.recipients(context(K.CLEARED, told=TOLD_BLOCKED))
 
     assert recipients.tokens == ["token-a"]
-    assert recipients.channel == TRAIN_ALERTS_CHANNEL
+    assert recipients.channel is Channel.TRAIN_ALERTS
 
 
 def test_blocked_waits_for_the_blockage_checks() -> None:

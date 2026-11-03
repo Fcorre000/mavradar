@@ -14,6 +14,7 @@ from app.services.alert_policy import AlertPolicy
 from app.services.auth import Node, NodeAuthenticator
 from app.services.crossing_tracker import CrossingTracker
 from app.services.event_log import EventLog
+from app.services.notifications import NotificationService
 
 
 def get_settings(request: Request) -> Settings:
@@ -36,6 +37,10 @@ def get_alert_policy(request: Request) -> AlertPolicy:
     return cast(AlertPolicy, request.app.state.alert_policy)
 
 
+def get_notification_service(request: Request) -> NotificationService:
+    return cast(NotificationService, request.app.state.notifications)
+
+
 def verify_node(
     settings: Annotated[Settings, Depends(get_settings)],
     x_node_key: Annotated[str | None, Header()] = None,
@@ -56,7 +61,8 @@ def get_ingest_controller(
     tracker: Annotated[CrossingTracker, Depends(get_crossing_tracker)],
     policy: Annotated[AlertPolicy, Depends(get_alert_policy)],
     repositories: Annotated[MemoryRepositories, Depends(get_repositories)],
+    notifications: Annotated[NotificationService, Depends(get_notification_service)],
 ) -> IngestController:
     # FastAPI runs verify_node once per request even though the route asks for it too.
     alert_mode = settings.alert_mode(node.crossing_id)
-    return IngestController(event_log, tracker, policy, repositories.alert_log, alert_mode)
+    return IngestController(event_log, tracker, policy, repositories.alert_log, alert_mode, notifications)

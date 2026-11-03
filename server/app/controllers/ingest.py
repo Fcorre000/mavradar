@@ -13,6 +13,7 @@ from app.services.alert_rules import AlertContext
 from app.services.auth import Node
 from app.services.crossing_tracker import ApplyOutcome, CrossingTracker
 from app.services.event_log import EventLog, EventStatus
+from app.services.notifications import DeliveryReport, NotificationService, alert_push
 
 
 class IngestController:
@@ -23,12 +24,14 @@ class IngestController:
         policy: AlertPolicy,
         alert_log: AlertLog,
         alert_mode: AlertMode,
+        notifications: NotificationService,
     ) -> None:
         self._event_log = event_log
         self._tracker = tracker
         self._policy = policy
         self._alert_log = alert_log
         self._alert_mode = alert_mode  # of the authenticated node's crossing
+        self._notifications = notifications
 
     async def post_event(self, event: CrossingEventIn, node: Node) -> None:
         """Returns once the event is handled (200). Raises 422, 503, or lets a failure through (500)."""
@@ -54,16 +57,22 @@ class IngestController:
                     now = datetime.now(UTC)
                     outcome = self._tracker.apply(event, received_at=now)
                     recipients = self._recipients(event, outcome, now)
-                    await self._send(event, outcome, recipients)
-                    if outcome.applied and event.to_state is ReportedState.CLEAR:
-                        # The blockage is over. Only now, after the cleared recipients were picked
-                        # from it, forget who was told. An outage (sensorOffline) never ends one.
-                        self._alert_log.close_blockage(event.crossing_id)
+                    report = await self._send(event, outcome, recipients)
                 except Exception:
-                    # Nothing went out, so the node's retry (it gets a 500) must start fresh.
+                    # Failed before the push (sending itself never raises), so nothing went out and
+                    # the node's retry (it gets a 500) must start fresh.
                     self._event_log.forget(event.event_id)
                     raise
                 self._event_log.mark_pushed(event.event_id)
+
+                # Everything below is a record of what happened, so it comes after the push.
+                if outcome.alert is not None and report is not None:
+                    # Only phones FCM accepted were told; dead and failed tokens weren't.
+                    self._alert_log.mark_told(event.crossing_id, report.delivered, outcome.alert)
+                if outcome.applied and event.to_state is ReportedState.CLEAR:
+                    # The blockage is over. Only now, after the cleared recipients were picked
+                    # from it, forget who was told. An outage (sensorOffline) never ends one.
+                    self._alert_log.close_blockage(event.crossing_id)
             case _:
                 assert_never(seen)
 
@@ -87,6 +96,10 @@ class IngestController:
 
     async def _send(
         self, event: CrossingEventIn, outcome: ApplyOutcome, recipients: Recipients | None
-    ) -> None:
-        """Stand-in for SD2 step 6, filled in by S2 group 4: send the push to the recipients, then
-        record who was told."""
+    ) -> DeliveryReport | None:
+        """Sends the push, or None when there is nothing to send. Dead tokens stay in the report
+        for S3 to delete."""
+        if outcome.alert is None or recipients is None or not recipients.tokens:
+            return None
+        push = alert_push(outcome.alert, event.crossing_id, event.occurred_at, recipients.channel)
+        return await self._notifications.send(push, recipients.tokens)

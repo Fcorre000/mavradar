@@ -32,5 +32,10 @@ class Settings(BaseSettings):
     # there). Changing a mode is rare, so a restart to pick it up is fine.
     alert_modes: dict[CrossingId, AlertMode] = Field(default_factory=dict[CrossingId, AlertMode])
 
+    # MAVRADAR_FCM_DRY_RUN. On unless someone turns it off on purpose: in dry run FCM checks every
+    # message but nothing reaches a phone, so a forgotten setting can't send a real alert.
+    fcm_dry_run: bool = True
+    firebase_project_id: str = "mavradar-4a74a"
+
     def alert_mode(self, crossing_id: str) -> AlertMode:
         return self.alert_modes.get(crossing_id, AlertMode.LOG_ONLY)

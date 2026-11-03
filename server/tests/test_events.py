@@ -1,10 +1,13 @@
-"""POST /events: node keys, validation, the EventLog branches of SD2 and the crossing state.
+"""POST /events, the whole hot path of SD2: node keys, validation, the EventLog branches, the
+crossing state, who gets the alert, and the push.
 
-The server side of each test holds only the hash of TEST_KEY; requests send the key itself.
+The server side of each test holds only the hash of TEST_KEY; requests send the key itself. FCM is
+always the fake, so no test reaches the network.
 """
 
 import json
-from collections.abc import Iterator
+from collections.abc import Generator, Iterable, Iterator
+from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
@@ -14,20 +17,21 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from app.api.deps import get_ingest_controller, get_settings
+from app.api.deps import get_ingest_controller, get_notification_service, get_repositories, get_settings
 from app.config import NodeConfig, Settings
 from app.contract import AlertMode, CrossingEventIn, ReportedState
 from app.controllers.ingest import IngestController
 from app.domain.crossing_state import AlertKind
 from app.main import app
 from app.repositories.base import AlertLog
-from app.repositories.memory import MemoryRepositories
+from app.repositories.memory import MemoryAlertLog, MemoryRepositories
 from app.services.alert_policy import AlertPolicy, Recipients
 from app.services.auth import hash_key
 from app.services.crossing_tracker import ApplyOutcome, CrossingTracker
 from app.services.event_log import EventLog, EventStatus
+from app.services.notifications import Channel, NotificationService, SendResult
 from app.services.subscriptions import SubscriptionMap
-from tests.helpers import device
+from tests.helpers import FakeFcmClient, device
 
 TEST_KEY = "test-key"
 EXAMPLE = Path(__file__).parents[2] / "contract/examples/crossing-event/valid/minimal.json"
@@ -43,34 +47,50 @@ GOOD = {"X-Node-Key": TEST_KEY}
 
 
 class RecordingController(IngestController):
-    """Records each call to the push stand-in, and can make the first few attempts fail."""
+    """Records each run of the alert steps (recipients, then push), and can make the first few
+    fail before the push."""
 
     def __init__(self, fail_first: int = 0, alert_mode: AlertMode = AlertMode.LOG_ONLY) -> None:
-        super().__init__(event_log(), tracker(), policy(), alert_log(), alert_mode)
+        super().__init__(event_log(), tracker(), policy(), alert_log(), alert_mode, notifications())
         self.alerts = 0
         self.outcomes: list[ApplyOutcome] = []
         self.recipients: list[Recipients | None] = []
         self._fail_first = fail_first
 
-    async def _send(
-        self, event: CrossingEventIn, outcome: ApplyOutcome, recipients: Recipients | None
-    ) -> None:
+    def _recipients(self, event: CrossingEventIn, outcome: ApplyOutcome, now: datetime) -> Recipients | None:
         self.alerts += 1
         self.outcomes.append(outcome)
-        self.recipients.append(recipients)
         if self.alerts <= self._fail_first:
-            raise RuntimeError("push failed")
+            raise RuntimeError("failed before the push")
+        recipients = super()._recipients(event, outcome, now)
+        self.recipients.append(recipients)
+        return recipients
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
+def fcm() -> FakeFcmClient:
+    return FakeFcmClient()
+
+
+def running_client(fcm: FakeFcmClient) -> Generator[TestClient]:
     node = NodeConfig(key_hash=hash_key(TEST_KEY), crossing_id=cast(str, EVENT["crossingId"]))
     settings = Settings(nodes={cast(str, EVENT["nodeId"]): node})
     app.dependency_overrides[get_settings] = lambda: settings
+    service = NotificationService(fcm, retry_delay_s=0)
+    app.dependency_overrides[get_notification_service] = lambda: service
     # A failure before the push surfaces as a 500, the way the node would see it.
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def client(fcm: FakeFcmClient) -> Iterator[TestClient]:
+    yield from running_client(fcm)
+
+
+# For a test that needs its own FCM answers.
+client_with = contextmanager(running_client)
 
 
 def event_log() -> EventLog:
@@ -87,6 +107,10 @@ def policy() -> AlertPolicy:
 
 def alert_log() -> AlertLog:
     return cast(MemoryRepositories, app.state.repositories).alert_log
+
+
+def notifications() -> NotificationService:
+    return cast(NotificationService, app.dependency_overrides[get_notification_service]())
 
 
 def subscriptions() -> SubscriptionMap:
@@ -230,39 +254,30 @@ def follower_told_blocked() -> None:
     alert_log().mark_told(CROSSING, ["token-a"], AlertKind.BLOCKED)
 
 
-@pytest.fixture
-def sent(monkeypatch: pytest.MonkeyPatch) -> list[Recipients | None]:
-    """Records what reaches the push stand-in, while the real providers build the controller."""
-    recorded: list[Recipients | None] = []
-
-    async def record(
-        self: IngestController, event: CrossingEventIn, outcome: ApplyOutcome, recipients: Recipients | None
-    ) -> None:
-        recorded.append(recipients)
-
-    monkeypatch.setattr(IngestController, "_send", record)
-    return recorded
-
-
-def test_unconfigured_crossing_is_log_only(client: TestClient, sent: list[Recipients | None]) -> None:
-    follower_told_blocked()
-
-    client.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
-
-    assert sent[0] is not None and sent[0].tokens == []
-
-
-def test_alert_mode_comes_from_the_settings(client: TestClient, sent: list[Recipients | None]) -> None:
+def configure_blocked_and_cleared() -> None:
     configured = Settings(
         nodes=cast(Settings, app.dependency_overrides[get_settings]()).nodes,
         alert_modes={CROSSING: AlertMode.BLOCKED_AND_CLEARED},
     )
     app.dependency_overrides[get_settings] = lambda: configured
+
+
+def test_unconfigured_crossing_is_log_only(client: TestClient, fcm: FakeFcmClient) -> None:
     follower_told_blocked()
 
     client.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
 
-    assert sent[0] is not None and sent[0].tokens == ["token-a"]
+    assert fcm.calls == []
+
+
+def test_alert_mode_comes_from_the_settings(client: TestClient, fcm: FakeFcmClient) -> None:
+    # Goes through the real providers, so this checks that the node's crossing picks its mode.
+    configure_blocked_and_cleared()
+    follower_told_blocked()
+
+    client.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
+
+    assert [tokens for _, tokens in fcm.calls] == [["token-a"]]
 
 
 def test_cleared_goes_to_phones_told_blocked_then_the_memory_is_wiped(client: TestClient) -> None:
@@ -293,3 +308,67 @@ def test_an_outage_doesnt_end_the_blockage(client: TestClient) -> None:
     client.post("/events", headers=GOOD, json=at(0, {"fromState": "blocked", "toState": "sensorOffline"}))
 
     assert "token-a" in alert_log().who_was_told(CROSSING)
+
+
+# The push
+
+
+def test_the_push_says_what_happened_and_where(client: TestClient, fcm: FakeFcmClient) -> None:
+    configure_blocked_and_cleared()
+    follower_told_blocked()
+
+    client.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
+
+    push, _ = fcm.calls[0]
+    assert push.title == "Cooper St is clear"
+    assert push.data == {"crossingId": CROSSING, "kind": "cleared"}
+    assert push.channel is Channel.TRAIN_ALERTS
+
+
+def test_only_phones_fcm_accepted_are_told() -> None:
+    fcm = FakeFcmClient(answers={"token-b": [SendResult.DEAD]})
+    with client_with(fcm) as c:
+        configure_blocked_and_cleared()
+        for token in ("token-a", "token-b"):
+            subscriptions().upsert(token, device(token).doc)
+        alert_log().mark_told(CROSSING, ["token-a", "token-b"], AlertKind.BLOCKED)
+
+        c.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "stopped"}))
+
+        told = alert_log().who_was_told(CROSSING)
+        assert AlertKind.STOPPED in told["token-a"]
+        assert AlertKind.STOPPED not in told["token-b"]
+
+
+class SpyAlertLog(MemoryAlertLog):
+    """Writes its name into the shared call list, like the fake FCM client does."""
+
+    def __init__(self, log: list[str]) -> None:
+        super().__init__()
+        self._log = log
+
+    def mark_told(self, crossing_id: str, tokens: Iterable[str], kind: AlertKind) -> None:
+        self._log.append("write")
+        super().mark_told(crossing_id, tokens, kind)
+
+    def close_blockage(self, crossing_id: str) -> None:
+        self._log.append("write")
+        super().close_blockage(crossing_id)
+
+
+def test_the_push_goes_out_before_anything_is_written() -> None:
+    calls: list[str] = []
+    with client_with(FakeFcmClient(log=calls)) as c:
+        configure_blocked_and_cleared()
+        repositories = MemoryRepositories()
+        spy = SpyAlertLog(calls)
+        repositories.alert_log = spy
+        app.dependency_overrides[get_repositories] = lambda: repositories
+        subscriptions().upsert("token-a", device("token-a").doc)
+        MemoryAlertLog.mark_told(spy, CROSSING, ["token-a"], AlertKind.BLOCKED)  # setup, not logged
+
+        c.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
+
+    # S3's Firestore writes join this list as "write" too, so this keeps guarding the order.
+    assert calls[0] == "push"
+    assert calls.count("push") == 1 and set(calls[1:]) == {"write"}
