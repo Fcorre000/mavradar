@@ -8,6 +8,7 @@ from fastapi import FastAPI
 from app.api import events, health
 from app.config import Settings
 from app.repositories.memory import MemoryRepositories
+from app.services.crossing_tracker import CrossingTracker
 from app.services.event_log import EventLog
 
 
@@ -18,6 +19,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     app.state.settings = Settings()
     app.state.repositories = MemoryRepositories()
     app.state.event_log = EventLog()
+    app.state.crossing_tracker = CrossingTracker()
     yield
 
 

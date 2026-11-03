@@ -1,4 +1,4 @@
-"""POST /events, S2 group 1: node keys, validation and the EventLog branches of SD2.
+"""POST /events: node keys, validation, the EventLog branches of SD2 and the crossing state.
 
 The server side of each test holds only the hash of TEST_KEY; requests send the key itself.
 """
@@ -15,10 +15,12 @@ from pydantic import ValidationError
 
 from app.api.deps import get_ingest_controller, get_settings
 from app.config import NodeConfig, Settings
-from app.contract import CrossingEventIn
+from app.contract import CrossingEventIn, ReportedState
 from app.controllers.ingest import IngestController
+from app.domain.crossing_state import AlertKind
 from app.main import app
 from app.services.auth import hash_key
+from app.services.crossing_tracker import ApplyOutcome, CrossingTracker
 from app.services.event_log import EventLog, EventStatus
 
 TEST_KEY = "test-key"
@@ -35,15 +37,17 @@ GOOD = {"X-Node-Key": TEST_KEY}
 
 
 class RecordingController(IngestController):
-    """Counts the push stand-in, and can make the first few attempts fail."""
+    """Records each call to the push stand-in, and can make the first few attempts fail."""
 
-    def __init__(self, event_log: EventLog, fail_first: int = 0) -> None:
-        super().__init__(event_log)
+    def __init__(self, event_log: EventLog, tracker: CrossingTracker, fail_first: int = 0) -> None:
+        super().__init__(event_log, tracker)
         self.alerts = 0
+        self.outcomes: list[ApplyOutcome] = []
         self._fail_first = fail_first
 
-    async def _alert(self, event: CrossingEventIn) -> None:
+    async def _alert(self, event: CrossingEventIn, outcome: ApplyOutcome) -> None:
         self.alerts += 1
+        self.outcomes.append(outcome)
         if self.alerts <= self._fail_first:
             raise RuntimeError("push failed")
 
@@ -63,8 +67,12 @@ def event_log() -> EventLog:
     return cast(EventLog, app.state.event_log)
 
 
+def tracker() -> CrossingTracker:
+    return cast(CrossingTracker, app.state.crossing_tracker)
+
+
 def use_controller(fail_first: int = 0) -> RecordingController:
-    controller = RecordingController(event_log(), fail_first)
+    controller = RecordingController(event_log(), tracker(), fail_first)
     app.dependency_overrides[get_ingest_controller] = lambda: controller
     return controller
 
@@ -159,3 +167,24 @@ def test_failure_before_push_lets_the_retry_start_fresh(client: TestClient) -> N
     assert client.post("/events", headers=GOOD, json=EVENT).status_code == 200
     assert controller.alerts == 2
     assert event_log().check_and_mark(EVENT_ID) is EventStatus.DONE
+
+
+# Crossing state
+
+
+def test_illegal_change_gets_422_and_leaves_no_log_entry(client: TestClient) -> None:
+    response = client.post(
+        "/events", headers=GOOD, json={**EVENT, "fromState": "clear", "toState": "stopped"}
+    )
+
+    assert response.status_code == 422
+    assert event_log().check_and_mark(EVENT_ID) is EventStatus.NEW
+
+
+def test_new_event_moves_the_crossing_and_names_its_alert(client: TestClient) -> None:
+    controller = use_controller()
+
+    client.post("/events", headers=GOOD, json=EVENT)  # clear to approaching
+
+    assert tracker().state(cast(str, EVENT["crossingId"])) is ReportedState.APPROACHING
+    assert controller.outcomes[0].alert is AlertKind.APPROACHING

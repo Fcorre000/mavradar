@@ -11,6 +11,7 @@ from app.config import Settings
 from app.controllers.ingest import IngestController
 from app.repositories.memory import MemoryRepositories
 from app.services.auth import Node, NodeAuthenticator
+from app.services.crossing_tracker import CrossingTracker
 from app.services.event_log import EventLog
 
 
@@ -26,6 +27,10 @@ def get_event_log(request: Request) -> EventLog:
     return cast(EventLog, request.app.state.event_log)
 
 
+def get_crossing_tracker(request: Request) -> CrossingTracker:
+    return cast(CrossingTracker, request.app.state.crossing_tracker)
+
+
 def verify_node(
     settings: Annotated[Settings, Depends(get_settings)],
     x_node_key: Annotated[str | None, Header()] = None,
@@ -39,5 +44,8 @@ def verify_node(
     return node
 
 
-def get_ingest_controller(event_log: Annotated[EventLog, Depends(get_event_log)]) -> IngestController:
-    return IngestController(event_log)
+def get_ingest_controller(
+    event_log: Annotated[EventLog, Depends(get_event_log)],
+    tracker: Annotated[CrossingTracker, Depends(get_crossing_tracker)],
+) -> IngestController:
+    return IngestController(event_log, tracker)
