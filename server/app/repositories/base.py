@@ -1,5 +1,26 @@
 """The repository protocols (blueprint 08, section 2).
 
-Empty until S2, which adds the protocols the event hot path needs. Routes and services
-depend on these protocols, never on a storage implementation.
+Routes and services depend on these protocols, never on a storage implementation. More arrive with
+S3, which adds the Firestore implementations.
 """
+
+from collections.abc import Iterable, Mapping
+from typing import Protocol
+
+from app.domain.crossing_state import AlertKind
+
+# push token -> the alert kinds that phone was sent during the current blockage
+ToldRecord = Mapping[str, frozenset[AlertKind]]
+
+
+class AlertLog(Protocol):
+    """Who was told what about each crossing's current blockage (SD4). Kept in memory so the hot
+    path reads nothing from Firestore; S3 also writes it there, so a restart can reload it."""
+
+    def who_was_told(self, crossing_id: str) -> ToldRecord: ...
+
+    def mark_told(self, crossing_id: str, tokens: Iterable[str], kind: AlertKind) -> None: ...
+
+    def close_blockage(self, crossing_id: str) -> None:
+        """The train has cleared: forget who was told, so the next train starts fresh."""
+        ...

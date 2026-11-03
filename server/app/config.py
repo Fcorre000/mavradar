@@ -5,7 +5,7 @@ from typing import Annotated
 from pydantic import BaseModel, ConfigDict, Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-from app.contract import CrossingId
+from app.contract import AlertMode, CrossingId
 
 
 class NodeConfig(BaseModel):
@@ -27,3 +27,10 @@ class Settings(BaseSettings):
     # MAVRADAR_NODES, as JSON: {"node-id": {"key_hash": "...", "crossing_id": "794980D"}}.
     # On Cloud Run this comes from Secret Manager as an env var (S7).
     nodes: dict[str, NodeConfig] = Field(default_factory=dict[str, NodeConfig])
+    # MAVRADAR_ALERT_MODES, as JSON: {"794980D": "blockedAndCleared"}. A crossing that isn't listed
+    # is logOnly, so a forgotten entry stays silent instead of alerting (D1: every crossing starts
+    # there). Changing a mode is rare, so a restart to pick it up is fine.
+    alert_modes: dict[CrossingId, AlertMode] = Field(default_factory=dict[CrossingId, AlertMode])
+
+    def alert_mode(self, crossing_id: str) -> AlertMode:
+        return self.alert_modes.get(crossing_id, AlertMode.LOG_ONLY)

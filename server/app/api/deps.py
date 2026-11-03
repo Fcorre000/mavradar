@@ -10,6 +10,7 @@ from fastapi import Depends, Header, HTTPException, Request, status
 from app.config import Settings
 from app.controllers.ingest import IngestController
 from app.repositories.memory import MemoryRepositories
+from app.services.alert_policy import AlertPolicy
 from app.services.auth import Node, NodeAuthenticator
 from app.services.crossing_tracker import CrossingTracker
 from app.services.event_log import EventLog
@@ -31,6 +32,10 @@ def get_crossing_tracker(request: Request) -> CrossingTracker:
     return cast(CrossingTracker, request.app.state.crossing_tracker)
 
 
+def get_alert_policy(request: Request) -> AlertPolicy:
+    return cast(AlertPolicy, request.app.state.alert_policy)
+
+
 def verify_node(
     settings: Annotated[Settings, Depends(get_settings)],
     x_node_key: Annotated[str | None, Header()] = None,
@@ -45,7 +50,13 @@ def verify_node(
 
 
 def get_ingest_controller(
+    node: Annotated[Node, Depends(verify_node)],
+    settings: Annotated[Settings, Depends(get_settings)],
     event_log: Annotated[EventLog, Depends(get_event_log)],
     tracker: Annotated[CrossingTracker, Depends(get_crossing_tracker)],
+    policy: Annotated[AlertPolicy, Depends(get_alert_policy)],
+    repositories: Annotated[MemoryRepositories, Depends(get_repositories)],
 ) -> IngestController:
-    return IngestController(event_log, tracker)
+    # FastAPI runs verify_node once per request even though the route asks for it too.
+    alert_mode = settings.alert_mode(node.crossing_id)
+    return IngestController(event_log, tracker, policy, repositories.alert_log, alert_mode)

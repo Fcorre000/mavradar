@@ -5,9 +5,10 @@ The server side of each test holds only the hash of TEST_KEY; requests send the 
 
 import json
 from collections.abc import Iterator
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import pytest
 from fastapi.testclient import TestClient
@@ -15,13 +16,18 @@ from pydantic import ValidationError
 
 from app.api.deps import get_ingest_controller, get_settings
 from app.config import NodeConfig, Settings
-from app.contract import CrossingEventIn, ReportedState
+from app.contract import AlertMode, CrossingEventIn, ReportedState
 from app.controllers.ingest import IngestController
 from app.domain.crossing_state import AlertKind
 from app.main import app
+from app.repositories.base import AlertLog
+from app.repositories.memory import MemoryRepositories
+from app.services.alert_policy import AlertPolicy, Recipients
 from app.services.auth import hash_key
 from app.services.crossing_tracker import ApplyOutcome, CrossingTracker
 from app.services.event_log import EventLog, EventStatus
+from app.services.subscriptions import SubscriptionMap
+from tests.helpers import device
 
 TEST_KEY = "test-key"
 EXAMPLE = Path(__file__).parents[2] / "contract/examples/crossing-event/valid/minimal.json"
@@ -39,15 +45,19 @@ GOOD = {"X-Node-Key": TEST_KEY}
 class RecordingController(IngestController):
     """Records each call to the push stand-in, and can make the first few attempts fail."""
 
-    def __init__(self, event_log: EventLog, tracker: CrossingTracker, fail_first: int = 0) -> None:
-        super().__init__(event_log, tracker)
+    def __init__(self, fail_first: int = 0, alert_mode: AlertMode = AlertMode.LOG_ONLY) -> None:
+        super().__init__(event_log(), tracker(), policy(), alert_log(), alert_mode)
         self.alerts = 0
         self.outcomes: list[ApplyOutcome] = []
+        self.recipients: list[Recipients | None] = []
         self._fail_first = fail_first
 
-    async def _alert(self, event: CrossingEventIn, outcome: ApplyOutcome) -> None:
+    async def _send(
+        self, event: CrossingEventIn, outcome: ApplyOutcome, recipients: Recipients | None
+    ) -> None:
         self.alerts += 1
         self.outcomes.append(outcome)
+        self.recipients.append(recipients)
         if self.alerts <= self._fail_first:
             raise RuntimeError("push failed")
 
@@ -71,8 +81,20 @@ def tracker() -> CrossingTracker:
     return cast(CrossingTracker, app.state.crossing_tracker)
 
 
-def use_controller(fail_first: int = 0) -> RecordingController:
-    controller = RecordingController(event_log(), tracker(), fail_first)
+def policy() -> AlertPolicy:
+    return cast(AlertPolicy, app.state.alert_policy)
+
+
+def alert_log() -> AlertLog:
+    return cast(MemoryRepositories, app.state.repositories).alert_log
+
+
+def subscriptions() -> SubscriptionMap:
+    return cast(SubscriptionMap, app.state.subscriptions)
+
+
+def use_controller(fail_first: int = 0, alert_mode: AlertMode = AlertMode.LOG_ONLY) -> RecordingController:
+    controller = RecordingController(fail_first, alert_mode)
     app.dependency_overrides[get_ingest_controller] = lambda: controller
     return controller
 
@@ -188,3 +210,86 @@ def test_new_event_moves_the_crossing_and_names_its_alert(client: TestClient) ->
 
     assert tracker().state(cast(str, EVENT["crossingId"])) is ReportedState.APPROACHING
     assert controller.outcomes[0].alert is AlertKind.APPROACHING
+
+
+# Who gets it
+
+CROSSING = cast(str, EVENT["crossingId"])
+LIVE = {**EVENT, "logOnly": False}
+
+
+def at(minute: int, change: dict[str, object]) -> dict[str, object]:
+    """A live event <minute> minutes into the last half hour, so the lateness rule still lets
+    cleared through at minute 25 or later. A fresh eventId each time."""
+    occurred = datetime.now(UTC).replace(microsecond=0) - timedelta(minutes=30 - minute)
+    return {**LIVE, **change, "eventId": str(uuid4()), "occurredAt": f"{occurred:%Y-%m-%dT%H:%M:%S}.000Z"}
+
+
+def follower_told_blocked() -> None:
+    subscriptions().upsert("token-a", device("token-a").doc)
+    alert_log().mark_told(CROSSING, ["token-a"], AlertKind.BLOCKED)
+
+
+@pytest.fixture
+def sent(monkeypatch: pytest.MonkeyPatch) -> list[Recipients | None]:
+    """Records what reaches the push stand-in, while the real providers build the controller."""
+    recorded: list[Recipients | None] = []
+
+    async def record(
+        self: IngestController, event: CrossingEventIn, outcome: ApplyOutcome, recipients: Recipients | None
+    ) -> None:
+        recorded.append(recipients)
+
+    monkeypatch.setattr(IngestController, "_send", record)
+    return recorded
+
+
+def test_unconfigured_crossing_is_log_only(client: TestClient, sent: list[Recipients | None]) -> None:
+    follower_told_blocked()
+
+    client.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
+
+    assert sent[0] is not None and sent[0].tokens == []
+
+
+def test_alert_mode_comes_from_the_settings(client: TestClient, sent: list[Recipients | None]) -> None:
+    configured = Settings(
+        nodes=cast(Settings, app.dependency_overrides[get_settings]()).nodes,
+        alert_modes={CROSSING: AlertMode.BLOCKED_AND_CLEARED},
+    )
+    app.dependency_overrides[get_settings] = lambda: configured
+    follower_told_blocked()
+
+    client.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
+
+    assert sent[0] is not None and sent[0].tokens == ["token-a"]
+
+
+def test_cleared_goes_to_phones_told_blocked_then_the_memory_is_wiped(client: TestClient) -> None:
+    controller = use_controller(alert_mode=AlertMode.BLOCKED_AND_CLEARED)
+    follower_told_blocked()
+
+    client.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
+
+    recipients = controller.recipients[0]
+    assert recipients is not None and recipients.tokens == ["token-a"]
+    assert alert_log().who_was_told(CROSSING) == {}
+
+
+def test_an_out_of_order_clear_keeps_the_memory(client: TestClient) -> None:
+    use_controller(alert_mode=AlertMode.BLOCKED_AND_CLEARED)
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+    follower_told_blocked()
+
+    client.post("/events", headers=GOOD, json=at(5, {"fromState": "blocked", "toState": "clear"}))
+
+    assert "token-a" in alert_log().who_was_told(CROSSING)
+
+
+def test_an_outage_doesnt_end_the_blockage(client: TestClient) -> None:
+    use_controller(alert_mode=AlertMode.BLOCKED_AND_CLEARED)
+    follower_told_blocked()
+
+    client.post("/events", headers=GOOD, json=at(0, {"fromState": "blocked", "toState": "sensorOffline"}))
+
+    assert "token-a" in alert_log().who_was_told(CROSSING)
