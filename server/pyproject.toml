@@ -5,6 +5,7 @@ description = "MavRadar ingest API and alert fan-out"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi>=0.162.0",
+    "firebase-admin>=7.7.0",
     "pydantic>=2.9",
     "pydantic-settings>=2.16.2",
     "uvicorn>=0.54.0",
@@ -37,4 +38,4 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.pyright]
 typeCheckingMode = "strict"
 pythonVersion = "3.12"
-include = ["app", "tests"]
+include = ["app", "scripts", "tests"]
