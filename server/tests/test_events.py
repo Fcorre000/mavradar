@@ -19,12 +19,12 @@ from pydantic import ValidationError
 
 from app.api.deps import get_ingest_controller, get_notification_service, get_repositories, get_settings
 from app.config import NodeConfig, Settings
-from app.contract import AlertMode, CrossingEventIn, ReportedState
+from app.contract import AlertMode, CrossingDoc, CrossingEventIn, ReportedState
 from app.controllers.ingest import IngestController
 from app.domain.crossing_state import AlertKind
 from app.main import app
-from app.repositories.base import AlertLog
-from app.repositories.memory import MemoryAlertLog, MemoryRepositories
+from app.repositories.base import AlertLog, Repositories
+from app.repositories.memory import MemoryAlertLog, MemoryCrossingRepository, memory_repositories
 from app.services.alert_policy import AlertPolicy, Recipients
 from app.services.auth import hash_key
 from app.services.crossing_tracker import ApplyOutcome, CrossingTracker
@@ -51,7 +51,16 @@ class RecordingController(IngestController):
     fail before the push."""
 
     def __init__(self, fail_first: int = 0, alert_mode: AlertMode = AlertMode.LOG_ONLY) -> None:
-        super().__init__(event_log(), tracker(), policy(), alert_log(), alert_mode, notifications())
+        super().__init__(
+            event_log(),
+            tracker(),
+            policy(),
+            repositories(),
+            notifications(),
+            alert_mode=alert_mode,
+            node_ids=["node-a"],
+            save_retry_delays=(0, 0),
+        )
         self.alerts = 0
         self.outcomes: list[ApplyOutcome] = []
         self.recipients: list[Recipients | None] = []
@@ -78,6 +87,10 @@ def running_client(fcm: FakeFcmClient) -> Generator[TestClient]:
     app.dependency_overrides[get_settings] = lambda: settings
     service = NotificationService(fcm, retry_delay_s=0)
     app.dependency_overrides[get_notification_service] = lambda: service
+    # In-memory storage, always: no unit test reaches Firestore (conftest also points the real
+    # client at a local emulator, as a second guard).
+    stores = memory_repositories()
+    app.dependency_overrides[get_repositories] = lambda: stores
     # A failure before the push surfaces as a 500, the way the node would see it.
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
@@ -105,8 +118,16 @@ def policy() -> AlertPolicy:
     return cast(AlertPolicy, app.state.alert_policy)
 
 
+def repositories() -> Repositories:
+    return cast(Repositories, app.dependency_overrides[get_repositories]())
+
+
 def alert_log() -> AlertLog:
-    return cast(MemoryRepositories, app.state.repositories).alert_log
+    return repositories().alert_log
+
+
+def saved() -> MemoryCrossingRepository:
+    return cast(MemoryCrossingRepository, repositories().crossings)
 
 
 def notifications() -> NotificationService:
@@ -341,7 +362,7 @@ def test_only_phones_fcm_accepted_are_told() -> None:
 
 
 class SpyAlertLog(MemoryAlertLog):
-    """Writes its name into the shared call list, like the fake FCM client does."""
+    """Writes "write" into the shared call list, like the fake FCM client writes "push"."""
 
     def __init__(self, log: list[str]) -> None:
         super().__init__()
@@ -356,19 +377,82 @@ class SpyAlertLog(MemoryAlertLog):
         super().close_blockage(crossing_id)
 
 
+class SpyCrossings(MemoryCrossingRepository):
+    def __init__(self, log: list[str]) -> None:
+        super().__init__()
+        self._log = log
+
+    async def save_state(self, crossing_id: str, doc: CrossingDoc) -> None:
+        self._log.append("write")
+        await super().save_state(crossing_id, doc)
+
+
 def test_the_push_goes_out_before_anything_is_written() -> None:
     calls: list[str] = []
     with client_with(FakeFcmClient(log=calls)) as c:
         configure_blocked_and_cleared()
-        repositories = MemoryRepositories()
         spy = SpyAlertLog(calls)
-        repositories.alert_log = spy
-        app.dependency_overrides[get_repositories] = lambda: repositories
+        stores = Repositories(alert_log=spy, crossings=SpyCrossings(calls))
+        app.dependency_overrides[get_repositories] = lambda: stores
         subscriptions().upsert("token-a", device("token-a").doc)
         MemoryAlertLog.mark_told(spy, CROSSING, ["token-a"], AlertKind.BLOCKED)  # setup, not logged
 
         c.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
 
-    # S3's Firestore writes join this list as "write" too, so this keeps guarding the order.
-    assert calls[0] == "push"
-    assert calls.count("push") == 1 and set(calls[1:]) == {"write"}
+    # Told records, the wipe and the crossing document, all after the one push.
+    assert calls == ["push", "write", "write", "write"]
+
+
+# Saving the crossing (S3)
+
+
+def test_the_crossing_is_saved_for_the_app(client: TestClient) -> None:
+    configure_blocked_and_cleared()
+    before = datetime.now(UTC)
+
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+
+    doc = saved().docs[CROSSING]
+    assert doc.state is ReportedState.BLOCKED
+    assert doc.since is not None and doc.since < before  # when it happened, from the node
+    assert doc.last_reading_at >= before  # when the server heard it, from the server
+    assert doc.node_ids == ["node-a"]
+    assert doc.alert_mode is AlertMode.BLOCKED_AND_CLEARED
+
+
+def test_an_out_of_order_event_saves_nothing(client: TestClient) -> None:
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+    first = saved().docs[CROSSING]
+
+    client.post("/events", headers=GOOD, json=at(5, {"fromState": "blocked", "toState": "clear"}))
+
+    assert saved().docs[CROSSING] is first
+
+
+def test_a_save_that_fails_once_is_retried(client: TestClient) -> None:
+    use_controller()
+    saved().fail_next = 1
+
+    assert (
+        client.post(
+            "/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"})
+        ).status_code
+        == 200
+    )
+    assert CROSSING in saved().docs
+
+
+def test_a_save_that_keeps_failing_gets_503_and_the_resend_saves_without_pushing(
+    client: TestClient, fcm: FakeFcmClient
+) -> None:
+    use_controller(alert_mode=AlertMode.BLOCKED_AND_CLEARED)
+    follower_told_blocked()
+    saved().fail_next = 3  # the first try and both retries
+    cleared = at(29, {"fromState": "blocked", "toState": "clear"})
+
+    assert client.post("/events", headers=GOOD, json=cleared).status_code == 503
+    assert event_log().check_and_mark(UUID(cast(str, cleared["eventId"]))) is EventStatus.PUSHED
+    assert client.post("/events", headers=GOOD, json=cleared).status_code == 200
+
+    assert len(fcm.calls) == 1  # one push across both requests
+    assert saved().docs[CROSSING].state is ReportedState.CLEAR

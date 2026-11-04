@@ -2,8 +2,9 @@
 
 from collections.abc import Iterable
 
+from app.contract import CrossingDoc
 from app.domain.crossing_state import AlertKind
-from app.repositories.base import AlertLog, ToldRecord
+from app.repositories.base import Repositories, ToldRecord
 
 
 class MemoryAlertLog:
@@ -22,9 +23,17 @@ class MemoryAlertLog:
         self._told.pop(crossing_id, None)
 
 
-class MemoryRepositories:
-    """Holds the in-memory repositories. Built once by the lifespan, so their data lives as
-    long as the process."""
-
+class MemoryCrossingRepository:
     def __init__(self) -> None:
-        self.alert_log: AlertLog = MemoryAlertLog()
+        self.docs: dict[str, CrossingDoc] = {}
+        self.fail_next = 0  # tests set this to make the next writes fail
+
+    async def save_state(self, crossing_id: str, doc: CrossingDoc) -> None:
+        if self.fail_next:
+            self.fail_next -= 1
+            raise ConnectionError("Firestore unavailable")
+        self.docs[crossing_id] = doc
+
+
+def memory_repositories() -> Repositories:
+    return Repositories(alert_log=MemoryAlertLog(), crossings=MemoryCrossingRepository())
