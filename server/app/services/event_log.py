@@ -2,10 +2,16 @@
 
 The node keeps the same eventId for every retry, so this is what stops a retry from pushing twice.
 It lives in memory for the life of the process; the lifespan builds it once.
+
+A pushed event that isn't saved yet also keeps the records still to be saved, because a resend
+can't rebuild them: the push and its delivery report happened in the first request.
 """
 
+from dataclasses import dataclass
 from enum import StrEnum
 from uuid import UUID
+
+from app.repositories.base import AlertRecord, EventRecord
 
 
 class EventStatus(StrEnum):
@@ -15,9 +21,20 @@ class EventStatus(StrEnum):
     DONE = "done"  # pushed and written
 
 
+@dataclass(frozen=True)
+class PendingRecords:
+    """What an event still has to save after its push (S3)."""
+
+    history: EventRecord
+    alert: AlertRecord | None  # None when nothing was sent
+    crossing_changed: bool  # the event moved the crossing, so its document needs saving
+    blockage_changed: bool  # who-was-told changed, or the blockage ended
+
+
 class EventLog:
     def __init__(self) -> None:
         self._entries: dict[UUID, EventStatus] = {}
+        self._pending: dict[UUID, PendingRecords] = {}
 
     def check_and_mark(self, event_id: UUID) -> EventStatus:
         """What has happened to this event so far. A new one is marked in progress in the same step,
@@ -28,11 +45,16 @@ class EventLog:
             return EventStatus.NEW
         return current
 
-    def mark_pushed(self, event_id: UUID) -> None:
+    def mark_pushed(self, event_id: UUID, records: PendingRecords) -> None:
         self._entries[event_id] = EventStatus.PUSHED
+        self._pending[event_id] = records
+
+    def pending(self, event_id: UUID) -> PendingRecords | None:
+        return self._pending.get(event_id)
 
     def mark_done(self, event_id: UUID) -> None:
         self._entries[event_id] = EventStatus.DONE
+        self._pending.pop(event_id, None)
 
     def forget(self, event_id: UUID) -> None:
         """For a request that failed before the push: nothing went out, so the retry starts fresh."""

@@ -2,19 +2,26 @@
 root with: firebase emulators:exec --only firestore "cd server && uv run pytest -m emulator"
 """
 
+import base64
 import json
+import os
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import cast
 from uuid import uuid4
 
+import httpx2
 import pytest
 from google.cloud.firestore import AsyncClient
+from google.cloud.firestore_v1.base_query import FieldFilter
 
-from app.contract import AlertMode, CrossingDoc, ReportedState, SensorDoc
-from app.repositories.firestore import FirestoreCrossingRepository
+from app.contract import AlertMode, CrossingDoc, CrossingEventIn, ReportedState, SensorDoc
+from app.domain.crossing_state import AlertKind
+from app.repositories.base import AlertRecord, EventRecord
+from app.repositories.firestore import FirestoreAlertRecords, FirestoreCrossingRepository, FirestoreEventStore
 
-pytestmark = [pytest.mark.emulator, pytest.mark.anyio]
+pytestmark = pytest.mark.emulator
 
 SCHEMA = Path(__file__).parents[2] / "contract/schemas/firestore/crossing.schema.json"
 # Every field app/src/data/firestore-mapping.ts toReading() reads.
@@ -48,6 +55,7 @@ async def save_and_read(doc: CrossingDoc) -> dict[str, object]:
     return data
 
 
+@pytest.mark.anyio
 async def test_the_document_has_exactly_the_contracts_fields() -> None:
     data = await save_and_read(blocked_doc())
 
@@ -57,6 +65,7 @@ async def test_the_document_has_exactly_the_contracts_fields() -> None:
     assert data["sensor"] == {"name": "Crossing node", "batteryOk": True}
 
 
+@pytest.mark.anyio
 async def test_times_are_firestore_timestamps_and_empty_ones_are_null() -> None:
     data = await save_and_read(blocked_doc())
 
@@ -66,7 +75,108 @@ async def test_times_are_firestore_timestamps_and_empty_ones_are_null() -> None:
     assert data["stoppedAt"] is None and data["clearSince"] is None
 
 
+@pytest.mark.anyio
 async def test_it_reads_back_into_the_contract_model() -> None:
     data = await save_and_read(blocked_doc())
 
     assert CrossingDoc.model_validate(data) == blocked_doc()
+
+
+# The server-only records (S3 group 2)
+
+
+def an_event() -> CrossingEventIn:
+    return CrossingEventIn(
+        schema_version=1,
+        event_id=uuid4(),
+        node_id="node-a",
+        crossing_id="794980D",
+        from_state=ReportedState.CLEAR,
+        to_state=ReportedState.BLOCKED,
+        occurred_at=T,
+        log_only=True,
+    )
+
+
+async def read(client: AsyncClient, path: str) -> dict[str, object] | None:
+    ref = client.document(path)
+    snapshot = await ref.get()  # pyright: ignore[reportUnknownMemberType]  (untyped transaction arg)
+    return snapshot.to_dict()
+
+
+@pytest.mark.anyio
+async def test_a_resend_rewrites_the_same_history_document() -> None:
+    client = AsyncClient(project="mavradar-4a74a")
+    store = FirestoreEventStore(client)
+    event = an_event()
+
+    await store.append(EventRecord(event, T, applied=True))
+    await store.append(EventRecord(event, T, applied=True))  # the resend
+
+    data = await read(client, f"crossingEvents/{event.event_id}")
+    assert data is not None and data["eventId"] == str(event.event_id) and data["receivedAt"] == T
+    events = client.collection("crossingEvents")
+    same_id = FieldFilter("eventId", "==", str(event.event_id))
+    matching = events.where(filter=same_id)  # pyright: ignore[reportUnknownMemberType]  (untyped value arg)
+    assert len([doc async for doc in matching.stream()]) == 1
+
+
+@pytest.mark.anyio
+async def test_alert_and_blockage_records_land_at_their_paths() -> None:
+    client = AsyncClient(project="mavradar-4a74a")
+    store = FirestoreAlertRecords(client)
+    event_id = uuid4()
+    crossing = f"9{uuid4().int % 10**5:05d}B"
+
+    alert = AlertRecord(
+        "794980D", AlertKind.CLEARED, "train-alerts", delivered=3, dead=1, failed=0, sent_at=T
+    )
+    await store.record_alert(event_id, alert)
+    await store.save_blockage(crossing, T, {"token-a": frozenset({AlertKind.BLOCKED, AlertKind.STOPPED})})
+
+    logged = await read(client, f"alerts/{event_id}")
+    assert logged is not None and (logged["kind"], logged["delivered"], logged["dead"]) == ("cleared", 3, 1)
+    blockage = await read(client, f"blockages/{crossing}")
+    assert blockage is not None and blockage["told"] == {"token-a": ["blocked", "stopped"]}
+
+    await store.delete_blockage(crossing)
+    assert await read(client, f"blockages/{crossing}") is None
+
+
+# The rules: an app user can read crossings, never the server's records
+
+
+def app_user_token() -> str:
+    """An unsigned ID token for a signed-in anonymous user. Only the emulator accepts these."""
+
+    def part(value: dict[str, object]) -> str:
+        return base64.urlsafe_b64encode(json.dumps(value).encode()).decode().rstrip("=")
+
+    now = int(time.time())
+    claims: dict[str, object] = {
+        "iss": "https://securetoken.google.com/mavradar-4a74a",
+        "aud": "mavradar-4a74a",
+        "sub": "app-user",
+        "user_id": "app-user",
+        "iat": now,
+        "exp": now + 3600,
+        "auth_time": now,
+        "firebase": {"sign_in_provider": "anonymous", "identities": {}},
+    }
+    return f"{part({'alg': 'none', 'typ': 'JWT'})}.{part(claims)}."
+
+
+def app_user_reads(path: str) -> int:
+    host = os.environ["FIRESTORE_EMULATOR_HOST"]
+    url = f"http://{host}/v1/projects/mavradar-4a74a/databases/(default)/documents/{path}"
+    return httpx2.get(url, headers={"Authorization": f"Bearer {app_user_token()}"}).status_code
+
+
+@pytest.mark.parametrize("path", ["blockages/794980D", "crossingEvents/any", "alerts/any"])
+def test_app_users_cannot_read_the_servers_records(path: str) -> None:
+    assert app_user_reads(path) == 403
+
+
+def test_app_users_can_read_crossings() -> None:
+    # Allowed, so a missing document is 404 rather than 403: proof the rules let this one through.
+    assert app_user_reads("crossings/000000Z") == 404

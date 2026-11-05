@@ -2,7 +2,7 @@
 
 import asyncio
 import logging
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, datetime
 from typing import assert_never
 
@@ -10,12 +10,12 @@ from fastapi import HTTPException, status
 
 from app.contract import AlertMode, CrossingDoc, CrossingEventIn, ReportedState, SensorDoc
 from app.domain.crossing_state import is_legal
-from app.repositories.base import Repositories
+from app.repositories.base import AlertRecord, EventRecord, Repositories
 from app.services.alert_policy import AlertPolicy, Recipients
 from app.services.alert_rules import AlertContext
 from app.services.auth import Node
 from app.services.crossing_tracker import ApplyOutcome, CrossingTracker
-from app.services.event_log import EventLog, EventStatus
+from app.services.event_log import EventLog, EventStatus, PendingRecords
 from app.services.notifications import DeliveryReport, NotificationService, alert_push
 
 logger = logging.getLogger(__name__)
@@ -43,6 +43,8 @@ class IngestController:
         self._policy = policy
         self._alert_log = repositories.alert_log
         self._crossings = repositories.crossings
+        self._events = repositories.events
+        self._alert_records = repositories.alert_records
         self._notifications = notifications
         # Both are for the authenticated node's crossing.
         self._alert_mode = alert_mode
@@ -68,8 +70,16 @@ class IngestController:
                 # Another copy is mid-request and may still fail, so the node must keep this one.
                 raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "event is being handled, retry")
             case EventStatus.PUSHED:
-                # Pushed earlier but not saved: skip the push and save again.
-                changed = True
+                # Pushed earlier but not saved: skip the push and save again. Every save is
+                # idempotent, so all of them are simply redone from what memory holds now.
+                pending = self._event_log.pending(event.event_id)
+                history = pending.history if pending else EventRecord(event, datetime.now(UTC), applied=True)
+                records = PendingRecords(
+                    history=history,
+                    alert=pending.alert if pending else None,
+                    crossing_changed=True,
+                    blockage_changed=True,
+                )
             case EventStatus.NEW:
                 try:
                     now = datetime.now(UTC)
@@ -81,23 +91,50 @@ class IngestController:
                     # the node's retry (it gets a 500) must start fresh.
                     self._event_log.forget(event.event_id)
                     raise
-                self._event_log.mark_pushed(event.event_id)
 
                 # Everything below is a record of what happened, so it comes after the push.
+                told_changed = False
                 if outcome.alert is not None and report is not None:
                     # Only phones FCM accepted were told; dead and failed tokens weren't.
                     self._alert_log.mark_told(event.crossing_id, report.delivered, outcome.alert)
-                if outcome.applied and event.to_state is ReportedState.CLEAR:
+                    told_changed = bool(report.delivered)
+                cleared = outcome.applied and event.to_state is ReportedState.CLEAR
+                if cleared:
                     # The blockage is over. Only now, after the cleared recipients were picked
                     # from it, forget who was told. An outage (sensorOffline) never ends one.
                     self._alert_log.close_blockage(event.crossing_id)
-                changed = outcome.applied  # an out-of-order event changed nothing to save
+                records = PendingRecords(
+                    history=EventRecord(event, now, applied=outcome.applied),
+                    alert=self._alert_record(event, outcome, recipients, report, now),
+                    crossing_changed=outcome.applied,  # an out-of-order event goes to history only
+                    blockage_changed=told_changed or cleared,
+                )
+                self._event_log.mark_pushed(event.event_id, records)
             case _:
                 assert_never(seen)
 
-        if changed:
-            await self._save(event.crossing_id)
+        await self._save(event.crossing_id, records)
         self._event_log.mark_done(event.event_id)
+
+    @staticmethod
+    def _alert_record(
+        event: CrossingEventIn,
+        outcome: ApplyOutcome,
+        recipients: Recipients | None,
+        report: DeliveryReport | None,
+        now: datetime,
+    ) -> AlertRecord | None:
+        if outcome.alert is None or recipients is None or report is None:
+            return None  # nothing was sent
+        return AlertRecord(
+            crossing_id=event.crossing_id,
+            kind=outcome.alert,
+            channel=recipients.channel.value,
+            delivered=len(report.delivered),
+            dead=len(report.dead),
+            failed=len(report.failed),
+            sent_at=now,
+        )
 
     def _recipients(self, event: CrossingEventIn, outcome: ApplyOutcome, now: datetime) -> Recipients | None:
         """Who gets the alert, or None when the change calls for none or the event was out of order."""
@@ -124,14 +161,39 @@ class IngestController:
         push = alert_push(outcome.alert, event.crossing_id, event.occurred_at, recipients.channel)
         return await self._notifications.send(push, recipients.tokens)
 
-    async def _save(self, crossing_id: str) -> None:
-        """Saves the crossing document, with a few quick retries. If it still fails the node gets a
-        503 and the event stays "pushed, not written", so the resend saves without pushing again."""
+    async def _save(self, crossing_id: str, records: PendingRecords) -> None:
+        """Saves everything the event changed (SD3), with a few quick retries. If a save still
+        fails the node gets a 503 and the event stays "pushed, not written", so the resend saves
+        again without pushing. Each write is idempotent, so a retry just redoes them all."""
+        writes: list[Callable[[], Awaitable[None]]] = []
+        doc = self._crossing_doc(crossing_id)
+        if records.crossing_changed and doc is not None:
+            writes.append(lambda: self._crossings.save_state(crossing_id, doc))
+        writes.append(lambda: self._events.append(records.history))
+        alert = records.alert
+        if alert is not None:
+            writes.append(lambda: self._alert_records.record_alert(records.history.event.event_id, alert))
+        if records.blockage_changed:
+            writes.append(lambda: self._sync_blockage(crossing_id))
+
+        for delay in (*self._save_retry_delays, None):
+            try:
+                for write in writes:
+                    await write()
+                return
+            except Exception:
+                if delay is None:
+                    logger.exception("saving %s's records failed; the node will resend", crossing_id)
+                    raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not saved yet, retry") from None
+                logger.warning("saving %s's records failed; retrying", crossing_id)
+                await asyncio.sleep(delay)
+
+    def _crossing_doc(self, crossing_id: str) -> CrossingDoc | None:
         reading = self._tracker.reading(crossing_id)
         if reading is None:
-            return
+            return None
         now = datetime.now(UTC)
-        doc = CrossingDoc(
+        return CrossingDoc(
             state=reading.state,
             since=reading.since,
             stopped_at=reading.stopped_at,
@@ -143,13 +205,14 @@ class IngestController:
             alert_mode=self._alert_mode,
             updated_at=now,
         )
-        for delay in (*self._save_retry_delays, None):
-            try:
-                await self._crossings.save_state(crossing_id, doc)
-                return
-            except Exception:
-                if delay is None:
-                    logger.exception("saving crossings/%s failed; the node will resend", crossing_id)
-                    raise HTTPException(status.HTTP_503_SERVICE_UNAVAILABLE, "not saved yet, retry") from None
-                logger.warning("saving crossings/%s failed; retrying", crossing_id)
-                await asyncio.sleep(delay)
+
+    async def _sync_blockage(self, crossing_id: str) -> None:
+        """Makes the Firestore copy of who-was-told match memory: saved while a blockage is open,
+        deleted once it has ended. Matching memory, rather than replaying a change, keeps a late
+        resend from bringing back a blockage that has since cleared."""
+        told = self._alert_log.who_was_told(crossing_id)
+        if not told:
+            await self._alert_records.delete_blockage(crossing_id)
+            return
+        reading = self._tracker.reading(crossing_id)
+        await self._alert_records.save_blockage(crossing_id, reading.since if reading else None, told)

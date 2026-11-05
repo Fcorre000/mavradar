@@ -9,7 +9,7 @@ from google.cloud.firestore import AsyncClient
 from app.api import events, health
 from app.config import Settings
 from app.repositories.base import Repositories
-from app.repositories.firestore import FirestoreCrossingRepository
+from app.repositories.firestore import FirestoreAlertRecords, FirestoreCrossingRepository, FirestoreEventStore
 from app.repositories.memory import MemoryAlertLog
 from app.services.alert_policy import AlertPolicy
 from app.services.crossing_tracker import CrossingTracker
@@ -27,8 +27,10 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
     # Application Default Credentials, or the emulator when FIRESTORE_EMULATOR_HOST is set.
     firestore = AsyncClient(project=settings.firebase_project_id)
     app.state.repositories = Repositories(
-        alert_log=MemoryAlertLog(),  # its Firestore copy is S3 group 2
+        alert_log=MemoryAlertLog(),  # in memory for the hot path; alert_records keeps its copy
         crossings=FirestoreCrossingRepository(firestore),
+        events=FirestoreEventStore(firestore),
+        alert_records=FirestoreAlertRecords(firestore),
     )
     app.state.event_log = EventLog()
     app.state.crossing_tracker = CrossingTracker()
