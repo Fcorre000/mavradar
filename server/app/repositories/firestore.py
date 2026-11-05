@@ -1,6 +1,7 @@
 """The Firestore repositories. Only ever called after the push (SD3): nothing here is on the path
 an alert waits for."""
 
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import UUID
 
@@ -87,3 +88,19 @@ class FirestoreAlertRecords:
 
     async def delete_blockage(self, crossing_id: str) -> None:
         await self._client.collection("blockages").document(crossing_id).delete(timeout=WRITE_TIMEOUT_S)
+
+
+# Firestore takes at most 500 writes in one batch.
+BATCH_LIMIT = 500
+
+
+class FirestoreTokenRegistry:
+    def __init__(self, client: AsyncClient) -> None:
+        self._client = client
+
+    async def remove(self, tokens: Sequence[str]) -> None:
+        for start in range(0, len(tokens), BATCH_LIMIT):
+            batch = self._client.batch()
+            for token in tokens[start : start + BATCH_LIMIT]:
+                batch.delete(self._client.collection("devices").document(token))
+            await batch.commit(timeout=WRITE_TIMEOUT_S)

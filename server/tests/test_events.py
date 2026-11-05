@@ -6,6 +6,7 @@ always the fake, so no test reaches the network.
 """
 
 import json
+import logging
 from collections.abc import Generator, Iterable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
@@ -29,6 +30,7 @@ from app.repositories.memory import (
     MemoryAlertRecords,
     MemoryCrossingRepository,
     MemoryEventStore,
+    MemoryTokenRegistry,
     memory_repositories,
 )
 from app.services.alert_policy import AlertPolicy, Recipients
@@ -61,6 +63,7 @@ class RecordingController(IngestController):
             event_log(),
             tracker(),
             policy(),
+            subscriptions(),
             repositories(),
             notifications(),
             alert_mode=alert_mode,
@@ -443,6 +446,7 @@ def test_the_push_goes_out_before_anything_is_written() -> None:
             crossings=SpyCrossings(calls),
             events=SpyEvents(calls),
             alert_records=SpyAlertRecords(calls),
+            tokens=MemoryTokenRegistry(),
         )
         app.dependency_overrides[get_repositories] = lambda: stores
         subscriptions().upsert("token-a", device("token-a").doc)
@@ -634,3 +638,49 @@ def test_a_resent_clear_leaves_one_history_entry(client: TestClient) -> None:
 
     assert list(blockage_events()) == [UUID(cast(str, cleared["eventId"]))]
     assert saved().summaries[(CROSSING, "7d")].count == 1
+
+
+# Dead tokens (S3 group 4)
+
+
+def tokens() -> MemoryTokenRegistry:
+    return cast(MemoryTokenRegistry, repositories().tokens)
+
+
+def followers_told_blocked(*names: str) -> None:
+    for token in names:
+        subscriptions().upsert(token, device(token).doc)
+    alert_log().mark_told(CROSSING, list(names), AlertKind.BLOCKED)
+
+
+def test_dead_tokens_are_deleted_and_failed_ones_kept(caplog: pytest.LogCaptureFixture) -> None:
+    dead = "dead-token-from-an-uninstalled-app"
+    fcm = FakeFcmClient(answers={dead: [SendResult.DEAD], "token-c": [SendResult.FAILED, SendResult.FAILED]})
+    with client_with(fcm) as c, caplog.at_level(logging.WARNING):
+        configure_blocked_and_cleared()
+        followers_told_blocked("token-a", dead, "token-c")
+
+        c.post("/events", headers=GOOD, json=at(20, {"fromState": "blocked", "toState": "stopped"}))
+
+        assert tokens().removed == [dead]
+        assert [d.token for d in subscriptions().followers(CROSSING)] == ["token-a", "token-c"]
+    assert dead not in caplog.text and "...ed-app" in caplog.text  # only the last 6 characters
+
+
+def test_a_dead_token_is_dropped_at_once_even_if_its_delete_fails() -> None:
+    fcm = FakeFcmClient(answers={"token-b": [SendResult.DEAD]})
+    with client_with(fcm) as c:
+        use_controller(alert_mode=AlertMode.BLOCKED_AND_CLEARED)
+        followers_told_blocked("token-a", "token-b")
+        tokens().fail_next = 3  # the first try and both retries
+        stopped = at(20, {"fromState": "blocked", "toState": "stopped"})
+
+        assert c.post("/events", headers=GOOD, json=stopped).status_code == 503
+        assert [d.token for d in subscriptions().followers(CROSSING)] == ["token-a"]  # already gone
+        assert tokens().removed == []
+
+        c.post("/events", headers=GOOD, json=at(29, {"fromState": "stopped", "toState": "clear"}))
+        assert [batch for _, batch in fcm.calls][-1] == ["token-a"]  # the next alert skips it
+
+        assert c.post("/events", headers=GOOD, json=stopped).status_code == 200  # the resend
+        assert tokens().removed == ["token-b"]

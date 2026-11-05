@@ -1,7 +1,7 @@
 """In-memory repositories, for tests and local runs. The stores can be told to fail their next
 writes (`fail_next`), to exercise the 503 path."""
 
-from collections.abc import Iterable
+from collections.abc import Iterable, Sequence
 from datetime import datetime
 from uuid import UUID
 
@@ -89,10 +89,21 @@ class MemoryAlertRecords(_Flaky):
         self.blockages.pop(crossing_id, None)
 
 
+class MemoryTokenRegistry(_Flaky):
+    def __init__(self) -> None:
+        super().__init__()
+        self.removed: list[str] = []
+
+    async def remove(self, tokens: Sequence[str]) -> None:
+        self._maybe_fail()
+        self.removed.extend(token for token in tokens if token not in self.removed)
+
+
 def memory_repositories() -> Repositories:
     return Repositories(
         alert_log=MemoryAlertLog(),
         crossings=MemoryCrossingRepository(),
         events=MemoryEventStore(),
         alert_records=MemoryAlertRecords(),
+        tokens=MemoryTokenRegistry(),
     )

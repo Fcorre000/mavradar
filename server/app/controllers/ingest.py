@@ -19,6 +19,7 @@ from app.services.auth import Node
 from app.services.crossing_tracker import ApplyOutcome, CrossingTracker, FinishedBlockage
 from app.services.event_log import EventLog, EventStatus, PendingRecords
 from app.services.notifications import DeliveryReport, NotificationService, alert_push
+from app.services.subscriptions import SubscriptionMap
 
 logger = logging.getLogger(__name__)
 
@@ -34,6 +35,7 @@ class IngestController:
         event_log: EventLog,
         tracker: CrossingTracker,
         policy: AlertPolicy,
+        subscriptions: SubscriptionMap,
         repositories: Repositories,
         notifications: NotificationService,
         alert_mode: AlertMode,
@@ -43,10 +45,12 @@ class IngestController:
         self._event_log = event_log
         self._tracker = tracker
         self._policy = policy
+        self._subscriptions = subscriptions
         self._alert_log = repositories.alert_log
         self._crossings = repositories.crossings
         self._events = repositories.events
         self._alert_records = repositories.alert_records
+        self._tokens = repositories.tokens
         self._notifications = notifications
         # Both are for the authenticated node's crossing.
         self._alert_mode = alert_mode
@@ -82,6 +86,7 @@ class IngestController:
                     crossing_changed=True,
                     blockage_changed=True,
                     finished=pending.finished if pending else None,
+                    dead_tokens=pending.dead_tokens if pending else (),
                 )
             case EventStatus.NEW:
                 try:
@@ -101,6 +106,11 @@ class IngestController:
                     # Only phones FCM accepted were told; dead and failed tokens weren't.
                     self._alert_log.mark_told(event.crossing_id, report.delivered, outcome.alert)
                     told_changed = bool(report.delivered)
+                dead = tuple(report.dead) if report else ()
+                if dead:
+                    # Stop sending to them now. Deleting devices/{token} comes with the saves; a
+                    # restart would reload them from Firestore until that has worked.
+                    self._subscriptions.drop(dead)
                 cleared = outcome.applied and event.to_state is ReportedState.CLEAR
                 if cleared:
                     # The blockage is over. Only now, after the cleared recipients were picked
@@ -112,6 +122,7 @@ class IngestController:
                     crossing_changed=outcome.applied,  # an out-of-order event goes to history only
                     blockage_changed=told_changed or cleared,
                     finished=outcome.finished,
+                    dead_tokens=dead,
                 )
                 self._event_log.mark_pushed(event.event_id, records)
             case _:
@@ -185,6 +196,9 @@ class IngestController:
             blockage_id = records.history.event.event_id
             writes.append(lambda: self._add_blockage(crossing_id, blockage_id, finished))
             writes.append(lambda: self._refresh_summaries(crossing_id))
+        dead = records.dead_tokens
+        if dead:
+            writes.append(lambda: self._remove_tokens(dead))
 
         for delay in (*self._save_retry_delays, None):
             try:
@@ -244,3 +258,10 @@ class IngestController:
         blockages = [Blockage(doc.start, doc.duration_min, doc.stopped) for doc in saved]
         await self._crossings.save_summary(crossing_id, "7d", blockage_summary(blockages, now, 7))
         await self._crossings.save_summary(crossing_id, "30d", blockage_summary(blockages, now, 30))
+
+    async def _remove_tokens(self, tokens: tuple[str, ...]) -> None:
+        await self._tokens.remove(tokens)
+        # Never log a whole push token (backend guide, section 6).
+        logger.warning(
+            "deleted %d dead push tokens: %s", len(tokens), ", ".join(f"...{t[-6:]}" for t in tokens)
+        )

@@ -15,6 +15,7 @@ from app.services.auth import Node, NodeAuthenticator
 from app.services.crossing_tracker import CrossingTracker
 from app.services.event_log import EventLog
 from app.services.notifications import NotificationService
+from app.services.subscriptions import SubscriptionMap
 
 
 def get_settings(request: Request) -> Settings:
@@ -41,6 +42,10 @@ def get_notification_service(request: Request) -> NotificationService:
     return cast(NotificationService, request.app.state.notifications)
 
 
+def get_subscriptions(request: Request) -> SubscriptionMap:
+    return cast(SubscriptionMap, request.app.state.subscriptions)
+
+
 def verify_node(
     settings: Annotated[Settings, Depends(get_settings)],
     x_node_key: Annotated[str | None, Header()] = None,
@@ -60,6 +65,7 @@ def get_ingest_controller(
     event_log: Annotated[EventLog, Depends(get_event_log)],
     tracker: Annotated[CrossingTracker, Depends(get_crossing_tracker)],
     policy: Annotated[AlertPolicy, Depends(get_alert_policy)],
+    subscriptions: Annotated[SubscriptionMap, Depends(get_subscriptions)],
     repositories: Annotated[Repositories, Depends(get_repositories)],
     notifications: Annotated[NotificationService, Depends(get_notification_service)],
 ) -> IngestController:
@@ -68,6 +74,7 @@ def get_ingest_controller(
         event_log,
         tracker,
         policy,
+        subscriptions,
         repositories,
         notifications,
         alert_mode=settings.alert_mode(node.crossing_id),

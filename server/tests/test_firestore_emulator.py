@@ -28,7 +28,13 @@ from app.contract import (
 from app.domain.crossing_state import AlertKind
 from app.domain.stats import Blockage, blockage_summary
 from app.repositories.base import AlertRecord, EventRecord
-from app.repositories.firestore import FirestoreAlertRecords, FirestoreCrossingRepository, FirestoreEventStore
+from app.repositories.firestore import (
+    FirestoreAlertRecords,
+    FirestoreCrossingRepository,
+    FirestoreEventStore,
+    FirestoreTokenRegistry,
+    _set,  # pyright: ignore[reportPrivateUsage]  (test setup only)
+)
 
 pytestmark = pytest.mark.emulator
 
@@ -219,3 +225,19 @@ async def test_history_records_land_where_the_app_reads_them() -> None:
     await store.save_summary(crossing, "7d", summary)
     saved = await read(client, f"crossings/{crossing}/summary/7d")
     assert saved is not None and HistorySummaryDoc.model_validate(saved) == summary
+
+
+# Dead tokens (S3 group 4)
+
+
+@pytest.mark.anyio
+async def test_dead_tokens_are_really_deleted() -> None:
+    client = AsyncClient(project="mavradar-4a74a")
+    token = f"dead-{uuid4()}"
+    await _set(
+        client.collection("devices").document(token), {"uid": "u", "platform": "android", "updatedAt": T}
+    )
+
+    await FirestoreTokenRegistry(client).remove([token, f"never-registered-{uuid4()}"])
+
+    assert await read(client, f"devices/{token}") is None

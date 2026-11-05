@@ -9,7 +9,12 @@ from google.cloud.firestore import AsyncClient
 from app.api import events, health
 from app.config import Settings
 from app.repositories.base import Repositories
-from app.repositories.firestore import FirestoreAlertRecords, FirestoreCrossingRepository, FirestoreEventStore
+from app.repositories.firestore import (
+    FirestoreAlertRecords,
+    FirestoreCrossingRepository,
+    FirestoreEventStore,
+    FirestoreTokenRegistry,
+)
 from app.repositories.memory import MemoryAlertLog
 from app.services.alert_policy import AlertPolicy
 from app.services.crossing_tracker import CrossingTracker
@@ -31,6 +36,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None]:
         crossings=FirestoreCrossingRepository(firestore),
         events=FirestoreEventStore(firestore),
         alert_records=FirestoreAlertRecords(firestore),
+        tokens=FirestoreTokenRegistry(firestore),
     )
     app.state.event_log = EventLog()
     app.state.crossing_tracker = CrossingTracker()

@@ -4,7 +4,7 @@ Routes and services depend on these protocols, never on a storage implementation
 in-memory versions, used by tests; firestore.py has the Firestore ones.
 """
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal, Protocol
@@ -96,6 +96,15 @@ class AlertRecordStore(Protocol):
     async def delete_blockage(self, crossing_id: str) -> None: ...
 
 
+class TokenRegistry(Protocol):
+    """devices/{fcmToken}, written by the app's registerDevice(). The server only deletes, and
+    only tokens FCM reported dead (SD3 messages 7 to 9). S6 adds loading and syncing."""
+
+    async def remove(self, tokens: Sequence[str]) -> None:
+        """Deleting a document that's already gone is fine, so a resend can redo this."""
+        ...
+
+
 @dataclass
 class Repositories:
     """Built once by the lifespan. Tests swap in the in-memory ones."""
@@ -104,3 +113,4 @@ class Repositories:
     crossings: CrossingRepository
     events: CrossingEventStore
     alert_records: AlertRecordStore
+    tokens: TokenRegistry

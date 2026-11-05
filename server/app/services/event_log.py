@@ -31,6 +31,7 @@ class PendingRecords:
     crossing_changed: bool  # the event moved the crossing, so its document needs saving
     blockage_changed: bool  # who-was-told changed, or the blockage ended
     finished: FinishedBlockage | None = None  # a blockage this event ended, for History
+    dead_tokens: tuple[str, ...] = ()  # FCM said these will never work again; delete them
 
 
 class EventLog:
