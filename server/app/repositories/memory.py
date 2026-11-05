@@ -5,9 +5,9 @@ from collections.abc import Iterable
 from datetime import datetime
 from uuid import UUID
 
-from app.contract import CrossingDoc
+from app.contract import BlockageEventDoc, CrossingDoc, HistorySummaryDoc
 from app.domain.crossing_state import AlertKind
-from app.repositories.base import AlertRecord, EventRecord, Repositories, ToldRecord
+from app.repositories.base import AlertRecord, EventRecord, Repositories, SummaryRange, ToldRecord
 
 
 class MemoryAlertLog:
@@ -40,10 +40,24 @@ class MemoryCrossingRepository(_Flaky):
     def __init__(self) -> None:
         super().__init__()
         self.docs: dict[str, CrossingDoc] = {}
+        self.blockages: dict[str, dict[UUID, BlockageEventDoc]] = {}
+        self.summaries: dict[tuple[str, SummaryRange], HistorySummaryDoc] = {}
 
     async def save_state(self, crossing_id: str, doc: CrossingDoc) -> None:
         self._maybe_fail()
         self.docs[crossing_id] = doc
+
+    async def add_blockage(self, crossing_id: str, blockage_id: UUID, doc: BlockageEventDoc) -> None:
+        self._maybe_fail()
+        self.blockages.setdefault(crossing_id, {})[blockage_id] = doc
+
+    async def recent_blockages(self, crossing_id: str, since: datetime) -> list[BlockageEventDoc]:
+        self._maybe_fail()
+        return [doc for doc in self.blockages.get(crossing_id, {}).values() if doc.start >= since]
+
+    async def save_summary(self, crossing_id: str, range_: SummaryRange, doc: HistorySummaryDoc) -> None:
+        self._maybe_fail()
+        self.summaries[(crossing_id, range_)] = doc
 
 
 class MemoryEventStore(_Flaky):

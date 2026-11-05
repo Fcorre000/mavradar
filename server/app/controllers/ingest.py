@@ -5,16 +5,18 @@ import logging
 from collections.abc import Awaitable, Callable, Sequence
 from datetime import UTC, datetime
 from typing import assert_never
+from uuid import UUID
 
 from fastapi import HTTPException, status
 
-from app.contract import AlertMode, CrossingDoc, CrossingEventIn, ReportedState, SensorDoc
+from app.contract import AlertMode, BlockageEventDoc, CrossingDoc, CrossingEventIn, ReportedState, SensorDoc
 from app.domain.crossing_state import is_legal
+from app.domain.stats import Blockage, blockage_summary, window_start
 from app.repositories.base import AlertRecord, EventRecord, Repositories
 from app.services.alert_policy import AlertPolicy, Recipients
 from app.services.alert_rules import AlertContext
 from app.services.auth import Node
-from app.services.crossing_tracker import ApplyOutcome, CrossingTracker
+from app.services.crossing_tracker import ApplyOutcome, CrossingTracker, FinishedBlockage
 from app.services.event_log import EventLog, EventStatus, PendingRecords
 from app.services.notifications import DeliveryReport, NotificationService, alert_push
 
@@ -79,6 +81,7 @@ class IngestController:
                     alert=pending.alert if pending else None,
                     crossing_changed=True,
                     blockage_changed=True,
+                    finished=pending.finished if pending else None,
                 )
             case EventStatus.NEW:
                 try:
@@ -108,6 +111,7 @@ class IngestController:
                     alert=self._alert_record(event, outcome, recipients, report, now),
                     crossing_changed=outcome.applied,  # an out-of-order event goes to history only
                     blockage_changed=told_changed or cleared,
+                    finished=outcome.finished,
                 )
                 self._event_log.mark_pushed(event.event_id, records)
             case _:
@@ -175,6 +179,12 @@ class IngestController:
             writes.append(lambda: self._alert_records.record_alert(records.history.event.event_id, alert))
         if records.blockage_changed:
             writes.append(lambda: self._sync_blockage(crossing_id))
+        finished = records.finished
+        if finished is not None:
+            # Keyed by the clearing event's eventId, so a resend rewrites the same History entry.
+            blockage_id = records.history.event.event_id
+            writes.append(lambda: self._add_blockage(crossing_id, blockage_id, finished))
+            writes.append(lambda: self._refresh_summaries(crossing_id))
 
         for delay in (*self._save_retry_delays, None):
             try:
@@ -216,3 +226,21 @@ class IngestController:
             return
         reading = self._tracker.reading(crossing_id)
         await self._alert_records.save_blockage(crossing_id, reading.since if reading else None, told)
+
+    async def _add_blockage(self, crossing_id: str, blockage_id: UUID, finished: FinishedBlockage) -> None:
+        doc = BlockageEventDoc(
+            start=finished.start,
+            end=finished.end,
+            duration_min=(finished.end - finished.start).total_seconds() / 60,
+            stopped=finished.stopped,
+        )
+        await self._crossings.add_blockage(crossing_id, blockage_id, doc)
+
+    async def _refresh_summaries(self, crossing_id: str) -> None:
+        """Recomputes both History summaries from the saved blockages, not from memory, so a restart
+        can't reset them. One read covers both windows. Recomputing is idempotent."""
+        now = datetime.now(UTC)
+        saved = await self._crossings.recent_blockages(crossing_id, window_start(now, 30))
+        blockages = [Blockage(doc.start, doc.duration_min, doc.stopped) for doc in saved]
+        await self._crossings.save_summary(crossing_id, "7d", blockage_summary(blockages, now, 7))
+        await self._crossings.save_summary(crossing_id, "30d", blockage_summary(blockages, now, 30))

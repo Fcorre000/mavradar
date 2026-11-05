@@ -12,6 +12,7 @@ from enum import StrEnum
 from uuid import UUID
 
 from app.repositories.base import AlertRecord, EventRecord
+from app.services.crossing_tracker import FinishedBlockage
 
 
 class EventStatus(StrEnum):
@@ -29,6 +30,7 @@ class PendingRecords:
     alert: AlertRecord | None  # None when nothing was sent
     crossing_changed: bool  # the event moved the crossing, so its document needs saving
     blockage_changed: bool  # who-was-told changed, or the blockage ended
+    finished: FinishedBlockage | None = None  # a blockage this event ended, for History
 
 
 class EventLog:

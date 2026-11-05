@@ -19,7 +19,7 @@ from pydantic import ValidationError
 
 from app.api.deps import get_ingest_controller, get_notification_service, get_repositories, get_settings
 from app.config import NodeConfig, Settings
-from app.contract import AlertMode, CrossingDoc, CrossingEventIn, ReportedState
+from app.contract import AlertMode, BlockageEventDoc, CrossingDoc, CrossingEventIn, ReportedState
 from app.controllers.ingest import IngestController
 from app.domain.crossing_state import AlertKind
 from app.main import app
@@ -584,3 +584,53 @@ def test_a_late_resend_cannot_bring_back_a_cleared_blockage(client: TestClient) 
     assert client.post("/events", headers=GOOD, json=stopped).status_code == 200  # the late resend
 
     assert CROSSING not in records().blockages
+
+
+# Finished blockages and History (S3 group 3)
+
+
+def blockage_events() -> dict[UUID, BlockageEventDoc]:
+    return saved().blockages.get(CROSSING, {})
+
+
+def test_a_finished_blockage_goes_to_history_with_both_summaries(client: TestClient) -> None:
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+    client.post("/events", headers=GOOD, json=at(15, {"fromState": "blocked", "toState": "stopped"}))
+    client.post("/events", headers=GOOD, json=at(18, {"fromState": "stopped", "toState": "blocked"}))
+    cleared = at(25, {"fromState": "blocked", "toState": "clear"})
+
+    client.post("/events", headers=GOOD, json=cleared)
+
+    record = blockage_events()[UUID(cast(str, cleared["eventId"]))]
+    assert record.duration_min == 15
+    assert record.stopped  # it stopped at 15, even though it moved again at 18
+    for range_ in ("7d", "30d"):
+        summary = saved().summaries[(CROSSING, range_)]
+        assert summary.count == 1 and summary.longest is not None and summary.longest.duration_min == 15
+
+
+def test_no_blockage_no_history(client: TestClient) -> None:
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "approaching"}))
+    client.post("/events", headers=GOOD, json=at(11, {"fromState": "approaching", "toState": "clear"}))
+
+    assert blockage_events() == {} and saved().summaries == {}
+
+
+def test_an_out_of_order_clear_writes_no_history(client: TestClient) -> None:
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+    client.post("/events", headers=GOOD, json=at(5, {"fromState": "blocked", "toState": "clear"}))
+
+    assert blockage_events() == {}
+
+
+def test_a_resent_clear_leaves_one_history_entry(client: TestClient) -> None:
+    use_controller()
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+    cleared = at(25, {"fromState": "blocked", "toState": "clear"})
+    saved().fail_next = 4  # crossing saves, then the History write fails on every try
+    assert client.post("/events", headers=GOOD, json=cleared).status_code == 503
+
+    assert client.post("/events", headers=GOOD, json=cleared).status_code == 200
+
+    assert list(blockage_events()) == [UUID(cast(str, cleared["eventId"]))]
+    assert saved().summaries[(CROSSING, "7d")].count == 1

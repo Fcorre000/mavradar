@@ -5,9 +5,10 @@ from datetime import UTC, datetime
 from uuid import UUID
 
 from google.cloud.firestore import AsyncClient, AsyncDocumentReference
+from google.cloud.firestore_v1.base_query import FieldFilter
 
-from app.contract import CrossingDoc
-from app.repositories.base import AlertRecord, EventRecord, ToldRecord
+from app.contract import BlockageEventDoc, CrossingDoc, HistorySummaryDoc
+from app.repositories.base import AlertRecord, EventRecord, SummaryRange, ToldRecord
 
 WRITE_TIMEOUT_S = 5
 
@@ -20,6 +21,22 @@ class FirestoreCrossingRepository:
         # Python mode keeps datetimes as datetimes, so Firestore stores real Timestamps, not text.
         data = doc.model_dump(by_alias=True)
         await _set(self._client.collection("crossings").document(crossing_id), data)
+
+    async def add_blockage(self, crossing_id: str, blockage_id: UUID, doc: BlockageEventDoc) -> None:
+        events = self._client.collection("crossings", crossing_id, "events")
+        await _set(events.document(str(blockage_id)), doc.model_dump(by_alias=True))
+
+    async def recent_blockages(self, crossing_id: str, since: datetime) -> list[BlockageEventDoc]:
+        events = self._client.collection("crossings", crossing_id, "events")
+        recent = events.where(filter=FieldFilter("start", ">=", since))  # pyright: ignore[reportUnknownMemberType]  (untyped value arg)
+        return [
+            BlockageEventDoc.model_validate(doc.to_dict())
+            async for doc in recent.stream(timeout=WRITE_TIMEOUT_S)
+        ]
+
+    async def save_summary(self, crossing_id: str, range_: SummaryRange, doc: HistorySummaryDoc) -> None:
+        summary = self._client.collection("crossings", crossing_id, "summary")
+        await _set(summary.document(range_), doc.model_dump(by_alias=True))
 
 
 async def _set(ref: AsyncDocumentReference, data: dict[str, object]) -> None:

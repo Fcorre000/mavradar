@@ -6,7 +6,7 @@ import base64
 import json
 import os
 import time
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import cast
 from uuid import uuid4
@@ -16,8 +16,17 @@ import pytest
 from google.cloud.firestore import AsyncClient
 from google.cloud.firestore_v1.base_query import FieldFilter
 
-from app.contract import AlertMode, CrossingDoc, CrossingEventIn, ReportedState, SensorDoc
+from app.contract import (
+    AlertMode,
+    BlockageEventDoc,
+    CrossingDoc,
+    CrossingEventIn,
+    HistorySummaryDoc,
+    ReportedState,
+    SensorDoc,
+)
 from app.domain.crossing_state import AlertKind
+from app.domain.stats import Blockage, blockage_summary
 from app.repositories.base import AlertRecord, EventRecord
 from app.repositories.firestore import FirestoreAlertRecords, FirestoreCrossingRepository, FirestoreEventStore
 
@@ -180,3 +189,33 @@ def test_app_users_cannot_read_the_servers_records(path: str) -> None:
 def test_app_users_can_read_crossings() -> None:
     # Allowed, so a missing document is 404 rather than 403: proof the rules let this one through.
     assert app_user_reads("crossings/000000Z") == 404
+
+
+# History: finished blockages and summaries (S3 group 3)
+
+
+@pytest.mark.anyio
+async def test_history_records_land_where_the_app_reads_them() -> None:
+    client = AsyncClient(project="mavradar-4a74a")
+    store = FirestoreCrossingRepository(client)
+    crossing = f"9{uuid4().int % 10**5:05d}H"
+    blockage_id = uuid4()
+    old = BlockageEventDoc(
+        start=T - timedelta(days=40), end=T - timedelta(days=40), duration_min=3, stopped=False
+    )
+    recent = BlockageEventDoc(start=T, end=T + timedelta(minutes=15), duration_min=15, stopped=True)
+
+    await store.add_blockage(crossing, uuid4(), old)
+    await store.add_blockage(crossing, blockage_id, recent)
+    await store.add_blockage(crossing, blockage_id, recent)  # the resend
+
+    stored = await read(client, f"crossings/{crossing}/events/{blockage_id}")
+    assert stored is not None and stored["start"] == T and stored["durationMin"] == 15
+    assert await store.recent_blockages(crossing, T - timedelta(days=30)) == [
+        recent
+    ]  # one, and not the old one
+
+    summary = blockage_summary([Blockage(T, 15, True)], T + timedelta(hours=1), 7)
+    await store.save_summary(crossing, "7d", summary)
+    saved = await read(client, f"crossings/{crossing}/summary/7d")
+    assert saved is not None and HistorySummaryDoc.model_validate(saved) == summary

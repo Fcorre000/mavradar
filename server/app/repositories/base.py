@@ -7,10 +7,10 @@ in-memory versions, used by tests; firestore.py has the Firestore ones.
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Protocol
+from typing import Literal, Protocol
 from uuid import UUID
 
-from app.contract import CrossingDoc, CrossingEventIn
+from app.contract import BlockageEventDoc, CrossingDoc, CrossingEventIn, HistorySummaryDoc
 from app.domain.crossing_state import AlertKind
 
 # push token -> the alert kinds that phone was sent during the current blockage
@@ -30,12 +30,26 @@ class AlertLog(Protocol):
         ...
 
 
+SummaryRange = Literal["7d", "30d"]
+
+
 class CrossingRepository(Protocol):
-    """crossings/{usdotId}, the document the app shows (SD3 messages 1 and 2)."""
+    """crossings/{usdotId} and its events and summary, all of which the app reads (SD3)."""
 
     async def save_state(self, crossing_id: str, doc: CrossingDoc) -> None:
         """Replaces the whole document. Raises if the write fails."""
         ...
+
+    async def add_blockage(self, crossing_id: str, blockage_id: UUID, doc: BlockageEventDoc) -> None:
+        """crossings/{id}/events/{blockageId}, keyed by the clearing event's eventId so a resend
+        rewrites the same record instead of adding a second blockage to History."""
+        ...
+
+    async def recent_blockages(self, crossing_id: str, since: datetime) -> list[BlockageEventDoc]:
+        """Finished blockages that started at or after `since`."""
+        ...
+
+    async def save_summary(self, crossing_id: str, range_: SummaryRange, doc: HistorySummaryDoc) -> None: ...
 
 
 @dataclass(frozen=True)
