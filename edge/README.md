@@ -1,6 +1,6 @@
 # edge
 
-Python detection service for the field node. **Not started.**
+Python detection service for the field node. **So far:** settings (`config.py`) and the `RadarSource` interface with a replay source that plays recorded logs, so the node can be built and tested with no radar (E1). The log format and the synthetic logs are in `tests/data/`. The detector is E2.
 
 It will run on a Raspberry Pi Zero 2 W next to an OmniPreSense OPS243-C radar (Doppler plus FMCW range, so it can see a stopped train), classify trains, and POST events to the ingest API in `server/`. While there is one node, it sits at the crossing, within radar range; a second node later means spacing the two out, one on each side (blueprint D4). Either way, at least 50 ft from the nearest rail.
 
