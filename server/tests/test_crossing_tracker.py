@@ -8,7 +8,7 @@ import pytest
 
 from app.contract import CrossingEventIn, ReportedState
 from app.domain.crossing_state import AlertKind
-from app.services.crossing_tracker import CrossingTracker
+from app.services.crossing_tracker import CrossingReading, CrossingTracker, FinishedBlockage
 
 S = ReportedState
 CROSSING = "794980D"
@@ -106,3 +106,133 @@ def test_crossings_are_tracked_separately() -> None:
 
     assert tracker.state("123456A") is S.BLOCKED
     assert tracker.state(CROSSING) is S.SENSOR_OFFLINE
+
+
+# The crossing's times (what the crossing document shows)
+
+
+def at_minute(m: int) -> datetime:
+    return T0 + timedelta(minutes=m)
+
+
+def run(*changes: tuple[ReportedState, ReportedState, int]) -> CrossingReading:
+    """Applies changes as (from, to, minute) and returns the crossing's reading."""
+    tracker = CrossingTracker()
+    for from_state, to_state, minute in changes:
+        tracker.apply(event(from_state, to_state, at_minute(minute)), received_at=at_minute(minute))
+    reading = tracker.reading(CROSSING)
+    assert reading is not None
+    return reading
+
+
+def test_no_reading_before_any_event() -> None:
+    assert CrossingTracker().reading(CROSSING) is None
+
+
+def test_a_train_that_starts_moving_again_is_still_the_same_blockage() -> None:
+    # 2:00 blocked, 2:05 stopped, 2:12 moving again: blocked since 2:00, no longer stopped.
+    reading = run((S.CLEAR, S.BLOCKED, 0), (S.BLOCKED, S.STOPPED, 5), (S.STOPPED, S.BLOCKED, 12))
+
+    # Still the 2:00 blockage, no longer stopped, but it did stop (for the History record).
+    assert reading == CrossingReading(S.BLOCKED, since=at_minute(0), had_stop=True)
+
+
+def test_stopping_keeps_the_start_and_sets_stopped_at() -> None:
+    reading = run((S.CLEAR, S.BLOCKED, 0), (S.BLOCKED, S.STOPPED, 5))
+
+    assert (reading.since, reading.stopped_at) == (at_minute(0), at_minute(5))
+
+
+def test_approaching_then_blocked_keeps_when_it_was_seen() -> None:
+    reading = run((S.CLEAR, S.APPROACHING, 0), (S.APPROACHING, S.BLOCKED, 1))
+
+    assert (reading.detected_at, reading.since) == (at_minute(0), at_minute(1))
+
+
+def test_clearing_ends_the_blockage() -> None:
+    reading = run((S.CLEAR, S.APPROACHING, 0), (S.APPROACHING, S.BLOCKED, 1), (S.BLOCKED, S.CLEAR, 9))
+
+    assert reading == CrossingReading(S.CLEAR, clear_since=at_minute(9))
+
+
+def test_approaching_keeps_when_it_last_cleared() -> None:
+    reading = run((S.BLOCKED, S.CLEAR, 0), (S.CLEAR, S.APPROACHING, 30))
+
+    assert (reading.clear_since, reading.detected_at) == (at_minute(0), at_minute(30))
+
+
+def test_an_outage_keeps_the_blockage() -> None:
+    reading = run(
+        (S.CLEAR, S.BLOCKED, 0),
+        (S.BLOCKED, S.STOPPED, 5),
+        (S.STOPPED, S.SENSOR_OFFLINE, 6),
+        (S.SENSOR_OFFLINE, S.STOPPED, 20),
+    )
+
+    assert reading == CrossingReading(S.STOPPED, since=at_minute(0), stopped_at=at_minute(5), had_stop=True)
+
+
+def test_a_new_blockage_starts_its_own_clock() -> None:
+    reading = run((S.CLEAR, S.BLOCKED, 0), (S.BLOCKED, S.CLEAR, 9), (S.CLEAR, S.BLOCKED, 40))
+
+    assert reading.since == at_minute(40)
+
+
+def test_after_a_restart_the_events_change_sets_the_times() -> None:
+    # The server remembers nothing, so the blockage seems to start when it first hears of it.
+    assert run((S.BLOCKED, S.STOPPED, 7)) == CrossingReading(
+        S.STOPPED, since=at_minute(7), stopped_at=at_minute(7), had_stop=True
+    )
+
+
+# The finished blockage, for History
+
+
+def finish(*changes: tuple[ReportedState, ReportedState, int]) -> FinishedBlockage | None:
+    tracker = CrossingTracker()
+    outcome = None
+    for from_state, to_state, minute in changes:
+        outcome = tracker.apply(event(from_state, to_state, at_minute(minute)), received_at=at_minute(minute))
+    assert outcome is not None
+    return outcome.finished
+
+
+def test_a_train_that_stopped_then_moved_on_is_recorded_as_stopped() -> None:
+    # 2:00 blocked, 2:05 stopped, 2:12 moving again, 2:20 clear.
+    finished = finish(
+        (S.CLEAR, S.BLOCKED, 0),
+        (S.BLOCKED, S.STOPPED, 5),
+        (S.STOPPED, S.BLOCKED, 12),
+        (S.BLOCKED, S.CLEAR, 20),
+    )
+
+    assert finished == FinishedBlockage(start=at_minute(0), end=at_minute(20), stopped=True)
+
+
+def test_a_train_that_never_stopped() -> None:
+    assert finish((S.CLEAR, S.BLOCKED, 0), (S.BLOCKED, S.CLEAR, 4)) == FinishedBlockage(
+        start=at_minute(0), end=at_minute(4), stopped=False
+    )
+
+
+def test_the_next_blockage_starts_unticked() -> None:
+    finished = finish(
+        (S.CLEAR, S.BLOCKED, 0),
+        (S.BLOCKED, S.STOPPED, 2),
+        (S.STOPPED, S.CLEAR, 9),
+        (S.CLEAR, S.BLOCKED, 30),
+        (S.BLOCKED, S.CLEAR, 35),
+    )
+
+    assert finished is not None and not finished.stopped
+
+
+def test_no_blockage_no_record(caplog: pytest.LogCaptureFixture) -> None:
+    with caplog.at_level(logging.WARNING):
+        assert finish((S.CLEAR, S.APPROACHING, 0), (S.APPROACHING, S.CLEAR, 1)) is None
+
+    assert caplog.text == ""  # not a blockage with a lost start, just a train that never arrived
+
+
+def test_an_unknown_start_is_not_recorded() -> None:
+    assert finish((S.BLOCKED, S.CLEAR, 3)) is None  # the server restarted mid-blockage

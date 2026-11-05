@@ -39,3 +39,7 @@ class Settings(BaseSettings):
 
     def alert_mode(self, crossing_id: str) -> AlertMode:
         return self.alert_modes.get(crossing_id, AlertMode.LOG_ONLY)
+
+    def node_ids(self, crossing_id: str) -> list[str]:
+        """The nodes watching a crossing (the contract allows two)."""
+        return sorted(node_id for node_id, node in self.nodes.items() if node.crossing_id == crossing_id)[:2]

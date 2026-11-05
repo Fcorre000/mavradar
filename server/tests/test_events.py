@@ -6,6 +6,7 @@ always the fake, so no test reaches the network.
 """
 
 import json
+import logging
 from collections.abc import Generator, Iterable, Iterator
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
@@ -19,16 +20,23 @@ from pydantic import ValidationError
 
 from app.api.deps import get_ingest_controller, get_notification_service, get_repositories, get_settings
 from app.config import NodeConfig, Settings
-from app.contract import AlertMode, CrossingEventIn, ReportedState
+from app.contract import AlertMode, BlockageEventDoc, CrossingDoc, CrossingEventIn, ReportedState
 from app.controllers.ingest import IngestController
 from app.domain.crossing_state import AlertKind
 from app.main import app
-from app.repositories.base import AlertLog
-from app.repositories.memory import MemoryAlertLog, MemoryRepositories
+from app.repositories.base import AlertLog, AlertRecord, EventRecord, Repositories, ToldRecord
+from app.repositories.memory import (
+    MemoryAlertLog,
+    MemoryAlertRecords,
+    MemoryCrossingRepository,
+    MemoryEventStore,
+    MemoryTokenRegistry,
+    memory_repositories,
+)
 from app.services.alert_policy import AlertPolicy, Recipients
 from app.services.auth import hash_key
 from app.services.crossing_tracker import ApplyOutcome, CrossingTracker
-from app.services.event_log import EventLog, EventStatus
+from app.services.event_log import EventLog, EventStatus, PendingRecords
 from app.services.notifications import Channel, NotificationService, SendResult
 from app.services.subscriptions import SubscriptionMap
 from tests.helpers import FakeFcmClient, device
@@ -51,7 +59,17 @@ class RecordingController(IngestController):
     fail before the push."""
 
     def __init__(self, fail_first: int = 0, alert_mode: AlertMode = AlertMode.LOG_ONLY) -> None:
-        super().__init__(event_log(), tracker(), policy(), alert_log(), alert_mode, notifications())
+        super().__init__(
+            event_log(),
+            tracker(),
+            policy(),
+            subscriptions(),
+            repositories(),
+            notifications(),
+            alert_mode=alert_mode,
+            node_ids=["node-a"],
+            save_retry_delays=(0, 0),
+        )
         self.alerts = 0
         self.outcomes: list[ApplyOutcome] = []
         self.recipients: list[Recipients | None] = []
@@ -78,6 +96,10 @@ def running_client(fcm: FakeFcmClient) -> Generator[TestClient]:
     app.dependency_overrides[get_settings] = lambda: settings
     service = NotificationService(fcm, retry_delay_s=0)
     app.dependency_overrides[get_notification_service] = lambda: service
+    # In-memory storage, always: no unit test reaches Firestore (conftest also points the real
+    # client at a local emulator, as a second guard).
+    stores = memory_repositories()
+    app.dependency_overrides[get_repositories] = lambda: stores
     # A failure before the push surfaces as a 500, the way the node would see it.
     with TestClient(app, raise_server_exceptions=False) as c:
         yield c
@@ -105,8 +127,24 @@ def policy() -> AlertPolicy:
     return cast(AlertPolicy, app.state.alert_policy)
 
 
+def repositories() -> Repositories:
+    return cast(Repositories, app.dependency_overrides[get_repositories]())
+
+
 def alert_log() -> AlertLog:
-    return cast(MemoryRepositories, app.state.repositories).alert_log
+    return repositories().alert_log
+
+
+def saved() -> MemoryCrossingRepository:
+    return cast(MemoryCrossingRepository, repositories().crossings)
+
+
+def history_store() -> MemoryEventStore:
+    return cast(MemoryEventStore, repositories().events)
+
+
+def records() -> MemoryAlertRecords:
+    return cast(MemoryAlertRecords, repositories().alert_records)
 
 
 def notifications() -> NotificationService:
@@ -198,12 +236,16 @@ def test_copy_while_first_is_in_progress_gets_503(client: TestClient) -> None:
 
 def test_pushed_but_not_written_skips_the_push(client: TestClient) -> None:
     controller = use_controller()
+    history = EventRecord(CrossingEventIn.model_validate(EVENT), datetime.now(UTC), applied=True)
     event_log().check_and_mark(EVENT_ID)
-    event_log().mark_pushed(EVENT_ID)
+    event_log().mark_pushed(
+        EVENT_ID, PendingRecords(history, None, crossing_changed=True, blockage_changed=False)
+    )
 
     assert client.post("/events", headers=GOOD, json=EVENT).status_code == 200
     assert controller.alerts == 0
     assert event_log().check_and_mark(EVENT_ID) is EventStatus.DONE
+    assert history_store().records[EVENT_ID] is history  # saved from what the first request kept
 
 
 def test_failure_before_push_lets_the_retry_start_fresh(client: TestClient) -> None:
@@ -341,7 +383,7 @@ def test_only_phones_fcm_accepted_are_told() -> None:
 
 
 class SpyAlertLog(MemoryAlertLog):
-    """Writes its name into the shared call list, like the fake FCM client does."""
+    """Writes "write" into the shared call list, like the fake FCM client writes "push"."""
 
     def __init__(self, log: list[str]) -> None:
         super().__init__()
@@ -356,19 +398,289 @@ class SpyAlertLog(MemoryAlertLog):
         super().close_blockage(crossing_id)
 
 
+class SpyCrossings(MemoryCrossingRepository):
+    def __init__(self, log: list[str]) -> None:
+        super().__init__()
+        self._log = log
+
+    async def save_state(self, crossing_id: str, doc: CrossingDoc) -> None:
+        self._log.append("write")
+        await super().save_state(crossing_id, doc)
+
+
+class SpyEvents(MemoryEventStore):
+    def __init__(self, log: list[str]) -> None:
+        super().__init__()
+        self._log = log
+
+    async def append(self, record: EventRecord) -> None:
+        self._log.append("write")
+        await super().append(record)
+
+
+class SpyAlertRecords(MemoryAlertRecords):
+    def __init__(self, log: list[str]) -> None:
+        super().__init__()
+        self._log = log
+
+    async def record_alert(self, event_id: UUID, record: AlertRecord) -> None:
+        self._log.append("write")
+        await super().record_alert(event_id, record)
+
+    async def save_blockage(self, crossing_id: str, since: datetime | None, told: ToldRecord) -> None:
+        self._log.append("write")
+        await super().save_blockage(crossing_id, since, told)
+
+    async def delete_blockage(self, crossing_id: str) -> None:
+        self._log.append("write")
+        await super().delete_blockage(crossing_id)
+
+
 def test_the_push_goes_out_before_anything_is_written() -> None:
     calls: list[str] = []
     with client_with(FakeFcmClient(log=calls)) as c:
         configure_blocked_and_cleared()
-        repositories = MemoryRepositories()
         spy = SpyAlertLog(calls)
-        repositories.alert_log = spy
-        app.dependency_overrides[get_repositories] = lambda: repositories
+        stores = Repositories(
+            alert_log=spy,
+            crossings=SpyCrossings(calls),
+            events=SpyEvents(calls),
+            alert_records=SpyAlertRecords(calls),
+            tokens=MemoryTokenRegistry(),
+        )
+        app.dependency_overrides[get_repositories] = lambda: stores
         subscriptions().upsert("token-a", device("token-a").doc)
         MemoryAlertLog.mark_told(spy, CROSSING, ["token-a"], AlertKind.BLOCKED)  # setup, not logged
 
         c.post("/events", headers=GOOD, json=at(29, {"fromState": "blocked", "toState": "clear"}))
 
-    # S3's Firestore writes join this list as "write" too, so this keeps guarding the order.
-    assert calls[0] == "push"
-    assert calls.count("push") == 1 and set(calls[1:]) == {"write"}
+    # Told records and the wipe in memory, then the crossing, history, alert and blockage copies,
+    # all after the one push.
+    assert calls == ["push"] + ["write"] * 6
+
+
+# Saving the crossing (S3)
+
+
+def test_the_crossing_is_saved_for_the_app(client: TestClient) -> None:
+    configure_blocked_and_cleared()
+    before = datetime.now(UTC)
+
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+
+    doc = saved().docs[CROSSING]
+    assert doc.state is ReportedState.BLOCKED
+    assert doc.since is not None and doc.since < before  # when it happened, from the node
+    assert doc.last_reading_at >= before  # when the server heard it, from the server
+    assert doc.node_ids == ["node-a"]
+    assert doc.alert_mode is AlertMode.BLOCKED_AND_CLEARED
+
+
+def test_an_out_of_order_event_saves_nothing(client: TestClient) -> None:
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+    first = saved().docs[CROSSING]
+
+    client.post("/events", headers=GOOD, json=at(5, {"fromState": "blocked", "toState": "clear"}))
+
+    assert saved().docs[CROSSING] is first
+
+
+def test_a_save_that_fails_once_is_retried(client: TestClient) -> None:
+    use_controller()
+    saved().fail_next = 1
+
+    assert (
+        client.post(
+            "/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"})
+        ).status_code
+        == 200
+    )
+    assert CROSSING in saved().docs
+
+
+def test_a_save_that_keeps_failing_gets_503_and_the_resend_saves_without_pushing(
+    client: TestClient, fcm: FakeFcmClient
+) -> None:
+    use_controller(alert_mode=AlertMode.BLOCKED_AND_CLEARED)
+    follower_told_blocked()
+    saved().fail_next = 3  # the first try and both retries
+    cleared = at(29, {"fromState": "blocked", "toState": "clear"})
+
+    assert client.post("/events", headers=GOOD, json=cleared).status_code == 503
+    assert event_log().check_and_mark(UUID(cast(str, cleared["eventId"]))) is EventStatus.PUSHED
+    assert client.post("/events", headers=GOOD, json=cleared).status_code == 200
+
+    assert len(fcm.calls) == 1  # one push across both requests
+    assert saved().docs[CROSSING].state is ReportedState.CLEAR
+
+
+# The server-only records (S3 group 2)
+
+
+def test_every_new_event_goes_to_the_history(client: TestClient) -> None:
+    newer = at(10, {"fromState": "clear", "toState": "blocked", "logOnly": True})
+    older = at(5, {"fromState": "blocked", "toState": "clear"})
+
+    client.post("/events", headers=GOOD, json=newer)
+    client.post("/events", headers=GOOD, json=older)
+
+    stored = history_store().records
+    assert stored[UUID(cast(str, newer["eventId"]))].applied  # log-only, still recorded
+    assert not stored[UUID(cast(str, older["eventId"]))].applied  # out of order: history only
+
+
+def test_an_alert_that_went_out_is_logged_with_counts_only(client: TestClient) -> None:
+    configure_blocked_and_cleared()
+    follower_told_blocked()
+    cleared = at(29, {"fromState": "blocked", "toState": "clear"})
+
+    client.post("/events", headers=GOOD, json=cleared)
+
+    alert = records().alerts[UUID(cast(str, cleared["eventId"]))]
+    assert (alert.kind, alert.channel, alert.delivered, alert.dead, alert.failed) == (
+        AlertKind.CLEARED,
+        "train-alerts",
+        1,
+        0,
+        0,
+    )
+
+
+def test_no_alert_no_alert_record(client: TestClient) -> None:
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+
+    assert records().alerts == {}
+
+
+def test_the_blockage_copy_follows_who_was_told(client: TestClient) -> None:
+    configure_blocked_and_cleared()
+    follower_told_blocked()
+
+    client.post("/events", headers=GOOD, json=at(20, {"fromState": "blocked", "toState": "stopped"}))
+    _, told = records().blockages[CROSSING]
+    assert told["token-a"] == frozenset({AlertKind.BLOCKED, AlertKind.STOPPED})
+
+    client.post("/events", headers=GOOD, json=at(29, {"fromState": "stopped", "toState": "clear"}))
+    assert CROSSING not in records().blockages  # the blockage ended
+
+
+def test_the_resend_saves_the_first_requests_alert_record(client: TestClient, fcm: FakeFcmClient) -> None:
+    use_controller(alert_mode=AlertMode.BLOCKED_AND_CLEARED)
+    follower_told_blocked()
+    saved().fail_next = 3
+    cleared = at(29, {"fromState": "blocked", "toState": "clear"})
+
+    client.post("/events", headers=GOOD, json=cleared)  # pushed, then 503
+    client.post("/events", headers=GOOD, json=cleared)
+
+    assert len(fcm.calls) == 1
+    assert records().alerts[UUID(cast(str, cleared["eventId"]))].delivered == 1
+
+
+def test_a_late_resend_cannot_bring_back_a_cleared_blockage(client: TestClient) -> None:
+    use_controller(alert_mode=AlertMode.BLOCKED_AND_CLEARED)
+    follower_told_blocked()
+    stopped = at(20, {"fromState": "blocked", "toState": "stopped"})
+    saved().fail_next = 3
+    assert client.post("/events", headers=GOOD, json=stopped).status_code == 503
+
+    client.post("/events", headers=GOOD, json=at(29, {"fromState": "stopped", "toState": "clear"}))
+    assert client.post("/events", headers=GOOD, json=stopped).status_code == 200  # the late resend
+
+    assert CROSSING not in records().blockages
+
+
+# Finished blockages and History (S3 group 3)
+
+
+def blockage_events() -> dict[UUID, BlockageEventDoc]:
+    return saved().blockages.get(CROSSING, {})
+
+
+def test_a_finished_blockage_goes_to_history_with_both_summaries(client: TestClient) -> None:
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+    client.post("/events", headers=GOOD, json=at(15, {"fromState": "blocked", "toState": "stopped"}))
+    client.post("/events", headers=GOOD, json=at(18, {"fromState": "stopped", "toState": "blocked"}))
+    cleared = at(25, {"fromState": "blocked", "toState": "clear"})
+
+    client.post("/events", headers=GOOD, json=cleared)
+
+    record = blockage_events()[UUID(cast(str, cleared["eventId"]))]
+    assert record.duration_min == 15
+    assert record.stopped  # it stopped at 15, even though it moved again at 18
+    for range_ in ("7d", "30d"):
+        summary = saved().summaries[(CROSSING, range_)]
+        assert summary.count == 1 and summary.longest is not None and summary.longest.duration_min == 15
+
+
+def test_no_blockage_no_history(client: TestClient) -> None:
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "approaching"}))
+    client.post("/events", headers=GOOD, json=at(11, {"fromState": "approaching", "toState": "clear"}))
+
+    assert blockage_events() == {} and saved().summaries == {}
+
+
+def test_an_out_of_order_clear_writes_no_history(client: TestClient) -> None:
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+    client.post("/events", headers=GOOD, json=at(5, {"fromState": "blocked", "toState": "clear"}))
+
+    assert blockage_events() == {}
+
+
+def test_a_resent_clear_leaves_one_history_entry(client: TestClient) -> None:
+    use_controller()
+    client.post("/events", headers=GOOD, json=at(10, {"fromState": "clear", "toState": "blocked"}))
+    cleared = at(25, {"fromState": "blocked", "toState": "clear"})
+    saved().fail_next = 4  # crossing saves, then the History write fails on every try
+    assert client.post("/events", headers=GOOD, json=cleared).status_code == 503
+
+    assert client.post("/events", headers=GOOD, json=cleared).status_code == 200
+
+    assert list(blockage_events()) == [UUID(cast(str, cleared["eventId"]))]
+    assert saved().summaries[(CROSSING, "7d")].count == 1
+
+
+# Dead tokens (S3 group 4)
+
+
+def tokens() -> MemoryTokenRegistry:
+    return cast(MemoryTokenRegistry, repositories().tokens)
+
+
+def followers_told_blocked(*names: str) -> None:
+    for token in names:
+        subscriptions().upsert(token, device(token).doc)
+    alert_log().mark_told(CROSSING, list(names), AlertKind.BLOCKED)
+
+
+def test_dead_tokens_are_deleted_and_failed_ones_kept(caplog: pytest.LogCaptureFixture) -> None:
+    dead = "dead-token-from-an-uninstalled-app"
+    fcm = FakeFcmClient(answers={dead: [SendResult.DEAD], "token-c": [SendResult.FAILED, SendResult.FAILED]})
+    with client_with(fcm) as c, caplog.at_level(logging.WARNING):
+        configure_blocked_and_cleared()
+        followers_told_blocked("token-a", dead, "token-c")
+
+        c.post("/events", headers=GOOD, json=at(20, {"fromState": "blocked", "toState": "stopped"}))
+
+        assert tokens().removed == [dead]
+        assert [d.token for d in subscriptions().followers(CROSSING)] == ["token-a", "token-c"]
+    assert dead not in caplog.text and "...ed-app" in caplog.text  # only the last 6 characters
+
+
+def test_a_dead_token_is_dropped_at_once_even_if_its_delete_fails() -> None:
+    fcm = FakeFcmClient(answers={"token-b": [SendResult.DEAD]})
+    with client_with(fcm) as c:
+        use_controller(alert_mode=AlertMode.BLOCKED_AND_CLEARED)
+        followers_told_blocked("token-a", "token-b")
+        tokens().fail_next = 3  # the first try and both retries
+        stopped = at(20, {"fromState": "blocked", "toState": "stopped"})
+
+        assert c.post("/events", headers=GOOD, json=stopped).status_code == 503
+        assert [d.token for d in subscriptions().followers(CROSSING)] == ["token-a"]  # already gone
+        assert tokens().removed == []
+
+        c.post("/events", headers=GOOD, json=at(29, {"fromState": "stopped", "toState": "clear"}))
+        assert [batch for _, batch in fcm.calls][-1] == ["token-a"]  # the next alert skips it
+
+        assert c.post("/events", headers=GOOD, json=stopped).status_code == 200  # the resend
+        assert tokens().removed == ["token-b"]

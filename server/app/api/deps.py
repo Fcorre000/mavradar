@@ -9,20 +9,21 @@ from fastapi import Depends, Header, HTTPException, Request, status
 
 from app.config import Settings
 from app.controllers.ingest import IngestController
-from app.repositories.memory import MemoryRepositories
+from app.repositories.base import Repositories
 from app.services.alert_policy import AlertPolicy
 from app.services.auth import Node, NodeAuthenticator
 from app.services.crossing_tracker import CrossingTracker
 from app.services.event_log import EventLog
 from app.services.notifications import NotificationService
+from app.services.subscriptions import SubscriptionMap
 
 
 def get_settings(request: Request) -> Settings:
     return cast(Settings, request.app.state.settings)
 
 
-def get_repositories(request: Request) -> MemoryRepositories:
-    return cast(MemoryRepositories, request.app.state.repositories)
+def get_repositories(request: Request) -> Repositories:
+    return cast(Repositories, request.app.state.repositories)
 
 
 def get_event_log(request: Request) -> EventLog:
@@ -39,6 +40,10 @@ def get_alert_policy(request: Request) -> AlertPolicy:
 
 def get_notification_service(request: Request) -> NotificationService:
     return cast(NotificationService, request.app.state.notifications)
+
+
+def get_subscriptions(request: Request) -> SubscriptionMap:
+    return cast(SubscriptionMap, request.app.state.subscriptions)
 
 
 def verify_node(
@@ -60,9 +65,18 @@ def get_ingest_controller(
     event_log: Annotated[EventLog, Depends(get_event_log)],
     tracker: Annotated[CrossingTracker, Depends(get_crossing_tracker)],
     policy: Annotated[AlertPolicy, Depends(get_alert_policy)],
-    repositories: Annotated[MemoryRepositories, Depends(get_repositories)],
+    subscriptions: Annotated[SubscriptionMap, Depends(get_subscriptions)],
+    repositories: Annotated[Repositories, Depends(get_repositories)],
     notifications: Annotated[NotificationService, Depends(get_notification_service)],
 ) -> IngestController:
     # FastAPI runs verify_node once per request even though the route asks for it too.
-    alert_mode = settings.alert_mode(node.crossing_id)
-    return IngestController(event_log, tracker, policy, repositories.alert_log, alert_mode, notifications)
+    return IngestController(
+        event_log,
+        tracker,
+        policy,
+        subscriptions,
+        repositories,
+        notifications,
+        alert_mode=settings.alert_mode(node.crossing_id),
+        node_ids=settings.node_ids(node.crossing_id),
+    )
