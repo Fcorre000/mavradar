@@ -29,7 +29,7 @@ export interface Prefs {
 
 export const defaultPrefs: Prefs = {
   following: [],
-  alertTypes: { blocked: true, cleared: true, stopped: true },
+  alertTypes: { blocked: true, cleared: true, stopped: true, approaching: false, },
   minBlockMin: 1,
   commute: 0,
   quiet: 0,

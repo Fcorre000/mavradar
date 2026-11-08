@@ -6,7 +6,7 @@ import { Platform } from 'react-native';
 
 import type { PermissionState } from '@/domain/alerts';
 import { SERVICE_STATUS_CHANNEL, TRAIN_ALERTS_CHANNEL } from '@/lib/channels';
-import { devicePayload } from '@/lib/device-doc';
+import { devicePayload, type DevicePreferences } from '@/lib/device-doc';
 import { auth, db } from '@/lib/firebase';
 
 export { SERVICE_STATUS_CHANNEL, TRAIN_ALERTS_CHANNEL };
@@ -61,7 +61,7 @@ export async function requestAlertPermission(): Promise<PermissionState> {
 // On iOS it is a raw APNs token, which FCM v1 can't send to; Amendment 003 section 5.2
 // picks the iOS path before the first iOS build, and only this function should change.
 // It never prompts; it returns null unless permission was already granted.
-export async function registerDevice(subscriptions?: string[]): Promise<string | null> {
+export async function registerDevice(subscriptions: string[], preferences: DevicePreferences): Promise<string | null> {
   if (!Device.isDevice) return null;
   if ((await getAlertPermission()) !== 'granted') return null;
 
@@ -73,7 +73,7 @@ export async function registerDevice(subscriptions?: string[]): Promise<string |
   // re-registering on launch never clobbers subscriptions or quiet hours.
   await setDoc(
     doc(db, 'devices', token),
-    devicePayload(user.uid, Platform.OS, serverTimestamp(), subscriptions),
+    devicePayload(user.uid, Platform.OS, serverTimestamp(), subscriptions, preferences),
     { merge: true },
   );
   return token;

@@ -13,6 +13,7 @@ import { withThemeTransition } from '@/lib/theme-transition';
 
 import { loadPrefs, localDay, savePrefs, type Prefs } from './prefs';
 import { getState, setState, setUi, type AppState } from './store';
+import type {DevicePreferences} from '@/lib/device-doc';
 
 let started = false;
 
@@ -20,18 +21,19 @@ let started = false;
 export function startApp(onOpenCrossing: (crossingId: string) => void) {
   if (started) return;
   started = true;
-  loadPrefs().then((saved) => {
-    const prefs = { ...saved, launches: saved.launches + 1 };
-    setState({ prefs, prefsLoaded: true });
+  Promise.all([loadPrefs(), getAlertPermission()]).then(([saved, permission]) => {
+    const prefs = {
+      ...saved,
+      launches: saved.launches + 1,
+    };
+    setState({ prefs, prefsLoaded: true, permission, });
     savePrefs(prefs);
     applyAppearance(prefs.appearance);
-  });
-  getAlertPermission()
-    .then((permission) => {
-      setState({ permission });
-      if (permission === 'granted') syncDevice();
-    })
-    .catch(() => {});
+
+    if (permission === 'granted'){
+      syncDevice();
+    }
+  }).catch(() => {});
   source.subscribe(onSnapshot);
   onAlertTapped((crossingId) => {
     setUi({ statusCrossingId: crossingId });
@@ -68,7 +70,15 @@ export function setPrefs(patch: Partial<Prefs>) {
   if (theme || style) withThemeTransition(() => setState((s) => ({ prefs: { ...s.prefs, ...(theme && { theme }), ...(style && { style }) } })));
   const { appearance } = patch;
   if (appearance) withThemeTransition(() => applyAppearance(appearance));
-  if (patch.following && getState().permission === 'granted') syncDevice();
+  const shouldSync = 
+  patch.following !== undefined ||
+  patch.alertTypes !== undefined ||
+  patch.minBlockMin !== undefined ||
+  patch.quiet !== undefined ||
+  patch.commute !== undefined;
+  if (shouldSync && getState().permission === 'granted') {
+    syncDevice();
+}
 }
 
 /** Switches style once its fonts are in, so text never shows in a fallback face. */
@@ -88,8 +98,18 @@ function applyAppearance(appearance: Prefs['appearance']) {
 }
 
 function syncDevice() {
+  const prefs = getState().prefs;
+
+  const preferences: DevicePreferences = {
+    alertTypes: prefs.alertTypes,
+    minBlockMin: prefs.minBlockMin,
+    quietHours: prefs.quiet === 1 ? { start: '22:00', end: '06:00' } : null,
+
+    commuteWindows: prefs.commute === 1 ? [{ days: [1, 2, 3, 4, 5], start: '07:00', end: '09:00' }, { days: [1, 2, 3, 4, 5], start: '16:00', end: '19:00' }] : null,
+    timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  };
   // Fails softly where push isn't available (Expo Go, simulators, no network).
-  registerDevice(getState().prefs.following).catch(() => {});
+  registerDevice(prefs.following, preferences).catch(() => {});
 }
 
 // ---------------------------------------------------------------- snackbar

@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mavradar.app/contract/device.schema.json",
   "title": "Device",
-  "description": "devices/{fcmToken}: one phone. The document ID is the push token; the body never holds it. Writer: the app, through registerDevice(). Reader: server. Until A3, firestore.rules allows only uid, platform, subscriptions, quietHours and updatedAt.",
+  "description": "devices/{fcmToken}: one phone. The document ID is the FCM push token; the body never holds it. Writer: the app, through registerDevice(). Reader: server. Store followed crossings and notification preferences.",
   "type": "object",
-  "required": ["uid", "platform", "updatedAt"],
+  "required": ["uid", "platform", "updatedAt", "subscriptions", "alertTypes", "minBlockMin", "quietHours", "commuteWindows", "timeZone"],
   "additionalProperties": false,
   "properties": {
     "uid": { "type": "string", "minLength": 1, "description": "Anonymous auth uid; authorizes writes, isn't the identity" },
@@ -40,6 +40,7 @@
     "minBlockMin": { "enum": [1, 3, 5] },
     "commuteWindows": {
       "type": ["array", "null"],
+      "maxItems": 2,
       "description": "Set while commute windows are on. Times of day in timeZone.",
       "items": {
         "type": "object",
