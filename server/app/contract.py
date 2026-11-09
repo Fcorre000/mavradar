@@ -337,7 +337,7 @@ class DeviceDoc(ContractModel):
     quiet_hours: QuietHoursDoc | None = None
     alert_types: AlertTypesDoc | None = None
     min_block_min: Annotated[Literal[1, 3, 5], BeforeValidator(_json_integer)] | None = None
-    commute_windows: list[CommuteWindowDoc] | None = None
+    commute_windows: Annotated[list[CommuteWindowDoc], Field(max_length=2)] | None = None
     time_zone: Annotated[str, Field(pattern=r"^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*$")] | None = None
 
 

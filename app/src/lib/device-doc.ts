@@ -1,8 +1,8 @@
 // The devices/{token} body registerDevice() writes (contract/schemas/firestore/device.schema.json).
 // Kept apart from push.ts so Jest can check it without loading Firebase or native modules.
-// subscriptions is only set when given, so the merge write never wipes the saved list.
+// It always writes all nine fields: the follow list and preferences on the phone are the source of truth.
 export type DevicePreferences = {
-  /** The crossings the person is following, for train alerts. */
+  /** Which kinds of train alert this phone wants. */
   alertTypes: {
     blocked: boolean;
     stopped: boolean;

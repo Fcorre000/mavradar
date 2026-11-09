@@ -21,19 +21,19 @@ let started = false;
 export function startApp(onOpenCrossing: (crossingId: string) => void) {
   if (started) return;
   started = true;
-  Promise.all([loadPrefs(), getAlertPermission()]).then(([saved, permission]) => {
-    const prefs = {
-      ...saved,
-      launches: saved.launches + 1,
-    };
-    setState({ prefs, prefsLoaded: true, permission, });
+  loadPrefs().then((saved) => {
+    const prefs = { ...saved, launches: saved.launches + 1 };
+    setState({ prefs, prefsLoaded: true });
     savePrefs(prefs);
     applyAppearance(prefs.appearance);
-
-    if (permission === 'granted'){
-      syncDevice();
-    }
-  }).catch(() => {});
+    // Only after prefs load: the sync writes the saved follow list, never the empty default.
+    getAlertPermission()
+      .then((permission) => {
+        setState({ permission });
+        if (permission === 'granted') syncDevice();
+      })
+      .catch(() => {});
+  });
   source.subscribe(onSnapshot);
   onAlertTapped((crossingId) => {
     setUi({ statusCrossingId: crossingId });

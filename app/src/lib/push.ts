@@ -69,8 +69,8 @@ export async function registerDevice(subscriptions: string[], preferences: Devic
   const { data: token } = await Notifications.getDevicePushTokenAsync();
   const user = auth.currentUser ?? (await signInAnonymously(auth)).user;
 
-  // Keyed on the push token, not the uid (Amendment 002, 4.1). A merge write so
-  // re-registering on launch never clobbers subscriptions or quiet hours.
+  // Keyed on the push token, not the uid (Amendment 002, 4.1). Writes the full follow list and
+  // preferences from this phone, so call it only after prefs have loaded.
   await setDoc(
     doc(db, 'devices', token),
     devicePayload(user.uid, Platform.OS, serverTimestamp(), subscriptions, preferences),

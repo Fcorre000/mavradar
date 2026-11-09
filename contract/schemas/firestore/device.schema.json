@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://mavradar.app/contract/device.schema.json",
   "title": "Device",
-  "description": "devices/{fcmToken}: one phone. The document ID is the FCM push token; the body never holds it. Writer: the app, through registerDevice(). Reader: server. Store followed crossings and notification preferences.",
+  "description": "devices/{fcmToken}: one phone. The document ID is the FCM push token; the body never holds it. Writer: the app, through registerDevice(). Reader: server. Since A3 the app writes all nine fields, but documents saved by older builds may lack the preference fields; the server fills in safe defaults for those and logs a warning.",
   "type": "object",
-  "required": ["uid", "platform", "updatedAt", "subscriptions", "alertTypes", "minBlockMin", "quietHours", "commuteWindows", "timeZone"],
+  "required": ["uid", "platform", "updatedAt"],
   "additionalProperties": false,
   "properties": {
     "uid": { "type": "string", "minLength": 1, "description": "Anonymous auth uid; authorizes writes, isn't the identity" },
