@@ -50,7 +50,7 @@ function onSnapshot(snapshot: SourceSnapshot) {
     memory[id] = step.memory;
     for (const kind of step.alerts) {
       const prefs = { following: true, permission: s.permission, types: s.prefs.alertTypes, mutedToday: muted };
-      if (shouldDeliver(kind, prefs)) {
+      if (source.kind === 'demo' && shouldDeliver(kind, prefs)){
         deliverAlert(kind, crossing, e, snapshot.now, source.kind, step.clearedAfterMin).catch(() => {});
       }
     }
