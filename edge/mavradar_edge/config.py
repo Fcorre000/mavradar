@@ -5,9 +5,11 @@ detector). Detector thresholds join in E2 and the node key in E3.
 """
 
 import os
-from collections.abc import Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, field, fields
 from pathlib import Path
+
+from mavradar_edge.detector.settings import DetectorSettings
 
 PREFIX = "MAVRADAR_NODE_"
 
@@ -25,6 +27,10 @@ class NodeConfig:
     log_only: bool = True
     replay_log: Path | None = None  # a recorded log to play instead of the radar
     replay_speed: float = 1.0  # 1 is real speed, 10 is ten times faster, 0 is no waiting
+    # Size of one raw range band. The radar reports it with ?z; its FFT lines don't carry it.
+    # 1 m until the real OPS243-C is checked (E6).
+    range_bin_m: float = 1.0
+    detector: DetectorSettings = field(default_factory=DetectorSettings)
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "NodeConfig":
@@ -51,6 +57,13 @@ class NodeConfig:
             raise ConfigError(f"{PREFIX}REPLAY_SPEED must be a number, not {replay_speed!r}") from None
         if speed < 0:
             raise ConfigError(f"{PREFIX}REPLAY_SPEED can't be negative")
+        range_bin = get("RANGE_BIN_M")
+        try:
+            range_bin_m = float(range_bin) if range_bin is not None else 1.0
+        except ValueError:
+            raise ConfigError(f"{PREFIX}RANGE_BIN_M must be a number, not {range_bin!r}") from None
+        if range_bin_m <= 0:
+            raise ConfigError(f"{PREFIX}RANGE_BIN_M must be more than 0")
 
         return cls(
             node_id=required("ID"),
@@ -58,4 +71,28 @@ class NodeConfig:
             log_only=log_only is None or log_only.lower() == "true",
             replay_log=Path(replay_log) if replay_log else None,
             replay_speed=speed,
+            range_bin_m=range_bin_m,
+            detector=_detector_settings(get),
         )
+
+
+def _detector_settings(get: Callable[[str], str | None]) -> DetectorSettings:
+    """Each threshold from MAVRADAR_NODE_<NAME>, like MAVRADAR_NODE_MIN_SPEED_MPS; unset keeps
+    its default."""
+    values: dict[str, float] = {}
+    for setting in fields(DetectorSettings):
+        name = setting.name.upper()
+        raw = get(name)
+        if raw is None:
+            continue
+        try:
+            value = float(raw)
+        except ValueError:
+            raise ConfigError(f"{PREFIX}{name} must be a number, not {raw!r}") from None
+        if value < 0:
+            raise ConfigError(f"{PREFIX}{name} can't be negative")
+        values[setting.name] = value
+    settings = DetectorSettings(**values)
+    if settings.track_band_min_m >= settings.track_band_max_m:
+        raise ConfigError(f"{PREFIX}TRACK_BAND_MIN_M must be less than {PREFIX}TRACK_BAND_MAX_M")
+    return settings

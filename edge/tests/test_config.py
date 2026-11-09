@@ -55,3 +55,34 @@ def test_a_bad_value_is_refused(name: str, value: str) -> None:
 
 def test_a_blank_log_only_still_means_on() -> None:
     assert NodeConfig.from_env(BASE | {"MAVRADAR_NODE_LOG_ONLY": "  "}).log_only
+
+
+def test_range_bin_size() -> None:
+    assert NodeConfig.from_env(BASE).range_bin_m == 1.0
+    assert NodeConfig.from_env(BASE | {"MAVRADAR_NODE_RANGE_BIN_M": "0.34"}).range_bin_m == 0.34
+
+
+@pytest.mark.parametrize("value", ["wide", "0", "-1"])
+def test_a_bad_range_bin_size_is_refused(value: str) -> None:
+    with pytest.raises(ConfigError, match="MAVRADAR_NODE_RANGE_BIN_M"):
+        NodeConfig.from_env(BASE | {"MAVRADAR_NODE_RANGE_BIN_M": value})
+
+
+def test_detector_thresholds_come_from_settings() -> None:
+    config = NodeConfig.from_env(BASE | {"MAVRADAR_NODE_MIN_SPEED_MPS": "4.5", "MAVRADAR_NODE_GAP_S": "2"})
+
+    assert config.detector.min_speed_mps == 4.5 and config.detector.gap_s == 2
+    assert NodeConfig.from_env(BASE).detector.present_duration_s == 10  # the default
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"MAVRADAR_NODE_MIN_MAGNITUDE": "loud"},
+        {"MAVRADAR_NODE_GAP_S": "-1"},
+        {"MAVRADAR_NODE_TRACK_BAND_MIN_M": "25"},  # above the max of 23
+    ],
+)
+def test_a_bad_threshold_is_refused(change: dict[str, str]) -> None:
+    with pytest.raises(ConfigError):
+        NodeConfig.from_env(BASE | change)
