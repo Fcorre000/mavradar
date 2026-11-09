@@ -35,8 +35,8 @@ def build(*readings: SpeedReport | RangeReport) -> Track | None:
 
 
 def verdict(*readings: SpeedReport | RangeReport) -> Verdict:
-    track = build(*readings)
-    return RuleBasedClassifier(S).classify(track) if track else V.NOT_A_TRAIN
+    # Moving-train rules only; the background map and stopped are in test_background.py.
+    return RuleBasedClassifier(S).classify(build(*readings), occupied=False, still_s=0.0)
 
 
 def steady(seconds: float, mps: float = 11.0, every: float = 0.2) -> list[SpeedReport]:
@@ -147,7 +147,7 @@ def verdicts(source: RadarSource) -> list[Verdict]:
     seen: list[Verdict] = []
     for reading in source.readings():
         track = builder.add(reading)
-        v = classifier.classify(track) if track else V.NOT_A_TRAIN
+        v = classifier.classify(track, occupied=False, still_s=builder.still_s(reading.t))
         if not seen or seen[-1] is not v:
             seen.append(v)
     return seen

@@ -21,11 +21,16 @@ class Verdict(StrEnum):
     NOT_A_TRAIN = "notATrain"
     TRAIN_APPROACHING = "trainApproaching"
     TRAIN_PRESENT = "trainPresent"
-    # Group 3 adds TRAIN_STOPPED, from the background map.
+    # The track band holds something train-sized by the background map, and nothing is moving.
+    # The state machine only accepts it after a train was present: a parked object isn't a train.
+    TRAIN_STOPPED = "trainStopped"
 
 
 class TrainClassifier(Protocol):
-    def classify(self, track: Track) -> Verdict: ...
+    def classify(self, track: Track | None, occupied: bool, still_s: float) -> Verdict:
+        """`occupied`: the background map sees something train-sized on the track (the latest
+        range frame). `still_s`: how long nothing has moved."""
+        ...
 
 
 class RuleBasedClassifier:
@@ -34,8 +39,10 @@ class RuleBasedClassifier:
     def __init__(self, settings: DetectorSettings) -> None:
         self._s = settings
 
-    def classify(self, track: Track) -> Verdict:
+    def classify(self, track: Track | None, occupied: bool, still_s: float) -> Verdict:
         s = self._s
+        if track is None:
+            return Verdict.TRAIN_STOPPED if occupied and still_s >= s.stop_s else Verdict.NOT_A_TRAIN
         moving = track.median_speed_mps >= s.min_speed_mps
         in_band = track.in_band(s.band_window_s)
         # Present: long enough, at train speed, and in the track band. All three, so a truck
@@ -47,6 +54,9 @@ class RuleBasedClassifier:
         # the radar, and without it the verdict would drop to "not a train" for a few seconds.
         if track.duration_s >= s.approach_duration_s and moving and (track.toward or in_band):
             return Verdict.TRAIN_APPROACHING
+        # Stopped: a track that has gone quiet while the track band stays full.
+        if occupied and still_s >= s.stop_s:
+            return Verdict.TRAIN_STOPPED
         return Verdict.NOT_A_TRAIN
 
 

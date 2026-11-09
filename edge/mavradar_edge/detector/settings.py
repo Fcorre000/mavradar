@@ -21,6 +21,17 @@ class DetectorSettings:
     track_band_max_m: float = 23.0
     # "In the track band" means seen there within this long, so one dropped reading doesn't lose a train.
     band_window_s: float = 5.0
+    # Doppler readings slower than this are fixed clutter, not motion (the OPS243 research page
+    # saw ~0.06 m/s with nothing moving), so they never count toward a track or as movement.
+    clutter_mps: float = 0.3
+    # Background map: a band is "something new" when its echo is this far above its own normal,
+    # and the track is occupied when at least this many track bands are (one is a person).
+    map_margin: float = 30.0
+    min_occupied_bands: float = 3
+    # Stopped: the track band occupied and nothing moving for this long (06: "the stop threshold").
+    stop_s: float = 10.0
+    # "Occupied" comes from the latest range frame and stops counting once frames stop this long.
+    frame_stale_s: float = 5.0
     # The OC double-check: the radar's own summary says train if both hold.
     oc_min_time_s: float = 10.0
     oc_min_length_m: float = 100.0

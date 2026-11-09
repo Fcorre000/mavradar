@@ -49,6 +49,11 @@ class TrackBuilder:
         self._settings = settings
         self._track: Track | None = None
         self._last_in_band_t: float | None = None
+        self._last_motion_t: float | None = None
+
+    def still_s(self, now: float) -> float:
+        """How long nothing has moved, even after the track ended. Infinite before any motion."""
+        return float("inf") if self._last_motion_t is None else now - self._last_motion_t
 
     @property
     def track(self) -> Track | None:
@@ -67,8 +72,16 @@ class TrackBuilder:
 
         if isinstance(reading, SpeedReport):
             # The strongest object above the floor; the radar lists them strongest first.
-            strong = next((o for o in reading.objects if o.magnitude >= s.min_magnitude), None)
+            strong = next(
+                (
+                    o
+                    for o in reading.objects
+                    if o.magnitude >= s.min_magnitude and abs(o.mps) >= s.clutter_mps
+                ),
+                None,
+            )
             if strong is not None:
+                self._last_motion_t = reading.t
                 if track is None:
                     track = Track(start_t=reading.t, last_t=reading.t, now=reading.t)
                 track.last_t = reading.t
