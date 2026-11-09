@@ -112,3 +112,6 @@ edge/logs/
 .claude/skills/impeccable/scripts/bin/
 # Impeccable's local run history (critique snapshots); the shared report is docs/design/audit/AUDIT.md.
 .impeccable/
+
+# OmniPreSense sample recordings: no license, so fetched by edge/scripts/fetch_recordings.py, never committed
+edge/tests/data/omnipresense/

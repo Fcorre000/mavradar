@@ -55,3 +55,14 @@ def test_a_bad_value_is_refused(name: str, value: str) -> None:
 
 def test_a_blank_log_only_still_means_on() -> None:
     assert NodeConfig.from_env(BASE | {"MAVRADAR_NODE_LOG_ONLY": "  "}).log_only
+
+
+def test_range_bin_size() -> None:
+    assert NodeConfig.from_env(BASE).range_bin_m == 1.0
+    assert NodeConfig.from_env(BASE | {"MAVRADAR_NODE_RANGE_BIN_M": "0.34"}).range_bin_m == 0.34
+
+
+@pytest.mark.parametrize("value", ["wide", "0", "-1"])
+def test_a_bad_range_bin_size_is_refused(value: str) -> None:
+    with pytest.raises(ConfigError, match="MAVRADAR_NODE_RANGE_BIN_M"):
+        NodeConfig.from_env(BASE | {"MAVRADAR_NODE_RANGE_BIN_M": value})
