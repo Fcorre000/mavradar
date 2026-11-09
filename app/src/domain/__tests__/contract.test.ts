@@ -8,7 +8,7 @@ import addFormats from 'ajv-formats';
 
 import { Freshness } from '@/constants/theme';
 import { toReading } from '@/data/firestore-mapping';
-import { devicePayload } from '@/lib/device-doc';
+import { devicePayload, type DevicePreferences, } from '@/lib/device-doc';
 
 import { TYPICAL_MIN_SAMPLES } from '../stats';
 import { REPORTED_STATES } from '../types';
@@ -77,16 +77,65 @@ it.each(examples('crossing', 'valid'))('%s maps to a CrossingReading', (_file, e
 it('ReportedState matches the contract', () =>
   expect([...REPORTED_STATES]).toEqual(schema('crossing').$defs.reportedState.enum));
 
+const testPreferences: DevicePreferences = {
+  alertTypes: {
+    approaching: false,
+    blocked: true,
+    stopped: true,
+    cleared: true,
+  },
+  minBlockMin: 1,
+  quietHours: null,
+  commuteWindows: null,
+  timeZone: 'America/Chicago',
+};
 it('what registerDevice writes is a valid device document', () => {
-  expect(validate('device')(devicePayload('anon-uid', 'android', '2026-10-08T21:14:03.250Z', ['794980D']))).toBe(true);
-  expect(validate('device')(devicePayload('anon-uid', 'ios', '2026-10-08T21:14:03.250Z'))).toBe(true);
+  const androidPayload = devicePayload(
+    'anon-uid',
+    'android',
+    '2026-10-08T21:14:03.250Z',
+    ['794980D'],
+    testPreferences
+  );
+
+  const iosPayload = devicePayload(
+    'anon-uid',
+    'ios',
+    '2026-10-08T21:14:03.250Z',
+    [],
+    testPreferences
+  );
+
+  expect(validate('device')(androidPayload)).toBe(true);
+  expect(validate('device')(iosPayload)).toBe(true);
 });
 
-it('registerDevice never wipes or overfills subscriptions', () => {
-  // A merge write without the key keeps what is stored; with it, the contract caps the list at 20.
-  expect(devicePayload('anon-uid', 'ios', '2026-10-08T21:14:03.250Z')).not.toHaveProperty('subscriptions');
-  const many = Array.from({ length: 25 }, (_, i) => `${String(i).padStart(6, '0')}A`);
-  expect(devicePayload('anon-uid', 'android', '2026-10-08T21:14:03.250Z', many).subscriptions).toHaveLength(20);
+it('registerDevice includes subscriptions and limits them to 20', () => {
+  const empty = devicePayload(
+    'anon-uid',
+    'ios',
+    '2026-10-08T21:14:03.250Z',
+    [],
+    testPreferences
+  );
+
+  expect(empty.subscriptions).toEqual([]);
+
+  const many = Array.from(
+    { length: 25 },
+    (_, i) => `${String(i).padStart(6, '0')}A`
+  );
+
+  const payload = devicePayload(
+    'anon-uid',
+    'android',
+    '2026-10-08T21:14:03.250Z',
+    many,
+    testPreferences
+  );
+
+  expect(payload.subscriptions).toHaveLength(20);
+  expect(payload.subscriptions).toEqual(many.slice(0, 20));
 });
 
 it('freshness thresholds match the contract', () => {
@@ -96,3 +145,31 @@ it('freshness thresholds match the contract', () => {
 
 it('typical-time sample floor matches the contract', () =>
   expect(TYPICAL_MIN_SAMPLES).toBe(schema('history-summary')['x-typicalMinSamples']));
+
+it('device payload contains exactly the A3 fields', () => {
+  const payload = devicePayload(
+    'anon-uid',
+    'android',
+    '2026-10-08T21:14:03.250Z',
+    ['794980D'],
+    testPreferences
+  );
+
+  expect(Object.keys(payload).sort()).toEqual([
+    'uid',
+    'platform',
+    'updatedAt',
+    'subscriptions',
+    'alertTypes',
+    'minBlockMin',
+    'quietHours',
+    'commuteWindows',
+    'timeZone',
+  ].sort());
+
+  expect(payload.alertTypes).toEqual(testPreferences.alertTypes);
+  expect(payload.minBlockMin).toBe(1);
+  expect(payload.quietHours).toBeNull();
+  expect(payload.commuteWindows).toBeNull();
+  expect(payload.timeZone).toBe('America/Chicago');
+});

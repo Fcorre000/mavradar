@@ -5,7 +5,7 @@ import { formatTime, minutesBetween } from './time';
 import type { Crossing, CrossingState } from './types';
 
 export type AlertKind = 'blocked' | 'stopped' | 'cleared' | 'sensorOffline';
-export type AlertType = 'blocked' | 'stopped' | 'cleared';
+export type AlertType = 'blocked' | 'stopped' | 'cleared' | 'approaching';
 export type PermissionState = 'undetermined' | 'granted' | 'denied';
 
 /** Minutes a sensor must be quiet before followers get a "status unknown" note. */

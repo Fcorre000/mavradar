@@ -1,0 +1,52 @@
+{
+  "uid": "anon-uid",
+  "platform": "android",
+  "updatedAt": "2026-10-08T21:00:12.400Z",
+  "subscriptions": [
+    "794980D"
+  ],
+  "alertTypes": {
+    "approaching": false,
+    "blocked": true,
+    "stopped": true,
+    "cleared": true
+  },
+  "minBlockMin": 1,
+  "quietHours": null,
+  "commuteWindows": [
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "start": "07:00",
+      "end": "09:00"
+    },
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "start": "12:00",
+      "end": "13:00"
+    },
+    {
+      "days": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "start": "16:00",
+      "end": "19:00"
+    }
+  ],
+  "timeZone": "America/Chicago"
+}

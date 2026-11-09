@@ -43,4 +43,4 @@ uvx check-jsonschema --schemafile contract/schemas/heartbeat.schema.json contrac
 
 ## Device fields and the Firestore rules
 
-The device schema also lists the preference fields A3 will write (`alertTypes`, `minBlockMin`, `commuteWindows`, `timeZone`). Until A3 updates `firestore.rules`, the rules only allow `uid`, `platform`, `subscriptions`, `quietHours` and `updatedAt` on a device document.
+Since A3, the app writes all nine device fields and `firestore.rules` validates them. Only `uid`, `platform` and `updatedAt` are required in the schema, because documents saved by older builds can lack the preference fields. The server never rejects such a document: it assumes all alert types on except approaching, a 1-minute minimum, no quiet hours, no commute windows and `America/Chicago`, and logs a warning.

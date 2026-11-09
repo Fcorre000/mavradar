@@ -118,7 +118,7 @@ describe('stepAlerts', () => {
 });
 
 describe('shouldDeliver', () => {
-  const prefs = { following: true, permission: 'granted' as const, types: { blocked: true, stopped: true, cleared: true }, mutedToday: false };
+  const prefs = { following: true, permission: 'granted' as const, types: { approaching: false, blocked: true, stopped: true, cleared: true }, mutedToday: false };
 
   it('needs a follow and granted permission', () => {
     expect(shouldDeliver('blocked', prefs)).toBe(true);
