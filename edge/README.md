@@ -1,6 +1,6 @@
 # edge
 
-Python detection service for the field node. **So far:** settings (`config.py`) and the `RadarSource` interface with a replay source that plays recorded logs, so the node can be built and tested with no radar (E1). The log format and the synthetic logs are in `tests/data/`. The detector is E2.
+Python detection service for the field node. **So far:** settings (`config.py`) and the `RadarSource` interface with a replay source that plays recorded logs, so the node can be built and tested with no radar (E1). The log format and the synthetic logs are in `tests/data/`. The detector (`mavradar_edge/detector/`, E2) turns readings into CrossingEvents: a track and a rule-based classifier for moving trains, a background map of the empty crossing for stopped ones, and a state machine that sends one event per real change. Every threshold is a `MAVRADAR_NODE_*` setting.
 
 It will run on a Raspberry Pi Zero 2 W next to an OmniPreSense OPS243-C radar (Doppler plus FMCW range, so it can see a stopped train), classify trains, and POST events to the ingest API in `server/`. While there is one node, it sits at the crossing, within radar range; a second node later means spacing the two out, one on each side (blueprint D4). Either way, at least 50 ft from the nearest rail.
 
