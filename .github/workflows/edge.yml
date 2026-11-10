@@ -1,0 +1,31 @@
+name: edge
+
+on:
+  pull_request:
+    paths:
+      - "edge/**"
+      - "contract/**"
+      - ".github/workflows/edge.yml"
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # 3.11 is the floor the code is written to; 3.13 is what the node runs (Raspberry Pi OS Trixie).
+        python: ["3.11", "3.13"]
+    defaults:
+      run:
+        working-directory: edge
+    steps:
+      - uses: actions/checkout@v6
+      - uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.13.0"
+          python-version: ${{ matrix.python }}
+      - run: uv sync --locked
+      - run: uv run ruff check
+      - run: uv run ruff format --check
+      - run: uv run pyright
+      - run: uv run pytest

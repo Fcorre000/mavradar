@@ -28,7 +28,7 @@ Revisit only if someone on the team is already fluent in async Rust, we grow to 
 
 **CI (GitHub Actions) must fail the pull request** if Ruff, Pyright or the unit tests fail. A type checker that only runs when someone remembers to run it doesn't protect anything.
 
-Python version: use 3.12 for the server image. The node runs the Pi's own Python (3.11 on Raspberry Pi OS Bookworm; check with `python3 --version`), so nothing in `edge/`, including `edge/mavradar_edge/contract.py`, can use a newer feature. The server's Pydantic `contract.py` only runs in the server image.
+Python version: use 3.12 for the server image. The node runs the Pi's own Python (3.13 on Raspberry Pi OS Trixie, checked on the first Zero 2 W on 2026-11-10; check with `python3 --version`). `edge/` is still written to 3.11 (Pyright and Ruff target it), so nothing in `edge/`, including `edge/mavradar_edge/contract.py`, can use a newer feature, and CI runs the edge checks on both 3.11 and 3.13. On the Pi, run the tests with `uv run --python /usr/bin/python3 pytest`, so uv uses the system Python instead of downloading the 3.11 in `.python-version`. The server's Pydantic `contract.py` only runs in the server image.
 
 ## 2. Strict types: get the Rust benefits in Python
 
