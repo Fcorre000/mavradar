@@ -9,6 +9,7 @@ on:
 
 jobs:
   check:
+    name: server
     runs-on: ubuntu-latest
     defaults:
       run:

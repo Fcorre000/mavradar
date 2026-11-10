@@ -1,14 +1,13 @@
 name: edge
 
+# Runs on every pull request, not only ones that touch edge/ or contract/: these checks are required
+# on main, and a required check that never runs blocks the merge. Each run takes under 20 seconds.
 on:
   pull_request:
-    paths:
-      - "edge/**"
-      - "contract/**"
-      - ".github/workflows/edge.yml"
 
 jobs:
   check:
+    name: edge (${{ matrix.python }})
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
