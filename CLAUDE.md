@@ -46,7 +46,7 @@ firebase emulators:exec --only firestore "<test command>"   # test rules locally
 firebase deploy --only firestore:rules
 ```
 
-Edge and server (run from `edge/` or `server/`; uv reads `.python-version`, 3.11 and 3.12):
+Edge and server (run from `edge/` or `server/`; uv reads `.python-version`: 3.11 for edge, 3.12 for server; the node itself runs 3.13, and edge CI tests 3.11 and 3.13):
 
 ```bash
 uv run pytest && uv run ruff check && uv run ruff format --check && uv run pyright
