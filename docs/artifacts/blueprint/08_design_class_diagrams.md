@@ -639,7 +639,9 @@ The one place the shape of every message and stored document is written down. Ed
 
 ### Node to server: authentication and responses
 
-Every request carries the node's key as `Authorization: Bearer <node key>` (OQ3). The key lives in the node's environment and in Secret Manager, never in the repo.
+Every request carries the node's key in the `X-Node-Key` header (OQ3). The key lives in the node's environment and in Secret Manager, never in the repo.
+
+**Changed in E3 (2026-11-11):** this said `Authorization: Bearer <node key>`. The server built in S2 reads `X-Node-Key`, and the node now sends that. `Authorization` is left for the Google-signed tokens on the `/tasks` routes, so each header means one thing. The 200 body is `{"eventId": "..."}` with no `status` field; the node acts on the status code alone, and "accepted" and "duplicate" below are both a plain 200 to it.
 
 | Response                                          | Meaning                                             | What the node does (SD1, SD5)                                                |
 | ------------------------------------------------- | --------------------------------------------------- | ---------------------------------------------------------------------------- |
