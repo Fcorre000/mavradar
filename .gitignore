@@ -86,6 +86,7 @@ pglite-debug.log*
 
 # === local detection data (huge, regenerable) ===
 edge/data/*.db
+edge/data/*.db-*
 edge/data/*.csv
 edge/logs/
 *.sqlite3

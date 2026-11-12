@@ -1,7 +1,7 @@
 """NodeConfig from environment variables. See .env.example.
 
 Standard library only, like contract.py: the node stays small and portable (blueprint 06, edge
-detector). Detector thresholds join in E2 and the node key in E3.
+detector).
 """
 
 import os
@@ -10,6 +10,7 @@ from dataclasses import dataclass, field, fields
 from pathlib import Path
 
 from mavradar_edge.detector.settings import DetectorSettings
+from mavradar_edge.transport.transport import check_server_url
 
 PREFIX = "MAVRADAR_NODE_"
 
@@ -31,6 +32,13 @@ class NodeConfig:
     # 1 m until the real OPS243-C is checked (E6).
     range_bin_m: float = 1.0
     detector: DetectorSettings = field(default_factory=DetectorSettings)
+    # The uplink. The URL and key are unset for a run with no server (a replay on a laptop).
+    server_url: str | None = None  # https, or http to localhost only
+    node_key: str | None = field(default=None, repr=False)  # a secret: kept out of repr and logs
+    buffer_path: Path = Path("data/events.db")  # the SQLite outbox, on the node's disk
+    send_timeout_s: float = 10.0
+    retry_first_s: float = 1.0  # retries start here and double...
+    retry_max_s: float = 60.0  # ...up to here, and go back to the start after a success
 
     @classmethod
     def from_env(cls, env: Mapping[str, str] | None = None) -> "NodeConfig":
@@ -65,6 +73,27 @@ class NodeConfig:
         if range_bin_m <= 0:
             raise ConfigError(f"{PREFIX}RANGE_BIN_M must be more than 0")
 
+        server_url = get("SERVER_URL")
+        if server_url is not None:
+            try:
+                server_url = check_server_url(server_url)
+            except ValueError as error:
+                raise ConfigError(f"{PREFIX}SERVER_URL: {error}") from None
+
+        def seconds(name: str, default: float) -> float:
+            raw = get(name)
+            try:
+                value = float(raw) if raw is not None else default
+            except ValueError:
+                raise ConfigError(f"{PREFIX}{name} must be a number, not {raw!r}") from None
+            if value <= 0:
+                raise ConfigError(f"{PREFIX}{name} must be more than 0")
+            return value
+
+        retry_first_s, retry_max_s = seconds("RETRY_FIRST_S", 1.0), seconds("RETRY_MAX_S", 60.0)
+        if retry_first_s > retry_max_s:
+            raise ConfigError(f"{PREFIX}RETRY_FIRST_S can't be more than {PREFIX}RETRY_MAX_S")
+
         return cls(
             node_id=required("ID"),
             crossing_id=required("CROSSING_ID"),
@@ -73,6 +102,12 @@ class NodeConfig:
             replay_speed=speed,
             range_bin_m=range_bin_m,
             detector=_detector_settings(get),
+            server_url=server_url,
+            node_key=get("KEY"),
+            buffer_path=Path(get("BUFFER_PATH") or "data/events.db"),
+            send_timeout_s=seconds("SEND_TIMEOUT_S", 10.0),
+            retry_first_s=retry_first_s,
+            retry_max_s=retry_max_s,
         )
 
 

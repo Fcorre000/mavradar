@@ -86,3 +86,51 @@ def test_detector_thresholds_come_from_settings() -> None:
 def test_a_bad_threshold_is_refused(change: dict[str, str]) -> None:
     with pytest.raises(ConfigError):
         NodeConfig.from_env(BASE | change)
+
+
+# The uplink
+
+
+def test_uplink_defaults() -> None:
+    config = NodeConfig.from_env(BASE)
+
+    assert config.server_url is None and config.node_key is None  # a run with no server
+    assert config.buffer_path == Path("data/events.db")
+    assert (config.send_timeout_s, config.retry_first_s, config.retry_max_s) == (10, 1, 60)
+
+
+def test_uplink_settings() -> None:
+    config = NodeConfig.from_env(
+        BASE
+        | {
+            "MAVRADAR_NODE_SERVER_URL": "https://ingest.example.com/",
+            "MAVRADAR_NODE_KEY": "a-secret-key",
+            "MAVRADAR_NODE_BUFFER_PATH": "/var/lib/mavradar/events.db",
+            "MAVRADAR_NODE_RETRY_MAX_S": "120",
+        }
+    )
+
+    assert config.server_url == "https://ingest.example.com"
+    assert config.node_key == "a-secret-key"
+    assert config.buffer_path == Path("/var/lib/mavradar/events.db")
+    assert config.retry_max_s == 120
+
+
+def test_the_node_key_never_shows_when_the_config_is_printed() -> None:
+    config = NodeConfig.from_env(BASE | {"MAVRADAR_NODE_KEY": "a-secret-key"})
+
+    assert "a-secret-key" not in repr(config) and "a-secret-key" not in str(config)
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"MAVRADAR_NODE_SERVER_URL": "http://ingest.example.com"},  # the key would travel in the clear
+        {"MAVRADAR_NODE_SEND_TIMEOUT_S": "0"},
+        {"MAVRADAR_NODE_RETRY_FIRST_S": "soon"},
+        {"MAVRADAR_NODE_RETRY_FIRST_S": "90"},  # more than the max of 60
+    ],
+)
+def test_a_bad_uplink_setting_is_refused(change: dict[str, str]) -> None:
+    with pytest.raises(ConfigError):
+        NodeConfig.from_env(BASE | change)
