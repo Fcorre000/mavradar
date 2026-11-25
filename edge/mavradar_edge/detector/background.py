@@ -3,12 +3,16 @@
 A stopped train sends no Doppler readings, but it still reflects, so it shows in the raw range
 frames. So does everything fixed (a mast, a gate arm), so a frame is only judged against each
 band's own normal: a band is "something new" when it is well above what that band usually shows.
-Capturing, confirming and saving a map on the node is E5; this module builds and compares.
+Capturing and confirming a map is the calibrate command (E5); this module builds, compares and
+stores maps.
 """
 
+import json
+import os
 import statistics
 from collections.abc import Sequence
 from dataclasses import dataclass
+from pathlib import Path
 
 from mavradar_edge.detector.settings import DetectorSettings
 from mavradar_edge.radar.source import RangeFrame, Reading
@@ -66,6 +70,53 @@ class BackgroundMap:
         alone is something small, like a person."""
         new = set(self.new_bands(frame, settings.map_margin))
         return len(new & set(self.track_bands(settings))) >= settings.min_occupied_bands
+
+
+class MapStore:
+    """The current map and the one before it, as current.json and previous.json in one folder.
+
+    Saving copies current to previous, then swaps the new map in. Each file is written whole and
+    renamed into place (os.replace is atomic), so a reboot mid-save always leaves a whole current
+    map: the old one or the new one, never half of either (UC9 7a)."""
+
+    def __init__(self, folder: Path) -> None:
+        self._current = folder / "current.json"
+        self._previous = folder / "previous.json"
+
+    def load(self) -> BackgroundMap | None:
+        """None before the first calibration."""
+        return _read(self._current)
+
+    def load_previous(self) -> BackgroundMap | None:
+        """The map to go back to if a new one turns out worse (UC9 8a)."""
+        return _read(self._previous)
+
+    def save(self, new: BackgroundMap) -> None:
+        self._current.parent.mkdir(parents=True, exist_ok=True)
+        if self._current.exists():
+            _write(self._previous, self._current.read_text())
+        _write(
+            self._current,
+            json.dumps({"version": new.version, "binSizeM": new.bin_size_m, "normal": new.normal}),
+        )
+
+
+def _read(path: Path) -> BackgroundMap | None:
+    if not path.exists():
+        return None
+    data = json.loads(path.read_text())
+    return BackgroundMap(
+        float(data["binSizeM"]), tuple(float(v) for v in data["normal"]), str(data["version"])
+    )
+
+
+def _write(path: Path, text: str) -> None:
+    temporary = path.with_suffix(".tmp")
+    with temporary.open("w") as file:
+        file.write(text)
+        file.flush()
+        os.fsync(file.fileno())  # on the SD card before the rename, not just in a cache
+    os.replace(temporary, path)
 
 
 class BandWatcher:

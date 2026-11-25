@@ -84,7 +84,6 @@ classDiagram
         +confirm()
         +reject()
     }
-    Calibrator --> Detector
     Calibrator --> RadarSource
     Calibrator --> MapStore
 
@@ -125,6 +124,8 @@ classDiagram
     HeartbeatSender --> HealthReporter
     HeartbeatSender --> Transport
 ```
+
+**Changed in E5 (2026-11-25):** calibration is its own command (`python -m mavradar_edge.calibrate`) that runs while the node's service is stopped, because only one program can use the radar. So the Calibrator never talks to the Detector: there's no `Detector.pause()`, and SD10's pause and resume become "stop the service" and "start it again" (E7 adds the `systemctl` lines; the command restarts it however it ends, SIGHUP included). The command sends its own heartbeats, saying `calibrating` with state `sensorOffline` so the server shows the crossing as Unknown. Confirm and reject are a y/n prompt after the summary. `MapStore.restore_previous()` isn't built yet: the previous map is kept on disk as `previous.json`. A capture is thrown out for too few frames or movement (any frame far from the capture's median in 3 or more track bands, above or below); a capture whose track bands look train-sized next to the current map is saved only after a warning the maintainer has seen.
 
 **Changed in E4 (2026-11-25):** heartbeats are sent by their own `HeartbeatSender` (in `health/reporter.py`, its own thread) instead of `Uplink.send_heartbeat()`. An event in a 60 second backoff, or a send that hangs, would otherwise make a heartbeat late. The two share the transport, and the sender only reads the buffer's count. `HealthReporter` reads `Detector.current_status()` and the buffer, not the uplink. Until the INA219 and temperature sensor are wired, `batteryVoltage` is 0 and `enclosureTempC` is -999: impossible on purpose, so the server's health check flags them and nobody mistakes them for real readings.
 
