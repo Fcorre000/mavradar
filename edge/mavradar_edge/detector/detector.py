@@ -10,10 +10,11 @@ Log-only mode is not a state: the same machine runs, and every event carries the
 import logging
 from collections import deque
 from collections.abc import Callable
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from mavradar_edge.contract import CrossingEvent, Direction, ReportedState, Train
+from mavradar_edge.contract import CrossingEvent, Direction, NodeStatus, ReportedState, Train
 from mavradar_edge.detector.background import BackgroundMap, BandWatcher
 from mavradar_edge.detector.classifier import RuleBasedClassifier, TrainClassifier, Verdict, oc_says_train
 from mavradar_edge.detector.settings import DetectorSettings
@@ -31,6 +32,15 @@ CALL_MEMORY_S = 900.0  # how far back an OC report can look for the detector's o
 def wall_clock(t: float) -> datetime:
     """On the node, an event happens now. Tests map the radar's seconds onto a fixed start instead."""
     return datetime.now(UTC)
+
+
+@dataclass(frozen=True)
+class DetectorStatus:
+    """What a heartbeat says about detection (SD5 messages 2 and 3)."""
+
+    status: NodeStatus
+    state: ReportedState
+    map_version: str
 
 
 class Detector:
@@ -57,6 +67,7 @@ class Detector:
         self._new_id = new_id
         self._tracks = TrackBuilder(settings)
         self._band = BandWatcher(background, settings)
+        self._map_version = background.version
         self._state: DetectorState = IDLE
         self._last_reading_t: float | None = None
         self._quiet_since: float | None = None
@@ -65,6 +76,13 @@ class Detector:
     @property
     def state(self) -> DetectorState:
         return self._state
+
+    def current_status(self) -> DetectorStatus:
+        """Safe to call from the heartbeat thread: it reads the state once, and swapping one
+        reference is atomic in Python, so it never sees half a change. Calibrating arrives with E5."""
+        state = self._state
+        status = NodeStatus.FAULTED if state is FAULTED else NodeStatus.DETECTING
+        return DetectorStatus(status, state.reported, self._map_version)
 
     def on_reading(self, reading: Reading) -> CrossingEvent | None:
         t = reading.t

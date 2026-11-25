@@ -108,7 +108,6 @@ classDiagram
     class Uplink {
         +run_forever()
         +send_next_event() bool
-        +send_heartbeat(heartbeat)
     }
     Uplink --> EventBuffer
     Uplink --> Transport
@@ -117,8 +116,17 @@ classDiagram
         +build_heartbeat() Heartbeat
     }
     HealthReporter --> Detector
-    HealthReporter --> Uplink
+    HealthReporter --> EventBuffer
+
+    class HeartbeatSender {
+        +run_forever()
+        +send_once() bool
+    }
+    HeartbeatSender --> HealthReporter
+    HeartbeatSender --> Transport
 ```
+
+**Changed in E4 (2026-11-25):** heartbeats are sent by their own `HeartbeatSender` (in `health/reporter.py`, its own thread) instead of `Uplink.send_heartbeat()`. An event in a 60 second backoff, or a send that hangs, would otherwise make a heartbeat late. The two share the transport, and the sender only reads the buffer's count. `HealthReporter` reads `Detector.current_status()` and the buffer, not the uplink. Until the INA219 and temperature sensor are wired, `batteryVoltage` is 0 and `enclosureTempC` is -999: impossible on purpose, so the server's health check flags them and nobody mistakes them for real readings.
 
 ### Interfaces
 
@@ -175,9 +183,9 @@ edge/
     transport/
       transport.py             Transport protocol, HttpsTransport, FakeTransport
     uplink/
-      uplink.py                Uplink: send loop, backoff, heartbeats
+      uplink.py                Uplink: send loop, backoff
     health/
-      reporter.py              HealthReporter
+      reporter.py              HealthReporter, HeartbeatSender
   tests/                       pytest; replay logs under tests/data/
   deploy/
     mavradar-edge.service      systemd unit
@@ -197,7 +205,7 @@ edge/
 | `EventBuffer.delete()`                            | SD1 messages 11 and 13         |
 | `HealthReporter.build_heartbeat()`                | SD5 message 1                  |
 | `Detector.current_status()`                       | SD5 messages 2 and 3           |
-| `Uplink.send_heartbeat()`                         | SD5 messages 4 to 6            |
+| `HeartbeatSender.send_once()`                     | SD5 messages 4 to 6            |
 | `Calibrator.start()`                              | SD10 message 1                 |
 | `Detector.pause()`                                | SD10 messages 2 and 3          |
 | `RadarSource.range_frames()`                      | SD10 messages 4 and 5          |
