@@ -36,6 +36,7 @@ class NodeConfig:
     server_url: str | None = None  # https, or http to localhost only
     node_key: str | None = field(default=None, repr=False)  # a secret: kept out of repr and logs
     buffer_path: Path = Path("data/events.db")  # the SQLite outbox, on the node's disk
+    map_dir: Path = Path("data/maps")  # the background map and the one before it (E5)
     send_timeout_s: float = 10.0
     retry_first_s: float = 1.0  # retries start here and double...
     retry_max_s: float = 60.0  # ...up to here, and go back to the start after a success
@@ -105,6 +106,7 @@ class NodeConfig:
             server_url=server_url,
             node_key=get("KEY"),
             buffer_path=Path(get("BUFFER_PATH") or "data/events.db"),
+            map_dir=Path(get("MAP_DIR") or "data/maps"),
             send_timeout_s=seconds("SEND_TIMEOUT_S", 10.0),
             retry_first_s=retry_first_s,
             retry_max_s=retry_max_s,

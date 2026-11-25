@@ -42,3 +42,6 @@ class DetectorSettings:
     # The OC double-check: the radar's own summary says train if both hold.
     oc_min_time_s: float = 10.0
     oc_min_length_m: float = 100.0
+    # Calibration (E5): a capture with fewer range frames than this is thrown out (the radar
+    # dropped out). The default 300 s capture gets about 150 at the radar's 2 s frame rate.
+    calibration_min_frames: float = 30
