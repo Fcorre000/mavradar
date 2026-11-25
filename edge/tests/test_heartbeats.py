@@ -3,6 +3,8 @@ schedule by their own messenger, and a failed one dropped, never buffered or ret
 
 import json
 import logging
+import subprocess
+import sys
 import threading
 import time
 from collections.abc import Callable, Mapping
@@ -24,7 +26,7 @@ from mavradar_edge.health.reporter import (
     HealthReporter,
     HeartbeatSender,
 )
-from mavradar_edge.node import run
+from mavradar_edge.node import exit_on_error, run
 from mavradar_edge.radar.replay import ReplaySource
 from mavradar_edge.radar.source import RangeFrame
 from mavradar_edge.transport.transport import FakeTransport, Response
@@ -290,5 +292,69 @@ def test_run_starts_and_stops_the_heartbeats() -> None:
 
     run(ReplaySource(DATA / "train_passing.jsonl", speed=0.0), d, buffer, Uplink(buffer, transport), sender)
 
-    assert "heartbeats" not in {t.name for t in threading.enumerate()}
-    assert {path for path, _ in transport.posts} <= {"/events", HEARTBEATS_PATH}
+    assert any(path == HEARTBEATS_PATH for path, _ in transport.posts)  # it was started
+    assert "heartbeats" not in {t.name for t in threading.enumerate()}  # and stopped
+
+
+# A thread that fails ends the node, so systemd restarts it
+
+
+def test_an_error_in_a_thread_exits_with_1(caplog: pytest.LogCaptureFixture) -> None:
+    codes: list[int] = []
+
+    def broken() -> None:
+        raise OSError("disk I/O error")
+
+    exit_on_error(broken, exit=codes.append)()
+
+    assert codes == [1]
+    assert "disk I/O error" in caplog.text  # the traceback is logged before exiting
+
+
+def test_a_loop_that_ends_normally_doesnt_exit() -> None:
+    codes: list[int] = []
+
+    exit_on_error(lambda: None, exit=codes.append)()
+
+    assert codes == []
+
+
+BAD_DISK = """
+import sqlite3, sys, threading
+from mavradar_edge.buffer.event_buffer import MemoryEventBuffer
+from mavradar_edge.health.reporter import HealthReporter, HeartbeatSender
+from mavradar_edge.node import run
+from mavradar_edge.transport.transport import FakeTransport
+from mavradar_edge.uplink.uplink import Uplink
+from tests.test_heartbeats import detector
+
+class BadDisk(MemoryEventBuffer):
+    def fail(self):
+        raise sqlite3.OperationalError("disk I/O error")
+
+setattr(BadDisk, sys.argv[1], BadDisk.fail)  # count breaks the heartbeats, oldest_pending the uplink
+
+class Endless:  # a radar that never stops: only a crash can end this process
+    def readings(self):
+        threading.Event().wait()
+        yield from ()
+
+buffer, d, transport = BadDisk(), detector(), FakeTransport()
+reporter = HealthReporter(node_id="node-a", log_only=True, detector=d, buffer=buffer)
+run(Endless(), d, buffer, Uplink(buffer, transport), HeartbeatSender(reporter, transport))
+"""
+
+
+@pytest.mark.parametrize(("method", "thread"), [("count", "heartbeats"), ("oldest_pending", "uplink")])
+def test_a_failing_thread_takes_the_whole_node_down(method: str, thread: str) -> None:
+    process = subprocess.run(
+        [sys.executable, "-c", BAD_DISK, method],
+        cwd=Path(__file__).parents[1],
+        capture_output=True,
+        text=True,
+        timeout=30,
+    )
+
+    assert process.returncode == 1
+    assert f"the {thread} thread failed" in process.stderr
+    assert "disk I/O error" in process.stderr

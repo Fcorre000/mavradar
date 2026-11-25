@@ -123,8 +123,10 @@ class HeartbeatSender:
         self._stop.set()
 
     def run_forever(self) -> None:
-        due = self._clock()  # the first heartbeat goes out at start, so the server sees us now
-        while not self._stop.is_set():
+        """The first heartbeat always goes out at start, so the server sees the node right away."""
+        due = self._clock()
+        while True:
             self.send_once()
             due = self.next_due(due)
-            self._stop.wait(max(0.0, due - self._clock()))
+            if self._stop.wait(due - self._clock()):  # returns at once for zero or less
+                return
