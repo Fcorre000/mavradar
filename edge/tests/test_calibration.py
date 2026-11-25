@@ -14,6 +14,7 @@ from pathlib import Path
 
 import pytest
 
+import mavradar_edge.calibrate
 from mavradar_edge.calibrate import main
 from mavradar_edge.calibration.calibrator import (
     CalibrationSummary,
@@ -210,6 +211,19 @@ def test_heartbeats_say_calibrating_and_the_crossing_unknown(store: MapStore, sa
 # The command
 
 
+@pytest.fixture(autouse=True)
+def service(monkeypatch: pytest.MonkeyPatch) -> list[str]:
+    """Never touches a real service, even on the Pi: records what calibrate asks systemctl to do."""
+    calls: list[str] = []
+
+    def fake(action: str) -> bool:
+        calls.append(action)
+        return True
+
+    monkeypatch.setattr(mavradar_edge.calibrate, "systemctl", fake)
+    return calls
+
+
 def env(tmp_path: Path, log: str = "empty_track") -> dict[str, str]:
     return {
         "MAVRADAR_NODE_ID": "node-a",
@@ -275,6 +289,34 @@ def test_the_command_sends_heartbeats_that_say_calibrating(tmp_path: Path) -> No
     assert (body["status"], body["state"]) == ("calibrating", "sensorOffline")
 
 
+@pytest.mark.parametrize(
+    ("log", "answer"), [("empty_track", "y"), ("empty_track", "n"), ("train_passing", "")]
+)
+def test_the_service_is_stopped_first_and_started_again(
+    tmp_path: Path, service: list[str], log: str, answer: str
+) -> None:
+    main(["--seconds", "1000"], env(tmp_path, log), ask=lambda _: answer, out=lambda _: None)
+
+    assert service == ["stop", "start"]  # saved, rejected, or thrown out
+
+
+def test_ctrl_c_still_starts_the_service_again(tmp_path: Path, service: list[str]) -> None:
+    def interrupted(_: str) -> str:
+        raise KeyboardInterrupt
+
+    with pytest.raises(KeyboardInterrupt):
+        main(["--seconds", "1000"], env(tmp_path), ask=interrupted, out=lambda _: None)
+    assert service == ["stop", "start"]
+
+
+def test_a_failed_start_says_how_to_start_it(tmp_path: Path) -> None:
+    printed: list[str] = []
+
+    main(["--seconds", "1000"], env(tmp_path), ask=lambda _: "n", out=printed.append, service=lambda _: False)
+
+    assert printed[-1].endswith("systemctl --user start mavradar-edge")
+
+
 def test_ctrl_c_at_the_prompt_saves_nothing(tmp_path: Path) -> None:
     def interrupted(_: str) -> str:
         raise KeyboardInterrupt
@@ -290,7 +332,7 @@ def test_a_dropped_ssh_session_runs_the_cleanup(tmp_path: Path) -> None:
     process = subprocess.Popen(
         [sys.executable, "-m", "mavradar_edge.calibrate", "--seconds", "1000"],
         cwd=Path(__file__).parents[1],
-        env={**os.environ, **env(tmp_path)},
+        env={**os.environ, **env(tmp_path), "PATH": ""},  # no systemctl: never the real service
         stdin=subprocess.PIPE,
         stdout=subprocess.PIPE,
         text=True,

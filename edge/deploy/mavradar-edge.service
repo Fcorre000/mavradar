@@ -1,0 +1,22 @@
+# The MavRadar field node as a systemd user service. Install: edge/README.md, "Run it on the Pi".
+# It assumes the repo is cloned to ~/mavradar. As a user service it starts at boot once linger is
+# on, and calibrate can stop and start it without sudo.
+
+[Unit]
+Description=MavRadar edge node
+
+[Service]
+WorkingDirectory=%h/mavradar/edge
+# The node's settings and its key. Never in the repo: edge/.env is gitignored, and chmod 600.
+EnvironmentFile=%h/mavradar/edge/.env
+ExecStart=%h/mavradar/edge/.venv/bin/python -m mavradar_edge
+# Restart only on a failure: exit 1, or killed. A replay that finished (0) stays stopped, and a
+# setup problem (2) can't be fixed by restarting, so its reason stays at the end of the log.
+Restart=on-failure
+RestartPreventExitStatus=2
+# A few seconds between tries, so a node that fails at once doesn't hit systemd's start limit
+# (5 starts in 10 s) and stay down for good.
+RestartSec=5
+
+[Install]
+WantedBy=default.target
