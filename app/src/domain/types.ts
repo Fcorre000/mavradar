@@ -58,3 +58,14 @@ export interface SourceSnapshot {
   /** Finished blockages, oldest first. */
   events: BlockageEvent[];
 }
+
+export interface HistoryStats {
+  count: number;
+  typicalMin: number | null;
+  longest:{
+    durationMin: number;
+    stopped: boolean;
+  } | null;
+  hours: number[];
+  events: BlockageEvent[];
+}
