@@ -12,7 +12,7 @@ import { T } from '@/components/text';
 import { plateShadow } from '@/constants/styles';
 import { HistoryColors } from '@/constants/theme';
 import { crossingById } from '@/domain/crossings';
-import { blockageStats } from '@/domain/stats';
+import { source} from '@/data';
 import { formatTime, startOfDay } from '@/domain/time';
 import type { BlockageEvent } from '@/domain/types';
 import { useScheme, useStyle, useTheme } from '@/hooks/use-theme';
@@ -38,7 +38,7 @@ export default function HistoryScreen() {
   const [picking, setPicking] = useState(false);
 
   const crossing = crossingById(crossingId);
-  const stats = useMemo(() => blockageStats(allEvents, crossing.id, today + DAY - 1, range), [allEvents, crossing.id, today, range]);
+  const stats = useMemo(() => source.getHistory(crossing.id, today + DAY - 1, range), [allEvents, crossing.id, today, range]);
   const empty = forceEmpty || stats.count === 0;
   const max = Math.max(...stats.hours);
   const peak = stats.hours.indexOf(max);

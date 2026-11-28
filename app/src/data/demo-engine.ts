@@ -1,8 +1,9 @@
 import { LAUNCH_CROSSING, DEMO_CROSSINGS } from '@/domain/crossings';
 import { minutesBetween, startOfDay } from '@/domain/time';
-import type { BlockageEvent, Connection, CrossingReading, ReportedState, SourceSnapshot } from '@/domain/types';
+import type { BlockageEvent, Connection, CrossingReading, HistoryStats, ReportedState, SourceSnapshot } from '@/domain/types';
 
 import type { CrossingSource } from './source';
+import { blockageStats } from '@/domain/stats';
 
 const MIN = 60_000;
 /** Seconds between sensor heartbeats in the demo. Real nodes set their own interval. */
@@ -156,6 +157,13 @@ export class DemoEngine implements CrossingSource {
       events: this.events,
     };
   }
+
+  getHistory(
+    crossingId: string, 
+    end: number, 
+    range: 7 | 30): HistoryStats {
+      return blockageStats(this.events, crossingId, end, range);
+    }
 
   subscribe(listener: (s: SourceSnapshot) => void): () => void {
     this.listeners.add(listener);

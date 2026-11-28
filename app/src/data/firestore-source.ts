@@ -1,6 +1,6 @@
 import { doc, onSnapshot } from 'firebase/firestore';
 
-import type { Connection, CrossingReading, SourceSnapshot } from '@/domain/types';
+import type { Connection, CrossingReading, SourceSnapshot, HistoryStats } from '@/domain/types';
 import { db } from '@/lib/firebase';
 
 import { toReading } from './firestore-mapping';
@@ -48,4 +48,17 @@ export class FirestoreSource implements CrossingSource {
       clearInterval(ticker);
     };
   }
+
+  getHistory(
+    _crossingId: string, 
+    _end: number, 
+    _range: 7 | 30): HistoryStats {
+      return {
+        count: 0,
+        typicalMin: null,
+        longest: null,
+        hours: Array(24).fill(0),
+        events: [],
+      };
+    }
 }
